@@ -5,6 +5,7 @@ from enum import Enum
 from typing import List, Optional, Tuple, Literal
 # pyrefly: ignore [missing-import]
 from fastapi import FastAPI, Header, HTTPException, Depends
+# pyrefly: ignore [missing-import]
 from fastapi.responses import HTMLResponse
 # pyrefly: ignore [missing-import]
 from pydantic import BaseModel, Field
@@ -650,6 +651,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 @app.get("/demo.js", include_in_schema=False)
 async def demo_js():
+    # pyrefly: ignore [missing-import]
     from fastapi.responses import Response
     return Response(content=DEMO_JS, media_type="application/javascript")
 
@@ -1761,6 +1763,7 @@ async def get_summary(_: dict = Depends(verify_api_key)):
 
 
 if __name__ == "__main__":
+    # pyrefly: ignore [missing-import]
     import uvicorn
 
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
