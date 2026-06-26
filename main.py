@@ -1356,21 +1356,22 @@ console.log(applicable_rate);  <span class="cc">// "CGST 9% + SGST 9% = 18%"</sp
 </footer>
 
 <script>
-function fmt(d) {
-  const lines = [
-    '{',
-    `  <span class="jk">"hsn_code"</span>: <span class="js">"${d.hsn_code}"</span>,`,
-    `  <span class="jk">"description"</span>: <span class="js">"${d.description.replace(/"/g, '\\"').substring(0, 60)}${d.description.length > 60 ? '...' : ''}"</span>,`,
-    `  <span class="jk">"tax_rates"</span>: {`,
-    `    <span class="jk">"igst"</span>: <span class="jn">${d.tax_rates.igst}</span>, <span class="jk">"cgst"</span>: <span class="jn">${d.tax_rates.cgst}</span>, <span class="jk">"sgst"</span>: <span class="jn">${d.tax_rates.sgst}</span>, <span class="jk">"cess"</span>: <span class="jn">${d.tax_rates.cess}</span>`,
-    `  },`,
-    `  <span class="jk">"applicable_rate"</span>: <span class="js">"${d.applicable_rate}"</span>,`,
-    d.condition_applied ? `  <span class="jk">"condition_applied"</span>: <span class="js">"${d.condition_applied}"</span>,` : null,
-    `  <span class="jk">"notification_ref"</span>: <span class="js">"${d.notification_ref}"</span>,`,
-    `  <span class="jk">"effective_date"</span>: <span class="js">"${d.effective_date}"</span>`,
-    '}'
-  ].filter(Boolean).join('\\n');
-  return lines;
+function fmt(obj) {
+  let json = JSON.stringify(obj, null, 2);
+  json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+      let cls = 'jn';
+      if (/^"/.test(match)) {
+          if (/:$/.test(match)) {
+              cls = 'jk';
+          } else {
+              cls = 'js';
+          }
+      } else if (/true|false|null/.test(match)) {
+          cls = 'cw';
+      }
+      return '<span class="' + cls + '">' + match + '</span>';
+  });
 }
 
 function setQ(v) { document.getElementById('qi').value = v; runQ(); }
@@ -1392,7 +1393,7 @@ async function runQ() {
     });
     const data = await res.json();
     if (res.ok && data && data.length > 0) {
-      out.innerHTML = fmt(data[0]);
+      out.innerHTML = fmt(data);
       out.classList.add('has-result');
     } else {
       out.innerHTML = `<span style="color:#3D4E6A">// No exact match found for "${val}".\\n// Try: AC unit · gold jewellery · basmati rice · namkeen\\n// All 48,752 HSN codes available with an API key.</span>`;
