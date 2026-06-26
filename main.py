@@ -1579,14 +1579,24 @@ async def lookup_rate(req: LookupRequest, _: dict = Depends(verify_api_key)):
 
     # Build a tsquery: tokenise and OR-join terms
     terms = [t.strip() for t in req.description.split() if t.strip()]
-    tsquery = " | ".join(terms)
+    tsquery_and = " & ".join(terms)
 
     res = (
         supabase.table("hsn_rates")
         .select("*")
-        .text_search("hsn_description", tsquery)
+        .text_search("hsn_description", tsquery_and)
         .execute()
     )
+
+    if not res.data:
+        # Fallback to OR search if strict AND yields nothing
+        tsquery_or = " | ".join(terms)
+        res = (
+            supabase.table("hsn_rates")
+            .select("*")
+            .text_search("hsn_description", tsquery_or)
+            .execute()
+        )
 
     if not res.data:
         return []
@@ -1616,14 +1626,29 @@ async def bulk_lookup(requests: List[LookupRequest], _: dict = Depends(verify_ap
         if not req.description.strip():
             all_results.append([])
             continue
+            
         terms = [t.strip() for t in req.description.split() if t.strip()]
-        tsquery = " | ".join(terms)
+        if not terms:
+            all_results.append([])
+            continue
+            
+        tsquery_and = " & ".join(terms)
         res = (
             supabase.table("hsn_rates")
             .select("*")
-            .text_search("hsn_description", tsquery)
+            .text_search("hsn_description", tsquery_and)
             .execute()
         )
+        
+        if not res.data:
+            tsquery_or = " | ".join(terms)
+            res = (
+                supabase.table("hsn_rates")
+                .select("*")
+                .text_search("hsn_description", tsquery_or)
+                .execute()
+            )
+            
         all_results.append(_build_lookup_results(res.data or [], req))
 
     return all_results
