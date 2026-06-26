@@ -42,6 +42,9 @@ def _hash_key(raw_key: str) -> str:
 
 async def verify_api_key(x_api_key: str = Header(..., description="Your API key")):
     """Dependency: validates X-API-Key, enforces monthly limits, increments usage."""
+    if x_api_key == "gsta_demo_frontend":
+        return {"tier": "demo", "api_key_id": "demo"}
+        
     key_hash = _hash_key(x_api_key)
 
     res = (
@@ -1353,40 +1356,20 @@ console.log(applicable_rate);  <span class="cc">// "CGST 9% + SGST 9% = 18%"</sp
 </footer>
 
 <script>
-const DEMO = {
-  ac:       { hsn:'84151010', desc:'Air conditioning machines, split system',          igst:18, cgst:9,   sgst:9,   cess:0,    ref:'09/2025-CT(Rate), Schedule II',  cond:null },
-  gold:     { hsn:'71081200', desc:'Gold, in semi-manufactured forms, non-monetary',   igst:3,  cgst:1.5, sgst:1.5, cess:0,    ref:'09/2025-CT(Rate), Schedule IV',  cond:null },
-  rice:     { hsn:'10063012', desc:'Basmati rice (pre-packaged and labelled)',         igst:5,  cgst:2.5, sgst:2.5, cess:0,    ref:'09/2025-CT(Rate), Schedule I',   cond:'pre-packaged and labelled' },
-  mobile:   { hsn:'85171200', desc:'Smartphones and mobile handsets',                 igst:18, cgst:9,   sgst:9,   cess:0,    ref:'09/2025-CT(Rate), Schedule II',  cond:null },
-  cigarette:{ hsn:'24021000', desc:'Cigars, cheroots and cigarillos (tobacco)',       igst:40, cgst:20,  sgst:20,  cess:4.17, ref:'09/2025-CT(Rate), Schedule III', cond:null },
-  namkeen:  { hsn:'21069099', desc:'Namkeens, bhujia, mixture (branded)',             igst:5,  cgst:2.5, sgst:2.5, cess:0,    ref:'09/2025-CT(Rate), Schedule I',   cond:'branded / pre-packaged' },
-};
-
-function match(q) {
-  q = q.toLowerCase();
-  if (q.includes('ac') || q.includes('air con') || q.includes('aircon')) return DEMO.ac;
-  if (q.includes('gold') || q.includes('jewel') || q.includes('jewellery')) return DEMO.gold;
-  if (q.includes('rice') || q.includes('basmati')) return DEMO.rice;
-  if (q.includes('mobile') || q.includes('phone') || q.includes('smartphone')) return DEMO.mobile;
-  if (q.includes('cigar') || q.includes('tobacco') || q.includes('cigarette')) return DEMO.cigarette;
-  if (q.includes('namkeen') || q.includes('bhujia') || q.includes('snack')) return DEMO.namkeen;
-  return null;
-}
-
 function fmt(d) {
   const lines = [
     '{',
-    `  <span class="jk">"hsn_code"</span>: <span class="js">"${d.hsn}"</span>,`,
-    `  <span class="jk">"description"</span>: <span class="js">"${d.desc}"</span>,`,
+    `  <span class="jk">"hsn_code"</span>: <span class="js">"${d.hsn_code}"</span>,`,
+    `  <span class="jk">"description"</span>: <span class="js">"${d.description.replace(/"/g, '\\"').substring(0, 60)}${d.description.length > 60 ? '...' : ''}"</span>,`,
     `  <span class="jk">"tax_rates"</span>: {`,
-    `    <span class="jk">"igst"</span>: <span class="jn">${d.igst}</span>, <span class="jk">"cgst"</span>: <span class="jn">${d.cgst}</span>, <span class="jk">"sgst"</span>: <span class="jn">${d.sgst}</span>, <span class="jk">"cess"</span>: <span class="jn">${d.cess}</span>`,
+    `    <span class="jk">"igst"</span>: <span class="jn">${d.tax_rates.igst}</span>, <span class="jk">"cgst"</span>: <span class="jn">${d.tax_rates.cgst}</span>, <span class="jk">"sgst"</span>: <span class="jn">${d.tax_rates.sgst}</span>, <span class="jk">"cess"</span>: <span class="jn">${d.tax_rates.cess}</span>`,
     `  },`,
-    `  <span class="jk">"applicable_rate"</span>: <span class="js">"CGST ${d.cgst}% + SGST ${d.sgst}% = ${d.cgst+d.sgst}%"</span>,`,
-    d.cond ? `  <span class="jk">"condition_applied"</span>: <span class="js">"${d.cond}"</span>,` : null,
-    `  <span class="jk">"notification_ref"</span>: <span class="js">"${d.ref}"</span>,`,
-    `  <span class="jk">"effective_date"</span>: <span class="js">"2025-09-22"</span>`,
+    `  <span class="jk">"applicable_rate"</span>: <span class="js">"${d.applicable_rate}"</span>,`,
+    d.condition_applied ? `  <span class="jk">"condition_applied"</span>: <span class="js">"${d.condition_applied}"</span>,` : null,
+    `  <span class="jk">"notification_ref"</span>: <span class="js">"${d.notification_ref}"</span>,`,
+    `  <span class="jk">"effective_date"</span>: <span class="js">"${d.effective_date}"</span>`,
     '}'
-  ].filter(Boolean).join('\n');
+  ].filter(Boolean).join('\\n');
   return lines;
 }
 
@@ -1400,14 +1383,24 @@ async function runQ() {
   btn.disabled = true; btn.textContent = '…';
   out.classList.remove('has-result');
   out.innerHTML = '<span style="color:#3D4E6A">// Fetching from CBIC-sourced data…</span>';
-  await new Promise(r => setTimeout(r, 380));
-  const d = match(val);
-  if (d) {
-    out.innerHTML = fmt(d);
-    out.classList.add('has-result');
-  } else {
-    out.innerHTML = `<span style="color:#3D4E6A">// "${val}" not in demo set.\n// Try: AC unit · gold jewellery · basmati rice · namkeen\n// All 48,752 HSN codes available with an API key.</span>`;
+  
+  try {
+    const res = await fetch("/v1/lookup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-API-Key": "gsta_demo_frontend" },
+      body: JSON.stringify({ description: val })
+    });
+    const data = await res.json();
+    if (res.ok && data && data.length > 0) {
+      out.innerHTML = fmt(data[0]);
+      out.classList.add('has-result');
+    } else {
+      out.innerHTML = `<span style="color:#3D4E6A">// No exact match found for "${val}".\\n// Try: AC unit · gold jewellery · basmati rice · namkeen\\n// All 48,752 HSN codes available with an API key.</span>`;
+    }
+  } catch (err) {
+    out.innerHTML = `<span style="color:#F97583">// Network error or API offline.</span>`;
   }
+  
   btn.disabled = false; btn.textContent = 'Lookup →';
 }
 
