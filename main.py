@@ -17,10 +17,11 @@ load_dotenv()
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
 
-if not SUPABASE_URL or not SUPABASE_KEY:
+if not SUPABASE_URL or not SUPABASE_KEY or not SUPABASE_ANON_KEY:
     raise RuntimeError(
-        "SUPABASE_URL and SUPABASE_KEY must be set in environment variables."
+        "SUPABASE_URL, SUPABASE_KEY, and SUPABASE_ANON_KEY must be set in environment variables."
     )
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -29,6 +30,8 @@ app = FastAPI(
     title="gstaccelerator.in API",
     version="1.0.0",
     description="Lookup GST CGST/IGST/SGST/Cess rates for Indian goods (HSN) and services (SAC) codes. Powered by gstaccelerator.in.",
+    docs_url="/swagger",
+    redoc_url="/redoc"
 )
 
 
@@ -1057,6 +1060,7 @@ async def root():
       border-radius: 0 10px 10px 10px; padding: 1.5rem;
       font-family: var(--font-mono); font-size: 0.79rem;
       line-height: 1.8; overflow-x: auto; display: none;
+      white-space: pre;
     }
     .code.on { display: block; }
     .cc { color: #4A5E82; }
@@ -1122,8 +1126,8 @@ async def root():
   <div class="nav-links">
     <a href="#features">Features</a>
     <a href="#pricing">Pricing</a>
-    <a href="#code">Docs</a>
-    <a class="nav-cta" href="#pricing">Get API Key</a>
+    <a href="/docs">Docs</a>
+    <a class="nav-cta" href="/dashboard">Get API Key</a>
   </div>
 </nav>
 
@@ -1767,6 +1771,100 @@ async def get_summary(_: dict = Depends(verify_api_key)):
         rate_slabs=rate_slabs,
         last_updated="2025-09-22",
     )
+
+
+# ---------------------------------------------------------------------------
+# Dashboard Endpoints
+# ---------------------------------------------------------------------------
+
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import secrets
+
+security = HTTPBearer()
+
+async def verify_jwt(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    try:
+        user_res = supabase.auth.get_user(token)
+        if not user_res or not user_res.user:
+            raise HTTPException(status_code=401, detail="Invalid or expired JWT")
+        return user_res.user
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Invalid or expired JWT: {str(e)}")
+
+@app.get("/dashboard", include_in_schema=False, response_class=HTMLResponse)
+async def dashboard_page():
+    try:
+        with open("dashboard.html", "r", encoding="utf-8") as f:
+            content = f.read()
+        content = content.replace("{{ SUPABASE_URL }}", SUPABASE_URL)
+        content = content.replace("{{ SUPABASE_ANON_KEY }}", SUPABASE_ANON_KEY)
+        return HTMLResponse(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Dashboard template not found.")
+
+@app.get("/docs", include_in_schema=False, response_class=HTMLResponse)
+async def api_docs_page():
+    try:
+        with open("docs.html", "r", encoding="utf-8") as f:
+            content = f.read()
+        return HTMLResponse(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Docs template not found.")
+
+class KeyCreateRequest(BaseModel):
+    name: str = "Default Key"
+
+@app.get("/v1/dashboard/keys", tags=["Dashboard"])
+async def get_dashboard_keys(user=Depends(verify_jwt)):
+    res = (
+        supabase.table("api_keys")
+        .select("id, name, key_prefix, is_active")
+        .eq("user_id", user.id)
+        .eq("is_active", True)
+        .execute()
+    )
+    return res.data
+
+@app.post("/v1/dashboard/keys", tags=["Dashboard"])
+async def create_dashboard_key(req: KeyCreateRequest, user=Depends(verify_jwt)):
+    # Generate a new random key
+    raw_key = f"gsta_live_{secrets.token_urlsafe(24)}"
+    key_hash = _hash_key(raw_key)
+    key_prefix = raw_key[:15]
+    
+    res = (
+        supabase.table("api_keys")
+        .insert({
+            "user_id": user.id,
+            "key_prefix": key_prefix,
+            "key_hash": key_hash,
+            "name": req.name,
+            "is_active": True,
+            "tier": "free",
+            "monthly_limit": 1000,
+            "calls_this_month": 0
+        })
+        .execute()
+    )
+    if not res.data:
+        raise HTTPException(status_code=500, detail="Failed to generate key")
+        
+    return {"raw_key": raw_key, "key_id": res.data[0]["id"]}
+
+@app.delete("/v1/dashboard/keys/{key_id}", tags=["Dashboard"])
+async def revoke_dashboard_key(key_id: str, user=Depends(verify_jwt)):
+    # Instead of deleting, just mark as inactive
+    res = (
+        supabase.table("api_keys")
+        .update({"is_active": False})
+        .eq("id", key_id)
+        .eq("user_id", user.id)
+        .execute()
+    )
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Key not found or not owned by user.")
+    return {"status": "revoked"}
 
 
 if __name__ == "__main__":

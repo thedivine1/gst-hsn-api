@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GST Accelerator — API Documentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0B0E14;
+      --surface: #151A23;
+      --surface-hover: #1E2532;
+      --border: #2A3441;
+      --amber: #E8650A;
+      --amber-glow: rgba(232, 101, 10, 0.2);
+      --text: #F3F4F6;
+      --text-muted: #9CA3AF;
+      --success: #10B981;
+      --danger: #EF4444;
+      --code-bg: #06080A;
+      --code-border: #1E2532;
+      --header-h: 73px;
+      --sidebar-w: 260px;
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Navbar */
+    nav {
+      height: var(--header-h);
+      padding: 0 2rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(11, 14, 20, 0.95);
+      backdrop-filter: blur(12px);
+      z-index: 100;
+      flex-shrink: 0;
+    }
+    
+    .brand {
+      font-weight: 600;
+      font-size: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      color: var(--text);
+      text-decoration: none;
+    }
+    
+    .brand-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--amber);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--amber);
+    }
+    
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      margin-left: 2.5rem;
+      font-weight: 500;
+      font-size: 0.95rem;
+      transition: color 0.2s;
+    }
+    
+    .nav-links a:hover {
+      color: var(--text);
+    }
+
+    .nav-cta {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+    }
+    .nav-cta:hover {
+      background: var(--surface-hover);
+      border-color: var(--amber);
+    }
+
+    /* Layout */
+    .layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    aside {
+      width: var(--sidebar-w);
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 2.5rem 1.5rem;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    aside h3 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+      margin-top: 2rem;
+      font-weight: 600;
+    }
+
+    aside h3:first-child {
+      margin-top: 0;
+    }
+
+    aside ul {
+      list-style: none;
+    }
+
+    aside li {
+      margin-bottom: 0.35rem;
+    }
+
+    aside a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      display: block;
+      padding: 0.45rem 0.75rem;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    aside a:hover, aside a.active {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--amber);
+    }
+
+    /* Main Content */
+    main {
+      flex: 1;
+      overflow-y: auto;
+      scroll-behavior: smooth;
+    }
+
+    .doc-section {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .doc-section:last-child {
+      border-bottom: none;
+    }
+
+    .doc-text {
+      flex: 1;
+      padding: 4rem;
+      max-width: 800px;
+    }
+
+    .doc-code {
+      flex: 1;
+      background: var(--code-bg);
+      padding: 4rem;
+      border-left: 1px solid var(--border);
+      max-width: 800px;
+    }
+
+    @media (max-width: 1200px) {
+      .doc-section { flex-direction: column; }
+      .doc-text, .doc-code { max-width: 100%; border-left: none; }
+      .doc-code { padding-top: 2rem; border-top: 1px solid var(--border); }
+    }
+
+    /* Typography */
+    h1 { font-size: 2.5rem; margin-bottom: 1rem; font-weight: 600; letter-spacing: -0.03em; }
+    h2 { font-size: 1.75rem; margin: 0 0 1rem; font-weight: 600; letter-spacing: -0.02em; color: var(--text); }
+    h3 { font-size: 1.15rem; margin: 2rem 0 1rem; font-weight: 500; color: #E5E7EB; }
+    p { margin-bottom: 1.25rem; color: #A1A1AA; font-size: 0.95rem; }
+    
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      background: rgba(232, 101, 10, 0.1);
+      color: var(--amber);
+      border: 1px solid var(--amber-glow);
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      vertical-align: middle;
+      margin-right: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Code Blocks */
+    .code-container {
+      background: var(--bg);
+      border: 1px solid var(--code-border);
+      border-radius: 8px;
+      margin-bottom: 2rem;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .code-header {
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid var(--code-border);
+      padding: 0.75rem 1.25rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    pre {
+      padding: 1.25rem;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: #E5E7EB;
+      white-space: pre;
+      line-height: 1.6;
+    }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 0.15rem 0.35rem;
+      border-radius: 4px;
+      font-size: 0.9em;
+    }
+    
+    pre code {
+      background: transparent;
+      padding: 0;
+      font-size: inherit;
+    }
+
+    /* Table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 2rem 0;
+      background: rgba(255,255,255,0.02);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    
+    th, td {
+      padding: 1rem 1.25rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    th {
+      font-weight: 500;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background: rgba(255,255,255,0.03);
+    }
+
+    td {
+      font-size: 0.9rem;
+      color: #D1D5DB;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .param-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .param-type {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--amber);
+    }
+
+    /* Code Highlighting Colors */
+    .c-key { color: #8BE9FD; } /* Cyan */
+    .c-str { color: #F1FA8C; } /* Yellow */
+    .c-num { color: #BD93F9; } /* Purple */
+    .c-bool { color: #FF79C6; } /* Pink */
+    .c-comment { color: #6272A4; } /* Grey */
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="/" class="brand">
+      <div class="brand-dot"></div>
+      GST Accelerator
+    </a>
+    <div class="nav-links">
+      <a href="/#features">Features</a>
+      <a href="/dashboard">Dashboard</a>
+      <a href="/docs" style="color: var(--text);">API Docs</a>
+      <a class="nav-cta" href="/dashboard">Get API Key</a>
+    </div>
+  </nav>
+
+  <div class="layout">
+    <aside>
+      <h3>Overview</h3>
+      <ul>
+        <li><a href="#introduction" class="active">Introduction</a></li>
+        <li><a href="#authentication">Authentication</a></li>
+      </ul>
+      
+      <h3>Endpoints</h3>
+      <ul>
+        <li><a href="#lookup-api">Lookup GST Rate</a></li>
+        <li><a href="#advanced-conditions">Condition Resolver</a></li>
+      </ul>
+
+      <h3>References</h3>
+      <ul>
+        <li><a href="#errors">Error Codes</a></li>
+        <li><a href="#rate-limits">Rate Limits</a></li>
+      </ul>
+    </aside>
+
+    <main>
+      
+      <!-- Section: Intro -->
+      <section id="introduction" class="doc-section">
+        <div class="doc-text">
+          <h1>GST Tax Rates API</h1>
+          <p>Unlike legacy APIs that require multiple endpoints for searching HSN codes, semantic searches, and tax lookups, <strong>GST Accelerator does it all in a single POST request</strong>.</p>
+          <p>Our condition-aware engine aggregates CBIC Master Database rules, automatically evaluates conditionals (e.g. price thresholds, B2B, branded packaging), and returns the exact applicable rate with an audit trail.</p>
+          <p>Ideal for ERPs, checkout flows, and AI Agent integrations.</p>
+        </div>
+        <div class="doc-code">
+          <div class="code-container" style="margin-top: 1rem;">
+            <div class="code-header">Base URL</div>
+            <pre><code>https://gstaccelerator.in/v1</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Auth -->
+      <section id="authentication" class="doc-section">
+        <div class="doc-text">
+          <h2>Authentication</h2>
+          <p>All API requests must be authenticated using an API key. You can generate and manage your API keys from the <a href="/dashboard" style="color: var(--amber);">Developer Dashboard</a>.</p>
+          <p>Pass your API key in the <code>X-API-Key</code> HTTP header.</p>
+          <p>If you fail to provide a key, or provide an invalid key, the API will respond with a <code>401 Unauthorized</code> error.</p>
+        </div>
+        <div class="doc-code">
+          <div class="code-container">
+            <div class="code-header">cURL Example</div>
+            <pre><code>curl -X POST https://gstaccelerator.in/v1/lookup \
+  -H "X-API-Key: gsta_live_*******************" \
+  -H "Content-Type: application/json" \
+  -d '{"description": "laptop"}'</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Lookup -->
+      <section id="lookup-api" class="doc-section">
+        <div class="doc-text">
+          <h2>Lookup GST Rate</h2>
+          <p><span class="badge">POST</span> <code>/v1/lookup</code></p>
+          <p>Search for HSN/SAC codes and their active GST rates by providing a natural language description. Provide optional context variables to automatically resolve complex notification conditions.</p>
+
+          <h3>Request Parameters</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Parameter</th>
+                <th>Type</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="param-name">description</span> <span style="color: var(--danger);">*</span></td>
+                <td><span class="param-type">string</span></td>
+                <td>The name of the item or service (e.g., <code>"cotton shirt"</code>, <code>"AC repair"</code>). Acts as a semantic search query.</td>
+              </tr>
+              <tr>
+                <td><span class="param-name">sale_value_inr</span></td>
+                <td><span class="param-type">float</span></td>
+                <td>Declared sale value in INR. Essential for resolving price-threshold conditions (e.g., footwear below ₹1000).</td>
+              </tr>
+              <tr>
+                <td><span class="param-name">branded</span></td>
+                <td><span class="param-type">boolean</span></td>
+                <td>Set to <code>true</code> if the product is pre-packaged and labelled (branded). Default is <code>false</code>.</td>
+              </tr>
+              <tr>
+                <td><span class="param-name">b2b</span></td>
+                <td><span class="param-type">boolean</span></td>
+                <td>Set to <code>true</code> if the buyer is a registered business (B2B). Default is <code>false</code>.</td>
+              </tr>
+              <tr>
+                <td><span class="param-name">supply_type</span></td>
+                <td><span class="param-type">enum</span></td>
+                <td><code>intrastate</code> or <code>interstate</code>. Dictates how the recommended applicable_rate string is formatted.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="doc-code">
+          <div class="code-container">
+            <div class="code-header">Example Request payload</div>
+            <pre><code>{
+  <span class="c-key">"description"</span>: <span class="c-str">"split AC unit"</span>,
+  <span class="c-key">"supply_type"</span>: <span class="c-str">"intrastate"</span>,
+  <span class="c-key">"branded"</span>: <span class="c-bool">true</span>
+}</code></pre>
+          </div>
+          
+          <div class="code-container">
+            <div class="code-header">Response (200 OK)</div>
+            <pre><code>[
+  {
+    <span class="c-key">"hsn_code"</span>: <span class="c-str">"84151010"</span>,
+    <span class="c-key">"description"</span>: <span class="c-str">"Air conditioning machines, split system"</span>,
+    <span class="c-key">"tax_rates"</span>: {
+      <span class="c-key">"igst"</span>: <span class="c-num">18.0</span>,
+      <span class="c-key">"cgst"</span>: <span class="c-num">9.0</span>,
+      <span class="c-key">"sgst"</span>: <span class="c-num">9.0</span>,
+      <span class="c-key">"cess"</span>: <span class="c-num">0.0</span>,
+      <span class="c-key">"total_intrastate"</span>: <span class="c-num">18.0</span>
+    },
+    <span class="c-key">"applicable_rate"</span>: {
+      <span class="c-key">"intrastate"</span>: <span class="c-str">"CGST 9.0% + SGST 9.0% = 18.0%"</span>,
+      <span class="c-key">"interstate"</span>: <span class="c-str">"IGST 18.0%"</span>
+    },
+    <span class="c-key">"condition_applied"</span>: <span class="c-bool">null</span>,
+    <span class="c-key">"confidence"</span>: <span class="c-num">0.9</span>,
+    <span class="c-key">"notification_ref"</span>: <span class="c-str">"1/2017-Central Tax (Rate)"</span>,
+    <span class="c-key">"needs_review"</span>: <span class="c-bool">false</span>
+  }
+]</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Advanced -->
+      <section id="advanced-conditions" class="doc-section">
+        <div class="doc-text">
+          <h2>Condition Resolver</h2>
+          <p>The standout feature of GST Accelerator is its ability to resolve complex tax notification rules automatically.</p>
+          <p>For example, garments below ₹1,000 are taxed at 5%, while garments above ₹1,000 are taxed at 12%. When you provide <code>sale_value_inr</code>, our engine evaluates the condition and returns the correct rate.</p>
+          <ul>
+            <li style="margin-bottom: 0.5rem; color: #A1A1AA;">If <strong>needs_review</strong> is <code>true</code>, human verification or more parameters are required to confirm the rate.</li>
+            <li style="margin-bottom: 0.5rem; color: #A1A1AA;">If <strong>condition_warning</strong> is not null, a condition was found but couldn't be resolved (e.g. you didn't provide <code>sale_value_inr</code>).</li>
+          </ul>
+        </div>
+        <div class="doc-code">
+          <div class="code-container">
+            <div class="code-header">Example with condition applied</div>
+            <pre><code><span class="c-comment">// Request with sale_value_inr</span>
+{
+  <span class="c-key">"description"</span>: <span class="c-str">"cotton shirt"</span>,
+  <span class="c-key">"sale_value_inr"</span>: <span class="c-num">1500.00</span>
+}
+
+<span class="c-comment">// Response segment</span>
+{
+  <span class="c-key">"tax_rates"</span>: { <span class="c-key">"igst"</span>: <span class="c-num">12.0</span>, ... },
+  <span class="c-key">"condition_applied"</span>: <span class="c-str">"Price threshold (exceeding Rs. 1,000): PASSED — 1,500.00 > 1000"</span>,
+  <span class="c-key">"condition_warning"</span>: <span class="c-bool">null</span>,
+  <span class="c-key">"needs_review"</span>: <span class="c-bool">false</span>
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Errors -->
+      <section id="errors" class="doc-section">
+        <div class="doc-text">
+          <h2>Error Codes</h2>
+          <p>The API uses standard HTTP status codes to indicate success or failure of requests.</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="param-name">400</span></td>
+                <td><strong>Bad Request:</strong> Invalid parameters were passed (e.g. missing description).</td>
+              </tr>
+              <tr>
+                <td><span class="param-name">401</span></td>
+                <td><strong>Unauthorized:</strong> The API key is missing, invalid, or revoked.</td>
+              </tr>
+              <tr>
+                <td><span class="param-name">429</span></td>
+                <td><strong>Too Many Requests:</strong> You have exceeded your tier's monthly limit.</td>
+              </tr>
+              <tr>
+                <td><span class="param-name">500</span></td>
+                <td><strong>Internal Server Error:</strong> Something went wrong on our end.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="doc-code">
+          <!-- Empty for this section, keeping the 3-column flow balanced -->
+          <div class="code-container" style="border: 1px dashed var(--border); background: transparent; box-shadow: none;">
+            <div class="code-header" style="border-bottom: 1px dashed var(--border);">Error Example</div>
+            <pre><code>{
+  <span class="c-key">"detail"</span>: <span class="c-str">"Invalid API Key or Revoked."</span>
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    // Smooth scrolling & Intersection Observer for active nav links
+    const sections = document.querySelectorAll('section');
+    const navLinks = document.querySelectorAll('aside a');
+
+    const observerOptions = {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.5
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href').substring(1) === entry.target.id) {
+              link.classList.add('active');
+            }
+          });
+        }
+      });
+    }, observerOptions);
+
+    sections.forEach(section => observer.observe(section));
+  </script>
+</body>
+</html>

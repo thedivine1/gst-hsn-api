@@ -14,7 +14,9 @@ import secrets
 import hashlib
 import argparse
 from datetime import date
+# pyrefly: ignore [missing-import]
 from supabase import create_client
+# pyrefly: ignore [missing-import]
 from dotenv import load_dotenv
 
 load_dotenv()
