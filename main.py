@@ -48,14 +48,18 @@ async def verify_api_key(x_api_key: str = Header(..., description="Your API key"
         
     key_hash = _hash_key(x_api_key)
 
-    res = (
-        supabase.table("api_keys")
-        .select("*")
-        .eq("key_hash", key_hash)
-        .eq("is_active", True)
-        .single()
-        .execute()
-    )
+    try:
+        res = (
+            supabase.table("api_keys")
+            .select("*")
+            .eq("key_hash", key_hash)
+            .eq("is_active", True)
+            .single()
+            .execute()
+        )
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid or inactive API key.")
+        
     if not res.data:
         raise HTTPException(status_code=401, detail="Invalid or inactive API key.")
 
@@ -1601,8 +1605,12 @@ async def lookup_rate(req: LookupRequest, _: dict = Depends(verify_api_key)):
     if not req.description.strip():
         raise HTTPException(status_code=400, detail="description cannot be empty.")
 
-    # Build a tsquery: tokenise and OR-join terms
-    terms = [t.strip() for t in req.description.split() if t.strip()]
+    # Build a tsquery: tokenise and AND-join terms
+    # Sanitize to prevent tsquery syntax errors
+    clean_desc = re.sub(r"[^\w\s]", " ", req.description)
+    terms = [t.strip() for t in clean_desc.split() if t.strip()]
+    if not terms:
+        return []
     tsquery_and = " & ".join(terms)
 
     res = (
@@ -1651,7 +1659,8 @@ async def bulk_lookup(requests: List[LookupRequest], _: dict = Depends(verify_ap
             all_results.append([])
             continue
             
-        terms = [t.strip() for t in req.description.split() if t.strip()]
+        clean_desc = re.sub(r"[^\w\s]", " ", req.description)
+        terms = [t.strip() for t in clean_desc.split() if t.strip()]
         if not terms:
             all_results.append([])
             continue

@@ -6,3 +6,6 @@ openpyxl
 python-dotenv
 pydantic
 passlib
+pytest
+httpx
+locust
