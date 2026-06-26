@@ -3,562 +3,842 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GST Accelerator — API Documentation</title>
+  <title>API Docs — GST Accelerator</title>
+  <meta name="description" content="Complete API documentation for GST Accelerator. Integrate India's most accurate GST rate engine into your ERP, checkout flow, or AI agent.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #0B0E14;
-      --surface: #151A23;
-      --surface-hover: #1E2532;
-      --border: #2A3441;
+      --surface: #111520;
+      --surface-2: #161B27;
+      --border: #1E2A3A;
+      --border-2: #263344;
       --amber: #E8650A;
-      --amber-glow: rgba(232, 101, 10, 0.2);
-      --text: #F3F4F6;
-      --text-muted: #9CA3AF;
+      --amber-dim: rgba(232, 101, 10, 0.12);
+      --amber-glow: rgba(232, 101, 10, 0.25);
+      --text: #F0F2F5;
+      --text-2: #B4BFCC;
+      --text-muted: #6B7B8D;
       --success: #10B981;
-      --danger: #EF4444;
-      --code-bg: #06080A;
-      --code-border: #1E2532;
-      --header-h: 73px;
-      --sidebar-w: 260px;
+      --danger: #F04545;
+      --blue: #60A5FA;
+      --purple: #A78BFA;
+      --green: #34D399;
+      --header-h: 62px;
     }
-    
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    
+
     body {
       font-family: 'Inter', sans-serif;
-      background-color: var(--bg);
+      background: var(--bg);
       color: var(--text);
-      line-height: 1.6;
       height: 100vh;
       overflow: hidden;
       display: flex;
       flex-direction: column;
     }
 
-    /* Navbar */
+    /* ── NAV ── */
     nav {
       height: var(--header-h);
-      padding: 0 2rem;
+      padding: 0 1.5rem;
       border-bottom: 1px solid var(--border);
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      background: rgba(11, 14, 20, 0.95);
-      backdrop-filter: blur(12px);
-      z-index: 100;
+      justify-content: space-between;
+      background: rgba(11,14,20,0.97);
+      backdrop-filter: blur(16px);
+      z-index: 200;
       flex-shrink: 0;
     }
-    
     .brand {
-      font-weight: 600;
-      font-size: 1.25rem;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      color: var(--text);
-      text-decoration: none;
+      display: flex; align-items: center; gap: 0.6rem;
+      text-decoration: none; color: var(--text);
+      font-weight: 700; font-size: 1.05rem; letter-spacing: -0.01em;
     }
-    
-    .brand-dot {
-      width: 8px;
-      height: 8px;
+    .brand-icon {
+      width: 28px; height: 28px;
       background: var(--amber);
-      border-radius: 50%;
-      box-shadow: 0 0 10px var(--amber);
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px; color: #fff; font-weight: 700;
     }
-    
-    .nav-links a {
-      color: var(--text-muted);
-      text-decoration: none;
-      margin-left: 2.5rem;
-      font-weight: 500;
-      font-size: 0.95rem;
-      transition: color 0.2s;
-    }
-    
-    .nav-links a:hover {
-      color: var(--text);
-    }
-
+    .brand-sub { color: var(--text-muted); font-weight: 400; font-size: 0.85rem; margin-left: 0.75rem; padding-left: 0.75rem; border-left: 1px solid var(--border-2); }
+    .nav-right { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-right a { color: var(--text-muted); text-decoration: none; font-size: 0.88rem; font-weight: 500; transition: color 0.2s; }
+    .nav-right a:hover { color: var(--text); }
     .nav-cta {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      padding: 0.5rem 1rem;
-      border-radius: 6px;
+      background: var(--amber); color: #fff !important;
+      padding: 0.45rem 1rem; border-radius: 6px;
+      font-weight: 600 !important; font-size: 0.85rem !important;
+      transition: opacity 0.2s !important;
     }
-    .nav-cta:hover {
-      background: var(--surface-hover);
-      border-color: var(--amber);
-    }
+    .nav-cta:hover { opacity: 0.85; }
 
-    /* Layout */
-    .layout {
-      display: flex;
-      flex: 1;
-      overflow: hidden;
-    }
+    /* ── SHELL ── */
+    .shell { display: flex; flex: 1; overflow: hidden; }
 
-    /* Sidebar */
-    aside {
-      width: var(--sidebar-w);
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: 230px; flex-shrink: 0;
       background: var(--surface);
       border-right: 1px solid var(--border);
-      padding: 2.5rem 1.5rem;
-      overflow-y: auto;
-      flex-shrink: 0;
+      overflow-y: auto; padding: 1.5rem 0;
     }
-
-    aside h3 {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--text-muted);
-      margin-bottom: 1rem;
-      margin-top: 2rem;
-      font-weight: 600;
+    .sidebar-group { margin-bottom: 1.75rem; }
+    .sidebar-label {
+      font-size: 0.68rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--text-muted); padding: 0 1.25rem;
+      margin-bottom: 0.5rem; display: block;
     }
-
-    aside h3:first-child {
-      margin-top: 0;
+    .sidebar a {
+      display: flex; align-items: center; gap: 0.5rem;
+      color: var(--text-2); text-decoration: none;
+      font-size: 0.875rem; padding: 0.45rem 1.25rem;
+      border-left: 2px solid transparent;
+      transition: all 0.15s;
     }
-
-    aside ul {
-      list-style: none;
+    .sidebar a:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+    .sidebar a.active { color: var(--amber); border-left-color: var(--amber); background: var(--amber-dim); }
+    .method-pill {
+      font-size: 0.62rem; font-weight: 700; padding: 1px 5px;
+      border-radius: 3px; font-family: 'JetBrains Mono', monospace;
+      background: rgba(16,185,129,0.15); color: var(--success);
     }
+    .method-pill.post { background: rgba(232,101,10,0.15); color: var(--amber); }
 
-    aside li {
-      margin-bottom: 0.35rem;
-    }
-
-    aside a {
-      color: var(--text-muted);
-      text-decoration: none;
-      font-size: 0.9rem;
-      display: block;
-      padding: 0.45rem 0.75rem;
-      border-radius: 6px;
-      transition: all 0.2s;
-    }
-
-    aside a:hover, aside a.active {
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--amber);
-    }
-
-    /* Main Content */
-    main {
-      flex: 1;
-      overflow-y: auto;
-      scroll-behavior: smooth;
-    }
-
-    .doc-section {
-      display: flex;
+    /* ── CONTENT ── */
+    .content { flex: 1; overflow-y: auto; }
+    .doc-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       border-bottom: 1px solid var(--border);
+      min-height: 0;
+    }
+    .doc-row:last-child { border-bottom: none; }
+
+    .doc-left {
+      padding: 3.5rem;
+      border-right: 1px solid var(--border);
+    }
+    .doc-right {
+      padding: 2rem 2.5rem;
+      background: var(--surface);
+      display: flex; flex-direction: column; gap: 1.25rem;
     }
 
-    .doc-section:last-child {
-      border-bottom: none;
-    }
+    /* First row hero */
+    .doc-row.hero-row .doc-left { padding-top: 4rem; }
 
-    .doc-text {
-      flex: 1;
-      padding: 4rem;
-      max-width: 800px;
+    h1 { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 1rem; }
+    h2 {
+      font-size: 1.4rem; font-weight: 600; letter-spacing: -0.02em;
+      margin-bottom: 0.85rem; color: var(--text);
     }
+    h3 { font-size: 1rem; font-weight: 600; color: var(--text-2); margin: 1.75rem 0 0.75rem; }
+    p { font-size: 0.9rem; color: var(--text-2); line-height: 1.7; margin-bottom: 0.9rem; }
+    strong { color: var(--text); font-weight: 600; }
 
-    .doc-code {
-      flex: 1;
-      background: var(--code-bg);
-      padding: 4rem;
-      border-left: 1px solid var(--border);
-      max-width: 800px;
+    .endpoint-badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: var(--amber-dim); border: 1px solid var(--amber-glow);
+      border-radius: 6px; padding: 0.35rem 0.75rem;
+      margin-bottom: 1.25rem;
     }
+    .ep-method { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 700; color: var(--amber); }
+    .ep-path { font-family: 'JetBrains Mono', monospace; font-size: 0.83rem; color: var(--text); }
 
-    @media (max-width: 1200px) {
-      .doc-section { flex-direction: column; }
-      .doc-text, .doc-code { max-width: 100%; border-left: none; }
-      .doc-code { padding-top: 2rem; border-top: 1px solid var(--border); }
+    /* Callout */
+    .callout {
+      background: rgba(96, 165, 250, 0.06);
+      border: 1px solid rgba(96, 165, 250, 0.2);
+      border-radius: 8px; padding: 1rem 1.25rem;
+      margin: 1.25rem 0; font-size: 0.875rem; color: var(--text-2);
     }
+    .callout.amber { background: var(--amber-dim); border-color: var(--amber-glow); }
+    .callout.green { background: rgba(52, 211, 153, 0.06); border-color: rgba(52,211,153,0.2); }
+    .callout-title { font-weight: 600; margin-bottom: 0.35rem; color: var(--blue); }
+    .callout.amber .callout-title { color: var(--amber); }
+    .callout.green .callout-title { color: var(--green); }
 
-    /* Typography */
-    h1 { font-size: 2.5rem; margin-bottom: 1rem; font-weight: 600; letter-spacing: -0.03em; }
-    h2 { font-size: 1.75rem; margin: 0 0 1rem; font-weight: 600; letter-spacing: -0.02em; color: var(--text); }
-    h3 { font-size: 1.15rem; margin: 2rem 0 1rem; font-weight: 500; color: #E5E7EB; }
-    p { margin-bottom: 1.25rem; color: #A1A1AA; font-size: 0.95rem; }
-    
-    .badge {
-      display: inline-block;
-      padding: 0.2rem 0.5rem;
-      background: rgba(232, 101, 10, 0.1);
-      color: var(--amber);
-      border: 1px solid var(--amber-glow);
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      vertical-align: middle;
-      margin-right: 0.75rem;
-      font-family: 'JetBrains Mono', monospace;
-    }
-
-    /* Code Blocks */
-    .code-container {
-      background: var(--bg);
-      border: 1px solid var(--code-border);
-      border-radius: 8px;
-      margin-bottom: 2rem;
-      overflow: hidden;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-    }
-
-    .code-header {
-      background: rgba(255, 255, 255, 0.03);
-      border-bottom: 1px solid var(--code-border);
-      padding: 0.75rem 1.25rem;
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    pre {
-      padding: 1.25rem;
-      overflow-x: auto;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.85rem;
-      color: #E5E7EB;
-      white-space: pre;
-      line-height: 1.6;
-    }
-
-    code {
-      font-family: 'JetBrains Mono', monospace;
-      background: rgba(255, 255, 255, 0.1);
-      padding: 0.15rem 0.35rem;
-      border-radius: 4px;
-      font-size: 0.9em;
-    }
-    
-    pre code {
-      background: transparent;
-      padding: 0;
-      font-size: inherit;
-    }
-
-    /* Table */
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 2rem 0;
-      background: rgba(255,255,255,0.02);
-      border-radius: 8px;
-      overflow: hidden;
-    }
-    
-    th, td {
-      padding: 1rem 1.25rem;
+    /* Params table */
+    .params-table { width: 100%; border-collapse: collapse; margin: 1rem 0 0; }
+    .params-table th {
+      font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--text-muted);
+      padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border);
       text-align: left;
+    }
+    .params-table td { padding: 0.75rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .params-table tr:last-child td { border-bottom: none; }
+    .p-name { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: 500; color: var(--text); }
+    .p-name .req { color: var(--danger); margin-left: 2px; }
+    .p-type { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--purple); }
+    .p-desc { font-size: 0.82rem; color: var(--text-2); line-height: 1.5; }
+
+    /* Response fields */
+    .resp-field {
+      padding: 0.6rem 0;
       border-bottom: 1px solid var(--border);
+      display: flex; gap: 1rem; align-items: flex-start;
     }
-    
-    th {
-      font-weight: 500;
-      color: var(--text-muted);
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+    .resp-field:last-child { border-bottom: none; }
+    .rf-name { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--blue); min-width: 140px; }
+    .rf-desc { font-size: 0.82rem; color: var(--text-2); line-height: 1.5; }
+
+    /* Error table */
+    .error-row { display: flex; gap: 1rem; padding: 0.75rem 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
+    .error-row:last-child { border-bottom: none; }
+    .e-code { font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; font-weight: 600; min-width: 50px; }
+    .e-code.e4xx { color: var(--amber); }
+    .e-code.e5xx { color: var(--danger); }
+    .e-desc { font-size: 0.85rem; color: var(--text-2); }
+
+    /* Code pane */
+    .code-block {
+      background: #080B10;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+    }
+    .code-block-header {
       background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid var(--border);
+      padding: 0.6rem 1.1rem;
+      display: flex; align-items: center; justify-content: space-between;
     }
-
-    td {
-      font-size: 0.9rem;
-      color: #D1D5DB;
+    .code-block-lang { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+    .copy-btn {
+      background: none; border: none; color: var(--text-muted);
+      font-size: 0.72rem; cursor: pointer; font-family: inherit;
+      padding: 0.2rem 0.5rem; border-radius: 4px; transition: all 0.15s;
     }
+    .copy-btn:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+    pre { padding: 1.25rem; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; line-height: 1.75; white-space: pre; }
+    code { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; background: rgba(255,255,255,0.08); padding: 0.1em 0.35em; border-radius: 3px; }
+    pre code { background: none; padding: 0; font-size: inherit; }
 
-    tr:last-child td {
-      border-bottom: none;
+    /* Syntax */
+    .s-key { color: #79C0FF; }
+    .s-str { color: #A5D6FF; }
+    .s-num { color: #F2CC60; }
+    .s-bool { color: #FF9E64; }
+    .s-null { color: #FF9E64; opacity: 0.7; }
+    .s-comment { color: #4A5568; font-style: italic; }
+    .s-keyword { color: #CF8E6D; }
+    .s-fn { color: #78DCE8; }
+    .s-var { color: #E3C07B; }
+    .s-url { color: #C3E88D; }
+    .s-header { color: #C792EA; }
+
+    /* Tab switcher */
+    .tab-bar { display: flex; gap: 2px; margin-bottom: 0; }
+    .tab-btn {
+      font-size: 0.75rem; font-weight: 500;
+      padding: 0.4rem 0.85rem; border-radius: 5px 5px 0 0;
+      border: 1px solid transparent; border-bottom: none;
+      cursor: pointer; background: transparent; color: var(--text-muted);
+      font-family: inherit; transition: all 0.15s;
     }
-
-    .param-name {
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 600;
+    .tab-btn.on {
+      background: #080B10; border-color: var(--border);
       color: var(--text);
     }
+    .tab-pane { display: none; }
+    .tab-pane.on { display: block; }
+    .tab-code-block { border-radius: 0 8px 8px 8px !important; }
 
-    .param-type {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.75rem;
-      color: var(--amber);
+    /* Step list */
+    .step-list { list-style: none; counter-reset: step-counter; }
+    .step-list li {
+      counter-increment: step-counter;
+      display: flex; gap: 1rem; margin-bottom: 1rem; align-items: flex-start;
     }
+    .step-list li::before {
+      content: counter(step-counter);
+      min-width: 24px; height: 24px;
+      background: var(--amber-dim); border: 1px solid var(--amber-glow);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700; color: var(--amber);
+      margin-top: 0.1rem;
+    }
+    .step-text { font-size: 0.875rem; color: var(--text-2); line-height: 1.6; }
+    .step-text strong { color: var(--text); }
 
-    /* Code Highlighting Colors */
-    .c-key { color: #8BE9FD; } /* Cyan */
-    .c-str { color: #F1FA8C; } /* Yellow */
-    .c-num { color: #BD93F9; } /* Purple */
-    .c-bool { color: #FF79C6; } /* Pink */
-    .c-comment { color: #6272A4; } /* Grey */
+    /* Feature pills */
+    .feat-pills { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0; }
+    .feat-pill {
+      font-size: 0.75rem; font-weight: 500;
+      padding: 0.3rem 0.75rem; border-radius: 100px;
+      border: 1px solid var(--border-2); color: var(--text-2);
+      background: rgba(255,255,255,0.03);
+    }
+    .feat-pill.green { color: var(--green); border-color: rgba(52,211,153,0.25); background: rgba(52,211,153,0.06); }
+    .feat-pill.blue { color: var(--blue); border-color: rgba(96,165,250,0.25); background: rgba(96,165,250,0.06); }
+    .feat-pill.amber { color: var(--amber); border-color: var(--amber-glow); background: var(--amber-dim); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
   </style>
 </head>
 <body>
 
-  <nav>
+<!-- NAV -->
+<nav>
+  <div style="display:flex;align-items:center;gap:0.5rem;">
     <a href="/" class="brand">
-      <div class="brand-dot"></div>
+      <div class="brand-icon">₹</div>
       GST Accelerator
     </a>
-    <div class="nav-links">
-      <a href="/#features">Features</a>
-      <a href="/dashboard">Dashboard</a>
-      <a href="/docs" style="color: var(--text);">API Docs</a>
-      <a class="nav-cta" href="/dashboard">Get API Key</a>
+    <span class="brand-sub">API Docs</span>
+  </div>
+  <div class="nav-right">
+    <a href="/#features">Features</a>
+    <a href="/#pricing">Pricing</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/dashboard" class="nav-cta">Get API Key →</a>
+  </div>
+</nav>
+
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-group">
+      <span class="sidebar-label">Overview</span>
+      <a href="#introduction" class="active">Introduction</a>
+      <a href="#quickstart">Quickstart</a>
+      <a href="#authentication">Authentication</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-label">Endpoints</span>
+      <a href="#lookup"><span class="method-pill post">POST</span>/v1/lookup</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-label">Guides</span>
+      <a href="#condition-resolver">Condition Resolver</a>
+      <a href="#supply-types">Supply Types</a>
+      <a href="#code-examples">Code Examples</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-label">Reference</span>
+      <a href="#response-fields">Response Fields</a>
+      <a href="#errors">Error Codes</a>
+      <a href="#rate-limits">Rate Limits</a>
     </div>
   </nav>
 
-  <div class="layout">
-    <aside>
-      <h3>Overview</h3>
-      <ul>
-        <li><a href="#introduction" class="active">Introduction</a></li>
-        <li><a href="#authentication">Authentication</a></li>
-      </ul>
-      
-      <h3>Endpoints</h3>
-      <ul>
-        <li><a href="#lookup-api">Lookup GST Rate</a></li>
-        <li><a href="#advanced-conditions">Condition Resolver</a></li>
-      </ul>
+  <!-- CONTENT -->
+  <div class="content" id="content">
 
-      <h3>References</h3>
-      <ul>
-        <li><a href="#errors">Error Codes</a></li>
-        <li><a href="#rate-limits">Rate Limits</a></li>
-      </ul>
-    </aside>
-
-    <main>
-      
-      <!-- Section: Intro -->
-      <section id="introduction" class="doc-section">
-        <div class="doc-text">
-          <h1>GST Tax Rates API</h1>
-          <p>Unlike legacy APIs that require multiple endpoints for searching HSN codes, semantic searches, and tax lookups, <strong>GST Accelerator does it all in a single POST request</strong>.</p>
-          <p>Our condition-aware engine aggregates CBIC Master Database rules, automatically evaluates conditionals (e.g. price thresholds, B2B, branded packaging), and returns the exact applicable rate with an audit trail.</p>
-          <p>Ideal for ERPs, checkout flows, and AI Agent integrations.</p>
+    <!-- INTRODUCTION -->
+    <div class="doc-row hero-row" id="introduction">
+      <div class="doc-left">
+        <h1>GST Tax Rates API</h1>
+        <p>The <strong>GST Accelerator API</strong> is a condition-aware compliance engine that returns the exact applicable GST rate for any Indian good or service — including CGST, SGST, IGST, and Compensation Cess breakdowns — with a full CBIC notification audit trail.</p>
+        <p>Unlike legacy APIs that require you to call separate endpoints for HSN search, SAC search, and rate lookup, our engine does it all in a <strong>single POST request</strong>.</p>
+        <div class="feat-pills">
+          <span class="feat-pill green">✓ CBIC-sourced data</span>
+          <span class="feat-pill green">✓ Condition-aware engine</span>
+          <span class="feat-pill blue">✓ AI Agent / MCP ready</span>
+          <span class="feat-pill amber">✓ Updated Sept 2025</span>
         </div>
-        <div class="doc-code">
-          <div class="code-container" style="margin-top: 1rem;">
-            <div class="code-header">Base URL</div>
-            <pre><code>https://gstaccelerator.in/v1</code></pre>
+        <div class="callout">
+          <div class="callout-title">What makes us different</div>
+          Products like footwear below ₹1,000 and garments below ₹1,000 have conditional GST rates. Every other API returns all possible rates and leaves it to you. We evaluate the condition against your transaction and return exactly one correct rate.
+        </div>
+      </div>
+      <div class="doc-right">
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-block-lang">Base URL</span>
           </div>
+          <pre><code><span class="s-url">https://gstaccelerator.in</span></code></pre>
         </div>
-      </section>
-
-      <!-- Section: Auth -->
-      <section id="authentication" class="doc-section">
-        <div class="doc-text">
-          <h2>Authentication</h2>
-          <p>All API requests must be authenticated using an API key. You can generate and manage your API keys from the <a href="/dashboard" style="color: var(--amber);">Developer Dashboard</a>.</p>
-          <p>Pass your API key in the <code>X-API-Key</code> HTTP header.</p>
-          <p>If you fail to provide a key, or provide an invalid key, the API will respond with a <code>401 Unauthorized</code> error.</p>
-        </div>
-        <div class="doc-code">
-          <div class="code-container">
-            <div class="code-header">cURL Example</div>
-            <pre><code>curl -X POST https://gstaccelerator.in/v1/lookup \
-  -H "X-API-Key: gsta_live_*******************" \
-  -H "Content-Type: application/json" \
-  -d '{"description": "laptop"}'</code></pre>
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-block-lang">Version</span>
           </div>
+          <pre><code><span class="s-key">"api_version"</span>: <span class="s-str">"v1"</span>
+<span class="s-key">"data_source"</span>: <span class="s-str">"CBIC 09/2025-CT(Rate)"</span>
+<span class="s-key">"effective_from"</span>: <span class="s-str">"2025-09-22"</span></code></pre>
         </div>
-      </section>
+      </div>
+    </div>
 
-      <!-- Section: Lookup -->
-      <section id="lookup-api" class="doc-section">
-        <div class="doc-text">
-          <h2>Lookup GST Rate</h2>
-          <p><span class="badge">POST</span> <code>/v1/lookup</code></p>
-          <p>Search for HSN/SAC codes and their active GST rates by providing a natural language description. Provide optional context variables to automatically resolve complex notification conditions.</p>
-
-          <h3>Request Parameters</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Parameter</th>
-                <th>Type</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><span class="param-name">description</span> <span style="color: var(--danger);">*</span></td>
-                <td><span class="param-type">string</span></td>
-                <td>The name of the item or service (e.g., <code>"cotton shirt"</code>, <code>"AC repair"</code>). Acts as a semantic search query.</td>
-              </tr>
-              <tr>
-                <td><span class="param-name">sale_value_inr</span></td>
-                <td><span class="param-type">float</span></td>
-                <td>Declared sale value in INR. Essential for resolving price-threshold conditions (e.g., footwear below ₹1000).</td>
-              </tr>
-              <tr>
-                <td><span class="param-name">branded</span></td>
-                <td><span class="param-type">boolean</span></td>
-                <td>Set to <code>true</code> if the product is pre-packaged and labelled (branded). Default is <code>false</code>.</td>
-              </tr>
-              <tr>
-                <td><span class="param-name">b2b</span></td>
-                <td><span class="param-type">boolean</span></td>
-                <td>Set to <code>true</code> if the buyer is a registered business (B2B). Default is <code>false</code>.</td>
-              </tr>
-              <tr>
-                <td><span class="param-name">supply_type</span></td>
-                <td><span class="param-type">enum</span></td>
-                <td><code>intrastate</code> or <code>interstate</code>. Dictates how the recommended applicable_rate string is formatted.</td>
-              </tr>
-            </tbody>
-          </table>
+    <!-- QUICKSTART -->
+    <div class="doc-row" id="quickstart">
+      <div class="doc-left">
+        <h2>Quickstart</h2>
+        <p>Get your first GST rate in under 60 seconds.</p>
+        <ol class="step-list">
+          <li><div class="step-text"><strong>Create an account</strong> — Sign up with Google, GitHub, or email magic link on the <a href="/dashboard" style="color:var(--amber)">Developer Dashboard</a>.</div></li>
+          <li><div class="step-text"><strong>Generate an API key</strong> — From your dashboard, click "Generate New Key". Copy it immediately — it will not be shown again.</div></li>
+          <li><div class="step-text"><strong>Make your first request</strong> — Pass your key in the <code>X-API-Key</code> header. Try the cURL example on the right.</div></li>
+          <li><div class="step-text"><strong>Parse the response</strong> — Use <code>tax_rates.cgst</code>, <code>tax_rates.sgst</code>, and <code>applicable_rate</code> in your invoice logic.</div></li>
+        </ol>
+      </div>
+      <div class="doc-right">
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-block-lang">cURL — First Request</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre><code>curl -X POST <span class="s-url">https://gstaccelerator.in/v1/lookup</span> \
+  -H <span class="s-header">"X-API-Key: gsta_live_*******************"</span> \
+  -H <span class="s-header">"Content-Type: application/json"</span> \
+  -d <span class="s-str">'{
+    "description": "laptop"
+  }'</span></code></pre>
         </div>
-        <div class="doc-code">
-          <div class="code-container">
-            <div class="code-header">Example Request payload</div>
-            <pre><code>{
-  <span class="c-key">"description"</span>: <span class="c-str">"split AC unit"</span>,
-  <span class="c-key">"supply_type"</span>: <span class="c-str">"intrastate"</span>,
-  <span class="c-key">"branded"</span>: <span class="c-bool">true</span>
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-block-lang">Response</span>
+          </div>
+          <pre><code>[{
+  <span class="s-key">"hsn_code"</span>: <span class="s-str">"8471"</span>,
+  <span class="s-key">"description"</span>: <span class="s-str">"Portable automatic data processing machines"</span>,
+  <span class="s-key">"tax_rates"</span>: {
+    <span class="s-key">"igst"</span>: <span class="s-num">18.0</span>,
+    <span class="s-key">"cgst"</span>: <span class="s-num">9.0</span>,
+    <span class="s-key">"sgst"</span>: <span class="s-num">9.0</span>,
+    <span class="s-key">"cess"</span>: <span class="s-num">0.0</span>
+  },
+  <span class="s-key">"applicable_rate"</span>: {
+    <span class="s-key">"intrastate"</span>: <span class="s-str">"CGST 9.0% + SGST 9.0% = 18.0%"</span>,
+    <span class="s-key">"interstate"</span>: <span class="s-str">"IGST 18.0%"</span>
+  },
+  <span class="s-key">"notification_ref"</span>: <span class="s-str">"1/2017-Central Tax (Rate)"</span>,
+  <span class="s-key">"confidence"</span>: <span class="s-num">0.95</span>,
+  <span class="s-key">"needs_review"</span>: <span class="s-bool">false</span>
+}]</code></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- AUTHENTICATION -->
+    <div class="doc-row" id="authentication">
+      <div class="doc-left">
+        <h2>Authentication</h2>
+        <p>All API requests require an API key passed in the <code>X-API-Key</code> HTTP request header. There are no session cookies or OAuth flows required for API access.</p>
+        <h3>Generating a Key</h3>
+        <p>Visit the <a href="/dashboard" style="color:var(--amber)">Developer Dashboard</a>, sign in with your preferred method, and click <strong>"Generate New Key"</strong>. The full key is only shown once — store it in your environment variables immediately.</p>
+        <div class="callout amber">
+          <div class="callout-title">Keep your key secret</div>
+          Never expose your API key in client-side JavaScript, public repos, or build logs. If compromised, immediately revoke it from the dashboard and generate a new one.
+        </div>
+      </div>
+      <div class="doc-right">
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-block-lang">Header</span>
+          </div>
+          <pre><code><span class="s-header">X-API-Key</span>: gsta_live_*******************</code></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-block-lang">401 — Unauthorized</span>
+          </div>
+          <pre><code>{
+  <span class="s-key">"detail"</span>: <span class="s-str">"Invalid or revoked API key."</span>
 }</code></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOOKUP ENDPOINT -->
+    <div class="doc-row" id="lookup">
+      <div class="doc-left">
+        <h2>Lookup GST Rate</h2>
+        <div class="endpoint-badge">
+          <span class="ep-method">POST</span>
+          <span class="ep-path">/v1/lookup</span>
+        </div>
+        <p>The primary endpoint. Searches the CBIC Master Database for HSN/SAC codes matching your description, evaluates applicable conditions, and returns the exact GST rate for your transaction context.</p>
+
+        <h3>Request Body</h3>
+        <table class="params-table">
+          <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="p-name">description<span class="req">*</span></span></td>
+              <td><span class="p-type">string</span></td>
+              <td class="p-desc">Natural language name of the good or service. e.g. <code>"cotton shirt"</code>, <code>"AC repair service"</code></td>
+            </tr>
+            <tr>
+              <td><span class="p-name">sale_value_inr</span></td>
+              <td><span class="p-type">float</span></td>
+              <td class="p-desc">Transaction value in INR. Required to resolve price-threshold conditions (e.g. footwear &lt; ₹1,000 = 5%, ≥ ₹1,000 = 12%).</td>
+            </tr>
+            <tr>
+              <td><span class="p-name">branded</span></td>
+              <td><span class="p-type">boolean</span></td>
+              <td class="p-desc"><code>true</code> if the product is pre-packaged and labelled (branded). Affects cereal, flour, pulses etc. Defaults to <code>false</code>.</td>
+            </tr>
+            <tr>
+              <td><span class="p-name">b2b</span></td>
+              <td><span class="p-type">boolean</span></td>
+              <td class="p-desc"><code>true</code> if buyer is a GST-registered business. Affects supply to SEZ, specific goods-transport services, etc.</td>
+            </tr>
+            <tr>
+              <td><span class="p-name">supply_type</span></td>
+              <td><span class="p-type">enum</span></td>
+              <td class="p-desc"><code>"intrastate"</code> or <code>"interstate"</code>. Controls the formatting of the <code>applicable_rate</code> string in the response. Defaults to <code>"intrastate"</code>.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="doc-right">
+        <div class="tab-bar">
+          <button class="tab-btn on" onclick="switchTab(this,'t-curl')">cURL</button>
+          <button class="tab-btn" onclick="switchTab(this,'t-python')">Python</button>
+          <button class="tab-btn" onclick="switchTab(this,'t-js')">JavaScript</button>
+        </div>
+
+        <div id="t-curl" class="tab-pane on">
+          <div class="code-block tab-code-block">
+            <div class="code-block-header">
+              <span class="code-block-lang">cURL</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><code>curl -X POST <span class="s-url">https://gstaccelerator.in/v1/lookup</span> \
+  -H <span class="s-header">"X-API-Key: gsta_live_******************"</span> \
+  -H <span class="s-header">"Content-Type: application/json"</span> \
+  -d <span class="s-str">'{
+    "description": "split AC unit",
+    "supply_type": "intrastate",
+    "branded": true
+  }'</span></code></pre>
           </div>
-          
-          <div class="code-container">
-            <div class="code-header">Response (200 OK)</div>
-            <pre><code>[
+        </div>
+
+        <div id="t-python" class="tab-pane">
+          <div class="code-block tab-code-block">
+            <div class="code-block-header">
+              <span class="code-block-lang">Python</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><code><span class="s-keyword">import</span> requests
+
+session = requests.Session()
+session.headers[<span class="s-str">"X-API-Key"</span>] = <span class="s-str">"gsta_live_******************"</span>
+
+r = session.post(
+    <span class="s-str">"https://gstaccelerator.in/v1/lookup"</span>,
+    json={
+        <span class="s-str">"description"</span>: <span class="s-str">"split AC unit"</span>,
+        <span class="s-str">"supply_type"</span>: <span class="s-str">"intrastate"</span>,
+        <span class="s-str">"branded"</span>: <span class="s-bool">True</span>,
+    }
+)
+result = r.json()[<span class="s-num">0</span>]
+<span class="s-fn">print</span>(result[<span class="s-str">"tax_rates"</span>][<span class="s-str">"igst"</span>])  <span class="s-comment"># → 18.0</span>
+<span class="s-fn">print</span>(result[<span class="s-str">"applicable_rate"</span>][<span class="s-str">"intrastate"</span>])  <span class="s-comment"># → "CGST 9.0% + SGST 9.0%"</span></code></pre>
+          </div>
+        </div>
+
+        <div id="t-js" class="tab-pane">
+          <div class="code-block tab-code-block">
+            <div class="code-block-header">
+              <span class="code-block-lang">JavaScript (fetch)</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><code><span class="s-keyword">const</span> res = <span class="s-keyword">await</span> <span class="s-fn">fetch</span>(<span class="s-str">"https://gstaccelerator.in/v1/lookup"</span>, {
+  method: <span class="s-str">"POST"</span>,
+  headers: {
+    <span class="s-str">"X-API-Key"</span>: <span class="s-str">"gsta_live_******************"</span>,
+    <span class="s-str">"Content-Type"</span>: <span class="s-str">"application/json"</span>,
+  },
+  body: <span class="s-fn">JSON.stringify</span>({
+    description: <span class="s-str">"split AC unit"</span>,
+    supply_type: <span class="s-str">"intrastate"</span>,
+    branded: <span class="s-bool">true</span>,
+  }),
+});
+<span class="s-keyword">const</span> [result] = <span class="s-keyword">await</span> res.<span class="s-fn">json</span>();
+console.<span class="s-fn">log</span>(result.tax_rates.igst); <span class="s-comment">// 18.0</span></code></pre>
+          </div>
+        </div>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="code-block-lang">Response (200 OK)</span>
+          </div>
+          <pre><code>[
   {
-    <span class="c-key">"hsn_code"</span>: <span class="c-str">"84151010"</span>,
-    <span class="c-key">"description"</span>: <span class="c-str">"Air conditioning machines, split system"</span>,
-    <span class="c-key">"tax_rates"</span>: {
-      <span class="c-key">"igst"</span>: <span class="c-num">18.0</span>,
-      <span class="c-key">"cgst"</span>: <span class="c-num">9.0</span>,
-      <span class="c-key">"sgst"</span>: <span class="c-num">9.0</span>,
-      <span class="c-key">"cess"</span>: <span class="c-num">0.0</span>,
-      <span class="c-key">"total_intrastate"</span>: <span class="c-num">18.0</span>
+    <span class="s-key">"hsn_code"</span>: <span class="s-str">"84151010"</span>,
+    <span class="s-key">"description"</span>: <span class="s-str">"Air conditioning machines, split system"</span>,
+    <span class="s-key">"tax_rates"</span>: {
+      <span class="s-key">"igst"</span>: <span class="s-num">18.0</span>, <span class="s-key">"cgst"</span>: <span class="s-num">9.0</span>,
+      <span class="s-key">"sgst"</span>: <span class="s-num">9.0</span>, <span class="s-key">"cess"</span>: <span class="s-num">0.0</span>,
+      <span class="s-key">"total_intrastate"</span>: <span class="s-num">18.0</span>
     },
-    <span class="c-key">"applicable_rate"</span>: {
-      <span class="c-key">"intrastate"</span>: <span class="c-str">"CGST 9.0% + SGST 9.0% = 18.0%"</span>,
-      <span class="c-key">"interstate"</span>: <span class="c-str">"IGST 18.0%"</span>
+    <span class="s-key">"applicable_rate"</span>: {
+      <span class="s-key">"intrastate"</span>: <span class="s-str">"CGST 9.0% + SGST 9.0% = 18.0%"</span>,
+      <span class="s-key">"interstate"</span>: <span class="s-str">"IGST 18.0%"</span>
     },
-    <span class="c-key">"condition_applied"</span>: <span class="c-bool">null</span>,
-    <span class="c-key">"confidence"</span>: <span class="c-num">0.9</span>,
-    <span class="c-key">"notification_ref"</span>: <span class="c-str">"1/2017-Central Tax (Rate)"</span>,
-    <span class="c-key">"needs_review"</span>: <span class="c-bool">false</span>
+    <span class="s-key">"condition_applied"</span>: <span class="s-null">null</span>,
+    <span class="s-key">"condition_warning"</span>: <span class="s-null">null</span>,
+    <span class="s-key">"confidence"</span>: <span class="s-num">0.9</span>,
+    <span class="s-key">"notification_ref"</span>: <span class="s-str">"1/2017-Central Tax (Rate)"</span>,
+    <span class="s-key">"needs_review"</span>: <span class="s-bool">false</span>
   }
 ]</code></pre>
-          </div>
         </div>
-      </section>
+      </div>
+    </div>
 
-      <!-- Section: Advanced -->
-      <section id="advanced-conditions" class="doc-section">
-        <div class="doc-text">
-          <h2>Condition Resolver</h2>
-          <p>The standout feature of GST Accelerator is its ability to resolve complex tax notification rules automatically.</p>
-          <p>For example, garments below ₹1,000 are taxed at 5%, while garments above ₹1,000 are taxed at 12%. When you provide <code>sale_value_inr</code>, our engine evaluates the condition and returns the correct rate.</p>
-          <ul>
-            <li style="margin-bottom: 0.5rem; color: #A1A1AA;">If <strong>needs_review</strong> is <code>true</code>, human verification or more parameters are required to confirm the rate.</li>
-            <li style="margin-bottom: 0.5rem; color: #A1A1AA;">If <strong>condition_warning</strong> is not null, a condition was found but couldn't be resolved (e.g. you didn't provide <code>sale_value_inr</code>).</li>
-          </ul>
+    <!-- CONDITION RESOLVER -->
+    <div class="doc-row" id="condition-resolver">
+      <div class="doc-left">
+        <h2>Condition Resolver</h2>
+        <p>This is the defining feature of GST Accelerator. The CBIC notification database contains hundreds of <strong>conditional rate rules</strong> that most APIs ignore entirely.</p>
+        <p>Our engine parses these rules and evaluates them against the context you provide in your request. Examples of conditions we resolve:</p>
+        <ul style="margin: 0.75rem 0 1rem 1.25rem; font-size: 0.875rem; color: var(--text-2); line-height: 2;">
+          <li>Footwear below ₹1,000 → 5%, at or above → 12%</li>
+          <li>Garments below ₹1,000 → 5%, at or above → 12%</li>
+          <li>Cereals/flour pre-packaged &amp; labelled → 5%, loose → 0%</li>
+          <li>Construction services (B2C affordable housing) → 1%</li>
+        </ul>
+        <div class="callout green">
+          <div class="callout-title">Reading the response fields</div>
+          <div class="resp-field"><span class="rf-name">condition_applied</span><span class="rf-desc">Describes which condition was found and whether it was resolved (PASSED/FAILED) against your inputs.</span></div>
+          <div class="resp-field"><span class="rf-name">condition_warning</span><span class="rf-desc">Non-null when a condition exists but couldn't be resolved because a required input (e.g. <code>sale_value_inr</code>) was missing.</span></div>
+          <div class="resp-field"><span class="rf-name">needs_review</span><span class="rf-desc">Set to <code>true</code> when the engine cannot confidently resolve the applicable rate and human verification is advised.</span></div>
         </div>
-        <div class="doc-code">
-          <div class="code-container">
-            <div class="code-header">Example with condition applied</div>
-            <pre><code><span class="c-comment">// Request with sale_value_inr</span>
+      </div>
+      <div class="doc-right">
+        <div class="code-block">
+          <div class="code-block-header"><span class="code-block-lang">With condition — garment ₹1,500</span></div>
+          <pre><code><span class="s-comment">// Request</span>
 {
-  <span class="c-key">"description"</span>: <span class="c-str">"cotton shirt"</span>,
-  <span class="c-key">"sale_value_inr"</span>: <span class="c-num">1500.00</span>
+  <span class="s-key">"description"</span>: <span class="s-str">"cotton shirt"</span>,
+  <span class="s-key">"sale_value_inr"</span>: <span class="s-num">1500.00</span>,
+  <span class="s-key">"supply_type"</span>: <span class="s-str">"intrastate"</span>
 }
 
-<span class="c-comment">// Response segment</span>
+<span class="s-comment">// Condition resolved → 12%</span>
 {
-  <span class="c-key">"tax_rates"</span>: { <span class="c-key">"igst"</span>: <span class="c-num">12.0</span>, ... },
-  <span class="c-key">"condition_applied"</span>: <span class="c-str">"Price threshold (exceeding Rs. 1,000): PASSED — 1,500.00 > 1000"</span>,
-  <span class="c-key">"condition_warning"</span>: <span class="c-bool">null</span>,
-  <span class="c-key">"needs_review"</span>: <span class="c-bool">false</span>
+  <span class="s-key">"tax_rates"</span>: { <span class="s-key">"igst"</span>: <span class="s-num">12.0</span>, <span class="s-key">"cgst"</span>: <span class="s-num">6.0</span>, <span class="s-key">"sgst"</span>: <span class="s-num">6.0</span> },
+  <span class="s-key">"condition_applied"</span>: <span class="s-str">"Price ≥ ₹1,000 threshold: PASSED — ₹1,500 &gt; ₹1,000"</span>,
+  <span class="s-key">"condition_warning"</span>: <span class="s-null">null</span>,
+  <span class="s-key">"needs_review"</span>: <span class="s-bool">false</span>
 }</code></pre>
-          </div>
         </div>
-      </section>
+        <div class="code-block">
+          <div class="code-block-header"><span class="code-block-lang">Without value — warning issued</span></div>
+          <pre><code><span class="s-comment">// Request — no sale_value_inr</span>
+{ <span class="s-key">"description"</span>: <span class="s-str">"cotton shirt"</span> }
 
-      <!-- Section: Errors -->
-      <section id="errors" class="doc-section">
-        <div class="doc-text">
-          <h2>Error Codes</h2>
-          <p>The API uses standard HTTP status codes to indicate success or failure of requests.</p>
-          <table>
-            <thead>
-              <tr>
-                <th>Code</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><span class="param-name">400</span></td>
-                <td><strong>Bad Request:</strong> Invalid parameters were passed (e.g. missing description).</td>
-              </tr>
-              <tr>
-                <td><span class="param-name">401</span></td>
-                <td><strong>Unauthorized:</strong> The API key is missing, invalid, or revoked.</td>
-              </tr>
-              <tr>
-                <td><span class="param-name">429</span></td>
-                <td><strong>Too Many Requests:</strong> You have exceeded your tier's monthly limit.</td>
-              </tr>
-              <tr>
-                <td><span class="param-name">500</span></td>
-                <td><strong>Internal Server Error:</strong> Something went wrong on our end.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="doc-code">
-          <!-- Empty for this section, keeping the 3-column flow balanced -->
-          <div class="code-container" style="border: 1px dashed var(--border); background: transparent; box-shadow: none;">
-            <div class="code-header" style="border-bottom: 1px dashed var(--border);">Error Example</div>
-            <pre><code>{
-  <span class="c-key">"detail"</span>: <span class="c-str">"Invalid API Key or Revoked."</span>
+<span class="s-comment">// Cannot resolve — warning added</span>
+{
+  <span class="s-key">"condition_applied"</span>: <span class="s-null">null</span>,
+  <span class="s-key">"condition_warning"</span>: <span class="s-str">"Price threshold condition exists. Provide sale_value_inr to resolve."</span>,
+  <span class="s-key">"needs_review"</span>: <span class="s-bool">true</span>
 }</code></pre>
-          </div>
         </div>
-      </section>
+      </div>
+    </div>
 
-    </main>
-  </div>
+    <!-- SUPPLY TYPES -->
+    <div class="doc-row" id="supply-types">
+      <div class="doc-left">
+        <h2>Supply Types</h2>
+        <p>Pass <code>supply_type</code> to get the correct rate formatted for your transaction type. This does not change the underlying IGST/CGST/SGST values — it only formats the <code>applicable_rate</code> string in the response.</p>
+        <table class="params-table">
+          <thead><tr><th>Value</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="p-name">intrastate</span></td>
+              <td class="p-desc">Supplier and buyer in the same state. Rate = CGST + SGST. Default.</td>
+            </tr>
+            <tr>
+              <td><span class="p-name">interstate</span></td>
+              <td class="p-desc">Supplier and buyer in different states. Rate = IGST only.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="doc-right">
+        <div class="code-block">
+          <div class="code-block-header"><span class="code-block-lang">Intrastate vs Interstate</span></div>
+          <pre><code><span class="s-comment">// applicable_rate when intrastate</span>
+<span class="s-key">"applicable_rate"</span>: {
+  <span class="s-key">"intrastate"</span>: <span class="s-str">"CGST 9.0% + SGST 9.0% = 18.0%"</span>,
+  <span class="s-key">"interstate"</span>: <span class="s-str">"IGST 18.0%"</span>
+}
 
-  <script>
-    // Smooth scrolling & Intersection Observer for active nav links
-    const sections = document.querySelectorAll('section');
-    const navLinks = document.querySelectorAll('aside a');
+<span class="s-comment">// Invoice GST calculation — intrastate</span>
+invoice_value = <span class="s-num">25000</span>
+cgst = (invoice_value × <span class="s-num">9</span>) / <span class="s-num">100</span>  <span class="s-comment"># ₹2,250</span>
+sgst = (invoice_value × <span class="s-num">9</span>) / <span class="s-num">100</span>  <span class="s-comment"># ₹2,250</span>
 
-    const observerOptions = {
-      root: null,
-      rootMargin: '0px',
-      threshold: 0.5
-    };
+<span class="s-comment">// Invoice GST calculation — interstate</span>
+igst = (invoice_value × <span class="s-num">18</span>) / <span class="s-num">100</span> <span class="s-comment"># ₹4,500</span></code></pre>
+        </div>
+      </div>
+    </div>
 
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          navLinks.forEach(link => {
-            link.classList.remove('active');
-            if (link.getAttribute('href').substring(1) === entry.target.id) {
-              link.classList.add('active');
-            }
-          });
-        }
-      });
-    }, observerOptions);
+    <!-- RESPONSE FIELDS -->
+    <div class="doc-row" id="response-fields">
+      <div class="doc-left">
+        <h2>Response Fields</h2>
+        <p>All successful responses return a JSON array, sorted by confidence score (highest first). Up to 50 results are returned.</p>
+        <div style="margin-top: 1rem;">
+          <div class="resp-field"><span class="rf-name">hsn_code</span><span class="rf-desc">The HSN (goods) or SAC (services) code matched from the CBIC Master Database.</span></div>
+          <div class="resp-field"><span class="rf-name">description</span><span class="rf-desc">Official CBIC description for this code.</span></div>
+          <div class="resp-field"><span class="rf-name">tax_rates.igst</span><span class="rf-desc">Integrated GST rate (%). Used for interstate supply.</span></div>
+          <div class="resp-field"><span class="rf-name">tax_rates.cgst</span><span class="rf-desc">Central GST rate (%). Used with SGST for intrastate supply.</span></div>
+          <div class="resp-field"><span class="rf-name">tax_rates.sgst</span><span class="rf-desc">State GST rate (%). Equal to CGST for intrastate supply.</span></div>
+          <div class="resp-field"><span class="rf-name">tax_rates.cess</span><span class="rf-desc">Compensation Cess rate, if applicable. Common for luxury and sin goods.</span></div>
+          <div class="resp-field"><span class="rf-name">applicable_rate</span><span class="rf-desc">Human-readable rate strings for both intrastate and interstate supply.</span></div>
+          <div class="resp-field"><span class="rf-name">condition_applied</span><span class="rf-desc">Description of the condition evaluated and the result of evaluation.</span></div>
+          <div class="resp-field"><span class="rf-name">condition_warning</span><span class="rf-desc">Warning message when a condition exists but could not be resolved due to missing input.</span></div>
+          <div class="resp-field"><span class="rf-name">confidence</span><span class="rf-desc">Match confidence score from 0.0 to 1.0. Higher is better.</span></div>
+          <div class="resp-field"><span class="rf-name">notification_ref</span><span class="rf-desc">CBIC notification reference for audit trail (e.g. "1/2017-Central Tax (Rate)").</span></div>
+          <div class="resp-field"><span class="rf-name">needs_review</span><span class="rf-desc"><code>true</code> when human verification is recommended before using the rate.</span></div>
+        </div>
+      </div>
+      <div class="doc-right">
+        <div class="code-block">
+          <div class="code-block-header"><span class="code-block-lang">Full Response Object</span></div>
+          <pre><code>{
+  <span class="s-key">"hsn_code"</span>: <span class="s-str">"6205"</span>,
+  <span class="s-key">"description"</span>: <span class="s-str">"Men's or boys' shirts"</span>,
+  <span class="s-key">"tax_rates"</span>: {
+    <span class="s-key">"igst"</span>: <span class="s-num">12.0</span>,
+    <span class="s-key">"cgst"</span>: <span class="s-num">6.0</span>,
+    <span class="s-key">"sgst"</span>: <span class="s-num">6.0</span>,
+    <span class="s-key">"utgst"</span>: <span class="s-num">6.0</span>,
+    <span class="s-key">"cess"</span>: <span class="s-num">0.0</span>,
+    <span class="s-key">"total_intrastate"</span>: <span class="s-num">12.0</span>,
+    <span class="s-key">"total_interstate"</span>: <span class="s-num">12.0</span>
+  },
+  <span class="s-key">"applicable_rate"</span>: {
+    <span class="s-key">"intrastate"</span>: <span class="s-str">"CGST 6.0% + SGST 6.0% = 12.0%"</span>,
+    <span class="s-key">"interstate"</span>: <span class="s-str">"IGST 12.0%"</span>,
+    <span class="s-key">"recommended"</span>: <span class="s-null">null</span>
+  },
+  <span class="s-key">"condition_applied"</span>: <span class="s-str">"Price ≥ ₹1,000: PASSED — ₹1,500 > ₹1,000"</span>,
+  <span class="s-key">"condition_warning"</span>: <span class="s-null">null</span>,
+  <span class="s-key">"confidence"</span>: <span class="s-num">0.9</span>,
+  <span class="s-key">"notification_ref"</span>: <span class="s-str">"1/2017-Central Tax (Rate)"</span>,
+  <span class="s-key">"needs_review"</span>: <span class="s-bool">false</span>
+}</code></pre>
+        </div>
+      </div>
+    </div>
 
-    sections.forEach(section => observer.observe(section));
-  </script>
+    <!-- ERRORS -->
+    <div class="doc-row" id="errors">
+      <div class="doc-left">
+        <h2>Error Codes</h2>
+        <p>The API uses standard HTTP status codes. All error responses include a <code>detail</code> field with a human-readable message.</p>
+        <div style="margin-top: 1rem;">
+          <div class="error-row"><span class="e-code e4xx">400</span><span class="e-desc"><strong>Bad Request</strong> — A required field is missing or a value is invalid. Check the <code>detail</code> field for specifics.</span></div>
+          <div class="error-row"><span class="e-code e4xx">401</span><span class="e-desc"><strong>Unauthorized</strong> — The <code>X-API-Key</code> header is missing, the key is invalid, or it has been revoked.</span></div>
+          <div class="error-row"><span class="e-code e4xx">422</span><span class="e-desc"><strong>Unprocessable Entity</strong> — The request body is malformed JSON or a field has the wrong type.</span></div>
+          <div class="error-row"><span class="e-code e4xx">429</span><span class="e-desc"><strong>Too Many Requests</strong> — Your plan's monthly call limit has been reached. Upgrade on the dashboard.</span></div>
+          <div class="error-row"><span class="e-code e5xx">500</span><span class="e-desc"><strong>Internal Server Error</strong> — Something went wrong on our end. Please retry, and contact support if the issue persists.</span></div>
+        </div>
+      </div>
+      <div class="doc-right">
+        <div class="code-block">
+          <div class="code-block-header"><span class="code-block-lang">Error Format</span></div>
+          <pre><code>{
+  <span class="s-key">"detail"</span>: <span class="s-str">"Invalid or revoked API key."</span>
+}</code></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-block-header"><span class="code-block-lang">Validation Error (422)</span></div>
+          <pre><code>{
+  <span class="s-key">"detail"</span>: [
+    {
+      <span class="s-key">"loc"</span>: [<span class="s-str">"body"</span>, <span class="s-str">"description"</span>],
+      <span class="s-key">"msg"</span>: <span class="s-str">"field required"</span>,
+      <span class="s-key">"type"</span>: <span class="s-str">"value_error.missing"</span>
+    }
+  ]
+}</code></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- RATE LIMITS -->
+    <div class="doc-row" id="rate-limits">
+      <div class="doc-left">
+        <h2>Rate Limits</h2>
+        <p>Limits apply per API key per calendar month. Requests that exceed your plan's quota receive a <code>429</code> response.</p>
+        <table class="params-table">
+          <thead><tr><th>Plan</th><th>Monthly Quota</th><th>Overage</th></tr></thead>
+          <tbody>
+            <tr><td><span class="p-name">Free</span></td><td class="p-desc">100 calls</td><td class="p-desc">Blocked</td></tr>
+            <tr><td><span class="p-name">Developer</span></td><td class="p-desc">5,000 calls</td><td class="p-desc">₹0.10 / call</td></tr>
+            <tr><td><span class="p-name">Pro</span></td><td class="p-desc">50,000 calls</td><td class="p-desc">₹0.08 / call</td></tr>
+            <tr><td><span class="p-name">Business</span></td><td class="p-desc">Unlimited</td><td class="p-desc">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="doc-right">
+        <div class="callout amber" style="margin-top: 1.5rem;">
+          <div class="callout-title">Need more calls?</div>
+          Upgrade your plan from the <a href="/dashboard" style="color:var(--amber)">Developer Dashboard</a> or contact <a href="mailto:hello@gstaccelerator.in" style="color:var(--amber)">hello@gstaccelerator.in</a> for custom enterprise quotas.
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end .content -->
+</div><!-- end .shell -->
+
+<script>
+  // Tab switcher
+  function switchTab(btn, id) {
+    const tabBar = btn.closest('.tab-bar');
+    const docRight = btn.closest('.doc-right');
+    tabBar.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    docRight.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('on'));
+    document.getElementById(id).classList.add('on');
+  }
+
+  // Copy button
+  function copyCode(btn) {
+    const pre = btn.closest('.code-block').querySelector('pre');
+    navigator.clipboard.writeText(pre.innerText.trim()).then(() => {
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = 'Copy', 2000);
+    });
+  }
+
+  // Sidebar active state via IntersectionObserver
+  const sideLinks = document.querySelectorAll('.sidebar a');
+  const docRows = document.querySelectorAll('.doc-row[id]');
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        sideLinks.forEach(a => {
+          a.classList.toggle('active', a.getAttribute('href') === '#' + entry.target.id);
+        });
+      }
+    });
+  }, { root: document.getElementById('content'), rootMargin: '-20% 0px -60% 0px', threshold: 0 });
+  docRows.forEach(r => io.observe(r));
+
+  // Smooth scrolling in the scrollable content div
+  sideLinks.forEach(a => {
+    a.addEventListener('click', e => {
+      const id = a.getAttribute('href').substring(1);
+      const el = document.getElementById(id);
+      if (el) { e.preventDefault(); el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    });
+  });
+</script>
 </body>
 </html>
