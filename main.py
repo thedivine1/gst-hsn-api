@@ -569,6 +569,91 @@ def _build_lookup_results(
 # ---------------------------------------------------------------------------
 
 
+DEMO_JS = r"""
+function renderResults(data) {
+  if (!data || data.length === 0) return null;
+  var byHsn = {};
+  data.forEach(function(r) {
+    if (!byHsn[r.hsn_code]) byHsn[r.hsn_code] = { desc: r.description, rows: [] };
+    byHsn[r.hsn_code].rows.push(r);
+  });
+  var codes = Object.keys(byHsn);
+  var lines = [];
+  lines.push('<span style="color:#3D4E6A">// ' + codes.length + ' HSN code(s) found \u2014 ' + data.length + ' rate row(s)</span>');
+  codes.forEach(function(code) {
+    var entry = byHsn[code];
+    lines.push('<span class="jk">"' + code + '"</span> <span style="color:#4A5568">\u2192</span> <span class="js">"' + entry.desc + '"</span>');
+    entry.rows.forEach(function(r) {
+      var cgst = (r.tax_rates && r.tax_rates.cgst !== null) ? r.tax_rates.cgst + '%' : 'Exempt';
+      var igst = (r.tax_rates && r.tax_rates.igst !== null) ? r.tax_rates.igst + '%' : 'Exempt';
+      var condHtml = r.condition_applied ? ' <span style="color:#E6995A">| ' + r.condition_applied.substring(0, 60) + '</span>' : '';
+      lines.push('  CGST <span class="jn">' + cgst + '</span> \u00b7 IGST <span class="jn">' + igst + '</span>' + condHtml);
+    });
+    lines.push('');
+  });
+  return lines.join('\n');
+}
+
+function setQ(v) {
+  document.getElementById('qi').value = v;
+  runQ();
+}
+
+function runQ() {
+  var btn = document.getElementById('qb');
+  var out = document.getElementById('qo');
+  var val = document.getElementById('qi').value.trim();
+  if (!val) return;
+  btn.disabled = true;
+  btn.textContent = '...';
+  out.classList.remove('has-result');
+  out.innerHTML = '<span style="color:#3D4E6A">// Fetching from CBIC-sourced data...</span>';
+
+  fetch('/v1/lookup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-API-Key': 'gsta_demo_frontend' },
+    body: JSON.stringify({ description: val })
+  })
+  .then(function(res) {
+    return res.json().then(function(data) {
+      if (res.ok && data && data.length > 0) {
+        out.innerHTML = renderResults(data);
+        out.classList.add('has-result');
+      } else {
+        out.innerHTML = '<span style="color:#3D4E6A">// No match found for "' + val + '".\n// Try: AC unit, gold jewellery, basmati rice, namkeen\n// All 48,752 HSN codes available with an API key.</span>';
+      }
+      btn.disabled = false;
+      btn.textContent = 'Lookup \u2192';
+    });
+  })
+  .catch(function(err) {
+    out.innerHTML = '<span style="color:#F97583">// Network error: ' + err.message + '</span>';
+    btn.disabled = false;
+    btn.textContent = 'Lookup \u2192';
+  });
+}
+
+function switchTab(el, id) {
+  document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('on'); });
+  document.querySelectorAll('.code').forEach(function(c) { c.classList.remove('on'); });
+  el.classList.add('on');
+  document.getElementById(id).classList.add('on');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('qi').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') runQ();
+  });
+});
+"""
+
+
+@app.get("/demo.js", include_in_schema=False)
+async def demo_js():
+    from fastapi.responses import Response
+    return Response(content=DEMO_JS, media_type="application/javascript")
+
+
 @app.get("/", include_in_schema=False, response_class=HTMLResponse)
 async def root():
     return """
@@ -1354,78 +1439,7 @@ console.log(applicable_rate);  <span class="cc">// "CGST 9% + SGST 9% = 18%"</sp
   </p>
 </footer>
 
-<script>
-function renderResults(data) {
-  if (!data || data.length === 0) return null;
-
-  // Group by HSN code for display
-  const byHsn = {};
-  data.forEach(r => {
-    if (!byHsn[r.hsn_code]) byHsn[r.hsn_code] = { desc: r.description, rows: [] };
-    byHsn[r.hsn_code].rows.push(r);
-  });
-
-  const codes = Object.keys(byHsn);
-  const lines = [];
-  lines.push(`<span style="color:#3D4E6A">// ${codes.length} HSN code(s) found — ${data.length} rate row(s)</span>\n`);
-
-  codes.forEach(code => {
-    const entry = byHsn[code];
-    lines.push(`<span class="jk">"${code}"</span> <span style="color:#4A5568">→</span> <span class="js">"${entry.desc}"</span>`);
-    entry.rows.forEach(r => {
-      const cgst = r.tax_rates && r.tax_rates.cgst !== null ? r.tax_rates.cgst + '%' : 'Exempt';
-      const igst = r.tax_rates && r.tax_rates.igst !== null ? r.tax_rates.igst + '%' : 'Exempt';
-      const cond = r.condition_applied ? ` <span style="color:#E6995A">| ${r.condition_applied.substring(0,60)}</span>` : '';
-      lines.push(`  CGST <span class="jn">${cgst}</span> · IGST <span class="jn">${igst}</span>${cond}`);
-    });
-    lines.push('');
-  });
-
-  return lines.join('\n');
-}
-
-function setQ(v) { document.getElementById('qi').value = v; runQ(); }
-
-async function runQ() {
-  const btn = document.getElementById('qb');
-  const out  = document.getElementById('qo');
-  const val  = document.getElementById('qi').value.trim();
-  if (!val) return;
-  btn.disabled = true; btn.textContent = '…';
-  out.classList.remove('has-result');
-  out.innerHTML = '<span style="color:#3D4E6A">// Fetching from CBIC-sourced data…</span>';
-  
-  try {
-    const res = await fetch("/v1/lookup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-API-Key": "gsta_demo_frontend" },
-      body: JSON.stringify({ description: val })
-    });
-    const data = await res.json();
-    if (res.ok && data && data.length > 0) {
-      out.innerHTML = renderResults(data);
-      out.classList.add('has-result');
-    } else {
-      out.innerHTML = `<span style="color:#3D4E6A">// No match found for "${val}".\n// Try: AC unit · gold jewellery · basmati rice · namkeen\n// Full 48,752 HSN codes available with an API key.</span>`;
-    }
-  } catch (err) {
-    out.innerHTML = `<span style="color:#F97583">// Network error or API offline. (${err.message})</span>`;
-  }
-  
-  btn.disabled = false; btn.textContent = 'Lookup →';
-}
-
-function switchTab(el, id) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
-  document.querySelectorAll('.code').forEach(c => c.classList.remove('on'));
-  el.classList.add('on');
-  document.getElementById(id).classList.add('on');
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('qi').addEventListener('keydown', e => { if (e.key === 'Enter') runQ(); });
-});
-</script>
+<script src="/demo.js"></script>
 </body>
 </html>
 
