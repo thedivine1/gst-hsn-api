@@ -528,6 +528,10 @@ def _build_lookup_results(
     req: LookupRequest,
     base_confidence: float = 0.9,
 ) -> List[LookupResult]:
+    # Sort rows by description length so the most direct/specific matches appear first.
+    # e.g. "Cigarettes" matches "CIGARETTES" (10 chars) before "Cigars, cheroots, cigarillos and cigarettes" (43 chars)
+    rows.sort(key=lambda x: len(x.get("hsn_description", "")))
+
     results = []
     for i, row in enumerate(rows):
         passes, condition_note, condition_warning = _evaluate_condition(row, req)
@@ -571,28 +575,22 @@ def _build_lookup_results(
 
 
 DEMO_JS = r"""
-function renderResults(data) {
-  if (!data || data.length === 0) return null;
-  var byHsn = {};
-  data.forEach(function(r) {
-    if (!byHsn[r.hsn_code]) byHsn[r.hsn_code] = { desc: r.description, rows: [] };
-    byHsn[r.hsn_code].rows.push(r);
+function fmt(obj) {
+  var json = JSON.stringify(obj, null, 2);
+  json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+      var cls = 'jn';
+      if (/^"/.test(match)) {
+          if (/:$/.test(match)) {
+              cls = 'jk';
+          } else {
+              cls = 'js';
+          }
+      } else if (/true|false|null/.test(match)) {
+          cls = 'cw';
+      }
+      return '<span class="' + cls + '">' + match + '</span>';
   });
-  var codes = Object.keys(byHsn);
-  var lines = [];
-  lines.push('<span style="color:#3D4E6A">// ' + codes.length + ' HSN code(s) found \u2014 ' + data.length + ' rate row(s)</span>');
-  codes.forEach(function(code) {
-    var entry = byHsn[code];
-    lines.push('<span class="jk">"' + code + '"</span> <span style="color:#4A5568">\u2192</span> <span class="js">"' + entry.desc + '"</span>');
-    entry.rows.forEach(function(r) {
-      var cgst = (r.tax_rates && r.tax_rates.cgst !== null) ? r.tax_rates.cgst + '%' : 'Exempt';
-      var igst = (r.tax_rates && r.tax_rates.igst !== null) ? r.tax_rates.igst + '%' : 'Exempt';
-      var condHtml = r.condition_applied ? ' <span style="color:#E6995A">| ' + r.condition_applied.substring(0, 60) + '</span>' : '';
-      lines.push('  CGST <span class="jn">' + cgst + '</span> \u00b7 IGST <span class="jn">' + igst + '</span>' + condHtml);
-    });
-    lines.push('');
-  });
-  return lines.join('\n');
 }
 
 function setQ(v) {
@@ -618,7 +616,7 @@ function runQ() {
   .then(function(res) {
     return res.json().then(function(data) {
       if (res.ok && data && data.length > 0) {
-        out.innerHTML = renderResults(data);
+        out.innerHTML = fmt(data[0]);
         out.classList.add('has-result');
       } else {
         out.innerHTML = '<span style="color:#3D4E6A">// No match found for "' + val + '".\n// Try: AC unit, gold jewellery, basmati rice, namkeen\n// All 48,752 HSN codes available with an API key.</span>';
