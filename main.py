@@ -5,6 +5,7 @@ from enum import Enum
 from typing import List, Optional, Tuple, Literal
 # pyrefly: ignore [missing-import]
 from fastapi import FastAPI, Header, HTTPException, Depends
+from fastapi.responses import HTMLResponse
 # pyrefly: ignore [missing-import]
 from pydantic import BaseModel, Field
 from supabase import create_client, Client  # pyright: ignore [missing-import]
@@ -566,9 +567,366 @@ def _build_lookup_results(
 # ---------------------------------------------------------------------------
 
 
-@app.get("/", include_in_schema=False)
+@app.get("/", include_in_schema=False, response_class=HTMLResponse)
 async def root():
-    return {"message": "gstaccelerator.in Rate Lookup API v1. See /docs for usage."}
+    return """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>gstaccelerator.in — GST HSN/SAC Rate Lookup API</title>
+  <meta name="description" content="India's most comprehensive GST HSN and SAC rate lookup API. Powered by gstaccelerator.in. Instant CGST, SGST, IGST, UTGST rates for 48,000+ goods and 681 services." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #6366f1;
+      --primary-light: #818cf8;
+      --accent: #22d3ee;
+      --accent2: #f472b6;
+      --bg: #0b0f1a;
+      --surface: #131929;
+      --surface2: #1a2235;
+      --border: rgba(99,102,241,0.18);
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* --- HERO --- */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(99,102,241,0.25) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 80% 80%, rgba(34,211,238,0.15) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(99,102,241,0.15);
+      border: 1px solid var(--border);
+      border-radius: 9999px;
+      padding: 0.35rem 1rem;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--primary-light);
+      letter-spacing: 0.04em;
+      margin-bottom: 1.5rem;
+      backdrop-filter: blur(8px);
+    }
+    .badge-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .hero h1 {
+      font-size: clamp(2.2rem, 6vw, 4rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #fff 30%, var(--primary-light) 70%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 1rem;
+    }
+    .hero p {
+      font-size: clamp(1rem, 2.5vw, 1.2rem);
+      color: var(--muted);
+      max-width: 600px;
+      line-height: 1.7;
+      margin-bottom: 2.5rem;
+    }
+    .cta-group { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.8rem 1.8rem;
+      border-radius: 0.6rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      color: #fff;
+      box-shadow: 0 4px 24px rgba(99,102,241,0.35);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(99,102,241,0.5); }
+    .btn-outline {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      color: var(--text);
+      backdrop-filter: blur(8px);
+    }
+    .btn-outline:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); }
+
+    /* --- STATS BAR --- */
+    .stats {
+      width: 100%;
+      max-width: 900px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1rem;
+      margin-top: 4rem;
+    }
+    .stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1.2rem 1.5rem;
+      text-align: left;
+      backdrop-filter: blur(8px);
+    }
+    .stat-num { font-size: 1.8rem; font-weight: 800; color: #fff; }
+    .stat-label { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
+
+    /* --- FEATURES --- */
+    .section { padding: 5rem 2rem; max-width: 1100px; margin: 0 auto; }
+    .section-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--primary-light);
+      margin-bottom: 0.8rem;
+    }
+    .section h2 {
+      font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.8rem;
+    }
+    .section p.sub { color: var(--muted); max-width: 520px; line-height: 1.7; margin-bottom: 3rem; }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 1.2rem;
+      padding: 2rem;
+      transition: all 0.25s;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      opacity: 0;
+      transition: opacity 0.25s;
+    }
+    .card:hover { transform: translateY(-4px); border-color: rgba(99,102,241,0.4); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+    .card:hover::before { opacity: 1; }
+    .card-icon {
+      width: 48px; height: 48px;
+      border-radius: 0.75rem;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem;
+      margin-bottom: 1.2rem;
+    }
+    .card h3 { font-size: 1.05rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .card p { font-size: 0.88rem; color: var(--muted); line-height: 1.65; }
+    .tag {
+      display: inline-block;
+      margin-top: 1rem;
+      padding: 0.25rem 0.7rem;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    /* --- CODE BLOCK --- */
+    .code-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 1.2rem;
+      overflow: hidden;
+      margin-top: 2rem;
+    }
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.8rem 1.4rem;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+    .code-dots { display: flex; gap: 6px; }
+    .code-dots span { width: 12px; height: 12px; border-radius: 50%; }
+    .code-label { font-size: 0.78rem; color: var(--muted); font-weight: 500; }
+    pre {
+      padding: 1.5rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      line-height: 1.7;
+      color: #a5f3fc;
+      overflow-x: auto;
+    }
+    .kw { color: #f472b6; }
+    .str { color: #86efac; }
+    .num { color: #fb923c; }
+
+    /* --- FOOTER --- */
+    footer {
+      text-align: center;
+      padding: 3rem 2rem;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    footer a { color: var(--primary-light); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="badge"><span class="badge-dot"></span> Live API &nbsp;&bull;&nbsp; GST 2.0 Ready &nbsp;&bull;&nbsp; 48,000+ HSN codes</div>
+    <h1>India's GST Rate<br/>Lookup API</h1>
+    <p>Instant CGST, SGST, IGST &amp; UTGST rates for every HSN good and SAC service code — built for GST 2.0 reforms effective September 2025.</p>
+    <div class="cta-group">
+      <a href="/docs" class="btn btn-primary">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        View API Docs
+      </a>
+      <a href="/v1/hsn/8415" class="btn btn-outline">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        Try a Lookup
+      </a>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-num">48,752</div><div class="stat-label">HSN Goods Codes</div></div>
+      <div class="stat"><div class="stat-num">681</div><div class="stat-label">SAC Service Codes</div></div>
+      <div class="stat"><div class="stat-num">4</div><div class="stat-label">Tax Components</div></div>
+      <div class="stat"><div class="stat-num">GST 2.0</div><div class="stat-label">Reform-Ready (Sep 2025)</div></div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <div class="section">
+    <p class="section-label">Capabilities</p>
+    <h2>Everything your GST workflow needs</h2>
+    <p class="sub">From single lookups to bulk invoice processing — with full condition resolution built in.</p>
+    <div class="cards">
+      <div class="card">
+        <div class="card-icon" style="background:rgba(99,102,241,0.15)">&#128269;</div>
+        <h3>HSN Code Lookup</h3>
+        <p>Fetch full rate details for any 8-digit, 6-digit heading or 4-digit chapter code, with automatic fallback.</p>
+        <span class="tag" style="background:rgba(99,102,241,0.15);color:#818cf8">GET /v1/hsn/{code}</span>
+      </div>
+      <div class="card">
+        <div class="card-icon" style="background:rgba(34,211,238,0.12)">&#128101;</div>
+        <h3>SAC Code Lookup</h3>
+        <p>Find GST rates for all 681 service codes under India's Services Accounting Code classification.</p>
+        <span class="tag" style="background:rgba(34,211,238,0.12);color:#22d3ee">GET /v1/sac/{code}</span>
+      </div>
+      <div class="card">
+        <div class="card-icon" style="background:rgba(244,114,182,0.12)">&#129521;</div>
+        <h3>Smart Description Search</h3>
+        <p>Search by product description and resolve applicable rate with branded/unbranded, price threshold, and end-use conditions.</p>
+        <span class="tag" style="background:rgba(244,114,182,0.12);color:#f472b6">POST /v1/lookup</span>
+      </div>
+      <div class="card">
+        <div class="card-icon" style="background:rgba(251,146,60,0.12)">&#9889;</div>
+        <h3>Bulk Lookup</h3>
+        <p>Process up to 100 line items in a single API call — perfect for invoicing and ERP integrations.</p>
+        <span class="tag" style="background:rgba(251,146,60,0.12);color:#fb923c">POST /v1/bulk</span>
+      </div>
+      <div class="card">
+        <div class="card-icon" style="background:rgba(34,197,94,0.12)">&#127881;</div>
+        <h3>Intrastate &amp; Interstate</h3>
+        <p>Pass <code style="color:#86efac;background:rgba(0,0,0,0.3);padding:2px 5px;border-radius:4px">supply_type</code> to get the recommended CGST+SGST or IGST rate string instantly.</p>
+        <span class="tag" style="background:rgba(34,197,94,0.12);color:#4ade80">Intrastate / Interstate</span>
+      </div>
+      <div class="card">
+        <div class="card-icon" style="background:rgba(168,85,247,0.12)">&#128202;</div>
+        <h3>Rate Summary</h3>
+        <p>Get an overview of all IGST &amp; CGST slabs, schedule breakdowns, and database stats in one call.</p>
+        <span class="tag" style="background:rgba(168,85,247,0.12);color:#c084fc">GET /v1/rates/summary</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CODE EXAMPLE -->
+  <div class="section" style="padding-top:0">
+    <p class="section-label">Quick Start</p>
+    <h2>One call. Full GST breakdown.</h2>
+    <p class="sub">Start looking up GST rates in seconds with a simple HTTP request.</p>
+    <div class="code-section">
+      <div class="code-header">
+        <div class="code-dots">
+          <span style="background:#ef4444"></span>
+          <span style="background:#f59e0b"></span>
+          <span style="background:#22c55e"></span>
+        </div>
+        <span class="code-label">Example Request &mdash; HSN lookup with supply routing</span>
+      </div>
+      <pre><span class="kw">GET</span> /v1/hsn/<span class="num">8415</span>?supply_type=intrastate
+<span class="kw">X-API-Key:</span> <span class="str">your_api_key</span>
+
+<span class="kw"># Response</span>
+{
+  <span class="str">"hsn_code"</span>: <span class="str">"84151010"</span>,
+  <span class="str">"tax_rates"</span>: {
+    <span class="str">"igst"</span>: <span class="num">18.0</span>,
+    <span class="str">"cgst"</span>: <span class="num">9.0</span>,
+    <span class="str">"sgst"</span>: <span class="num">9.0</span>,
+    <span class="str">"total_intrastate"</span>: <span class="num">18.0</span>
+  },
+  <span class="str">"applicable_rate"</span>: {
+    <span class="str">"recommended"</span>: <span class="str">"CGST 9.0% + SGST 9.0% = 18.0%"</span>
+  }
+}</pre>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>&#169; 2025 <strong>gstaccelerator.in</strong> &mdash; Built for India&apos;s GST ecosystem.</p>
+    <p style="margin-top:0.5rem">
+      <a href="/docs">API Docs (Swagger)</a> &nbsp;&bull;&nbsp;
+      <a href="/redoc">ReDoc</a> &nbsp;&bull;&nbsp;
+      <a href="/v1/rates/summary">Rate Summary</a>
+    </p>
+  </footer>
+
+</body>
+</html>
+    """
 
 
 def _map_db_to_hsn_rate(row: dict, supply_type: Optional[str]) -> HsnRate:
