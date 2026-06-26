@@ -1,0 +1,23 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.eggs/
+*.egg-info/
+
+# Environment
+.env
+
+# Build outputs
+dist/
+build/
+
+# Data files (large — do not commit raw Excel)
+*.xlsx
+*.docx
+*.pdf
+
+# OS
+.DS_Store
+Thumbs.db
