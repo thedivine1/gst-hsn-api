@@ -1476,7 +1476,7 @@ async def get_hsn(
     Pass `supply_type` to resolve the `applicable_rate.recommended` string for intrastate vs interstate routing.
     Falls back from 8-digit → 6-digit heading → 4-digit chapter if no exact match.
     """
-    code = code.strip().zfill(8) if len(code) <= 8 else code.strip()
+    code = code.strip()
 
     # Exact match
     res = supabase.table("hsn_rates").select("*").eq("hsn_code", code).execute()
@@ -1528,7 +1528,7 @@ async def get_sac(
     Returns full rate object for a given SAC code (services).
     Pass `supply_type` to resolve the `applicable_rate.recommended` string for intrastate vs interstate routing.
     """
-    code = code.strip().zfill(6) if len(code) <= 6 else code.strip()
+    code = code.strip()
 
     res = supabase.table("sac_rates").select("*").eq("sac_code", code).execute()
     if res.data:
@@ -1583,7 +1583,7 @@ async def lookup_rate(req: LookupRequest, _: dict = Depends(verify_api_key)):
     res = (
         supabase.table("hsn_rates")
         .select("*")
-        .text_search("hsn_description", tsquery, config="english")
+        .text_search("hsn_description", tsquery)
         .execute()
     )
 
@@ -1620,7 +1620,7 @@ async def bulk_lookup(requests: List[LookupRequest], _: dict = Depends(verify_ap
         res = (
             supabase.table("hsn_rates")
             .select("*")
-            .text_search("hsn_description", tsquery, config="english")
+            .text_search("hsn_description", tsquery)
             .execute()
         )
         all_results.append(_build_lookup_results(res.data or [], req))
