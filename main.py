@@ -1140,7 +1140,7 @@ async def root():
     GST 2.0 · 09/2025-CT(Rate) · Updated Sept 2025
   </div>
 
-  <h1>GST at the <em>speed of business</em></h1>
+  <h1>GST at the speed of <em>business</em></h1>
 
   <p class="hero-mantra">
     <strong>Compliance. Accelerated.</strong> &nbsp;·&nbsp;
