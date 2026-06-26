@@ -19,12 +19,14 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
 
-if not SUPABASE_URL or not SUPABASE_KEY or not SUPABASE_ANON_KEY:
-    raise RuntimeError(
-        "SUPABASE_URL, SUPABASE_KEY, and SUPABASE_ANON_KEY must be set in environment variables."
-    )
-
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase: Optional[Client] = None
+if SUPABASE_URL and SUPABASE_KEY:
+    try:
+        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+    except Exception as e:
+        print(f"Failed to initialize Supabase client: {e}")
+else:
+    print("WARNING: SUPABASE_URL and/or SUPABASE_KEY are missing. Supabase client will be None.")
 
 app = FastAPI(
     title="gstaccelerator.in API",
@@ -1795,10 +1797,11 @@ async def verify_jwt(credentials: HTTPAuthorizationCredentials = Depends(securit
 @app.get("/dashboard", include_in_schema=False, response_class=HTMLResponse)
 async def dashboard_page():
     try:
-        with open("dashboard.html", "r", encoding="utf-8") as f:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(base_dir, "dashboard.html"), "r", encoding="utf-8") as f:
             content = f.read()
-        content = content.replace("{{ SUPABASE_URL }}", SUPABASE_URL)
-        content = content.replace("{{ SUPABASE_ANON_KEY }}", SUPABASE_ANON_KEY)
+        content = content.replace("{{ SUPABASE_URL }}", SUPABASE_URL or "")
+        content = content.replace("{{ SUPABASE_ANON_KEY }}", SUPABASE_ANON_KEY or "")
         return HTMLResponse(content)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Dashboard template not found.")
@@ -1806,7 +1809,8 @@ async def dashboard_page():
 @app.get("/docs", include_in_schema=False, response_class=HTMLResponse)
 async def api_docs_page():
     try:
-        with open("docs.html", "r", encoding="utf-8") as f:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(base_dir, "docs.html"), "r", encoding="utf-8") as f:
             content = f.read()
         return HTMLResponse(content)
     except Exception as e:
