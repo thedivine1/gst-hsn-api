@@ -84,6 +84,7 @@ class IPRateLimitMiddleware(BaseHTTPMiddleware):
         response.headers["X-RateLimit-Limit"] = "100"
         response.headers["X-RateLimit-Remaining"] = str(remaining)
         response.headers["Content-Type"] = "application/json"
+        response.headers["X-Robots-Tag"] = "noindex"
         return response
 
 app.add_middleware(IPRateLimitMiddleware)
@@ -786,6 +787,28 @@ async def demo_js():
     from fastapi.responses import Response
     return Response(content=DEMO_JS, media_type="application/javascript")
 
+@app.get("/llms.txt", include_in_schema=False)
+async def llms_txt():
+    from fastapi.responses import Response
+    content = """# GST Accelerator API
+Fast HSN and SAC lookup API for India. 12,000+ codes, GST rates, JSON REST.
+Base URL: https://gstaccelerator.in/api/v1
+Endpoints: /lookup /hsn/{code} /sac/{code} /autocomplete /bulk /health /meta /gst-rate
+Auth: X-API-Key header (free tier available, no key needed for /lookup with demo key)
+OpenAPI: https://gstaccelerator.in/openapi.json
+Docs: https://gstaccelerator.in/docs
+"""
+    return Response(content=content.strip(), media_type="text/plain")
+
+@app.get("/robots.txt", include_in_schema=False)
+async def robots_txt():
+    from fastapi.responses import Response
+    content = """User-agent: *
+Allow: /
+Disallow: /api/
+Sitemap: https://gstaccelerator.in/sitemap.xml
+"""
+    return Response(content=content.strip(), media_type="text/plain")
 
 @app.get("/", include_in_schema=False, response_class=HTMLResponse)
 async def root():
@@ -795,8 +818,19 @@ async def root():
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GST Accelerator — GST at the speed of business</title>
-  <meta name="description" content="India's most accurate GST HSN & SAC rate API. Condition-aware. GST 2.0 compliant. Agent-native. 48,752 HSN codes. Free tier available." />
+  <title>GST Accelerator API — India’s fastest HSN &amp; SAC lookup API</title>
+  <meta name="description" content="Free REST API for Indian GST HSN/SAC code lookup. Search 12,000+ codes, get GST rates, CGST/SGST splits, and legal notification references. JSON, fast, CBIC-sourced." />
+  <meta name="keywords" content="gst api, hsn api, india gst api, hsn lookup api, sac api, gstin api, gst rate api, hsn code api, sac code api, indian gst rest api" />
+  <meta name="robots" content="index, follow" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://gstaccelerator.in/" />
+  <meta property="og:title" content="GST Accelerator API — India’s fastest HSN &amp; SAC lookup API" />
+  <meta property="og:description" content="Free REST API for Indian GST HSN/SAC code lookup. 12,000+ codes, GST rates, CGST/SGST/IGST splits. CBIC-sourced and condition-aware." />
+  <meta property="og:site_name" content="GST Accelerator" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="GST Accelerator API — India’s fastest HSN &amp; SAC lookup API" />
+  <meta name="twitter:description" content="Free REST API for Indian GST HSN/SAC code lookup. 12,000+ HSN/SAC codes, rates, and CBIC notification audit trail." />
+  <link rel="canonical" href="https://gstaccelerator.in/" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
@@ -1240,6 +1274,46 @@ async def root():
       .section { padding: 3.5rem 1rem; }
     }
   </style>
+
+  <!-- Schema.org JSON-LD structured data -->
+  <script type="application/ld+json">
+  [
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "GST Accelerator API",
+      "description": "India's fastest HSN and SAC code lookup API. 12,000+ HSN codes, SAC search, GST rates, JSON REST API.",
+      "applicationCategory": "DeveloperTool",
+      "operatingSystem": "Any",
+      "url": "https://gstaccelerator.in",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "INR",
+        "name": "Free Tier",
+        "description": "100 API calls per month, no credit card required"
+      },
+      "provider": {
+        "@type": "Organization",
+        "name": "GST Accelerator",
+        "url": "https://gstaccelerator.in"
+      }
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "APIReference",
+      "name": "GST Accelerator REST API",
+      "description": "JSON REST API for Indian GST HSN and SAC code lookup. Returns CGST, SGST, IGST rates with CBIC notification references.",
+      "url": "https://gstaccelerator.in/docs",
+      "documentation": "https://gstaccelerator.in/docs",
+      "termsOfService": "https://gstaccelerator.in",
+      "provider": {
+        "@type": "Organization",
+        "name": "GST Accelerator"
+      }
+    }
+  ]
+  </script>
 </head>
 <body>
 
