@@ -188,6 +188,7 @@ class HsnRate(BaseModel):
     id: Optional[int] = None
     hsn_code: str
     hsn_description: str
+    description: Optional[str] = None
     schedule: Optional[str] = None
     condition_text: Optional[str] = None
     condition_type: Optional[str] = "none"
@@ -199,12 +200,19 @@ class HsnRate(BaseModel):
     applicable_rate: ApplicableRate
     last_updated: str = "2025-06-01"
     source: str = "GST Council Notification 09/2025-CT(Rate)"
+    gst_rate: Optional[float] = None
+    cgst: Optional[float] = None
+    sgst: Optional[float] = None
+    igst: Optional[float] = None
+    condition_warning: Optional[str] = None
 
 
 class SacRate(BaseModel):
     id: Optional[int] = None
     sac_code: str
+    hsn_code: Optional[str] = None
     sac_description: str
+    description: Optional[str] = None
     condition_text: Optional[str] = None
     condition_type: Optional[str] = "none"
     has_condition: Optional[bool] = False
@@ -215,6 +223,11 @@ class SacRate(BaseModel):
     applicable_rate: ApplicableRate
     last_updated: str = "2025-06-01"
     source: str = "GST Council Notification 09/2025-CT(Rate)"
+    gst_rate: Optional[float] = None
+    cgst: Optional[float] = None
+    sgst: Optional[float] = None
+    igst: Optional[float] = None
+    condition_warning: Optional[str] = None
 
 
 class SupplyNature(str, Enum):
@@ -268,6 +281,10 @@ class LookupResult(BaseModel):
     needs_review: bool = False
     last_updated: str = "2025-06-01"
     source: str = "GST Council Notification 09/2025-CT(Rate)"
+    gst_rate: Optional[float] = None
+    cgst: Optional[float] = None
+    sgst: Optional[float] = None
+    igst: Optional[float] = None
 
 
 class ScheduleBreakdown(BaseModel):
@@ -650,6 +667,10 @@ def _build_lookup_results(
                 confidence=max(confidence, 0.1),
                 notification_ref=row.get("notification_ref"),
                 needs_review=needs_review,
+                gst_rate=row.get("igst_rate"),
+                cgst=row.get("cgst_rate"),
+                sgst=row.get("cgst_rate"),
+                igst=row.get("igst_rate"),
             )
         )
 
@@ -1576,6 +1597,11 @@ def _map_db_to_hsn_rate(row: dict, supply_type: Optional[str]) -> HsnRate:
         needs_review=row.get("needs_review", False),
         tax_rates=tax_rates,
         applicable_rate=applicable_rate,
+        description=row["hsn_description"],
+        gst_rate=row.get("igst_rate"),
+        cgst=row.get("cgst_rate"),
+        sgst=row.get("cgst_rate"),
+        igst=row.get("igst_rate"),
     )
 
 
@@ -1595,6 +1621,12 @@ def _map_db_to_sac_rate(row: dict, supply_type: Optional[str]) -> SacRate:
         needs_review=row.get("needs_review", False),
         tax_rates=tax_rates,
         applicable_rate=applicable_rate,
+        description=row["sac_description"],
+        hsn_code=row["sac_code"],
+        gst_rate=row.get("igst_rate"),
+        cgst=row.get("cgst_rate"),
+        sgst=row.get("cgst_rate"),
+        igst=row.get("igst_rate"),
     )
 
 
@@ -1685,6 +1717,43 @@ async def get_sac(
             return [_map_db_to_sac_rate(row, supply_type) for row in res.data]
 
     raise HTTPException(status_code=404, detail=f"No rate found for SAC code '{code}'.")
+
+
+@app.get(
+    "/api/v1/lookup",
+    response_model=List[LookupResult],
+    summary="Lookup rate by description keyword",
+    tags=["Lookup"],
+)
+async def get_lookup_rate(q: str, _: dict = Depends(verify_api_key)):
+    req = LookupRequest(description=q)
+    return await lookup_rate(req, _)
+
+@app.get(
+    "/api/v1/autocomplete",
+    summary="Autocomplete suggestions",
+    tags=["Lookup"],
+)
+async def autocomplete(q: str, _: dict = Depends(verify_api_key)):
+    if not q.strip():
+        return []
+    res = (
+        supabase.table("hsn_rates")
+        .select("hsn_code, hsn_description")
+        .ilike("hsn_description", f"%{q}%")
+        .limit(10)
+        .execute()
+    )
+    return res.data
+
+@app.get(
+    "/api/v1/gst-rate",
+    response_model=List[HsnRate],
+    summary="Get GST rate by HSN code",
+    tags=["HSN"],
+)
+async def get_gst_rate_hsn(hsn: str, _: dict = Depends(verify_api_key)):
+    return await get_hsn(hsn, None, _)
 
 
 @app.post(
