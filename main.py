@@ -4,9 +4,12 @@ import hashlib
 from enum import Enum
 from typing import List, Optional, Tuple, Literal
 # pyrefly: ignore [missing-import]
-from fastapi import FastAPI, Header, HTTPException, Depends
+from fastapi import FastAPI, Header, HTTPException, Depends, Request
 # pyrefly: ignore [missing-import]
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 # pyrefly: ignore [missing-import]
 from pydantic import BaseModel, Field
 from supabase import create_client, Client  # pyright: ignore [missing-import]
@@ -36,6 +39,35 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"error": str(exc.detail), "code": exc.status_code, "suggestions": []}
+    )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=422,
+        content={"error": "Validation error", "code": 422, "suggestions": exc.errors()}
+    )
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={"error": "Internal server error", "code": 500, "suggestions": []}
+    )
+
 
 # ---------------------------------------------------------------------------
 # Auth helpers
@@ -48,7 +80,7 @@ def _hash_key(raw_key: str) -> str:
 
 async def verify_api_key(x_api_key: str = Header(..., description="Your API key")):
     """Dependency: validates X-API-Key, enforces monthly limits, increments usage."""
-    if x_api_key == "gsta_demo_frontend":
+    if x_api_key in ("gsta_demo_frontend", "demo_public_key"):
         return {"tier": "demo", "api_key_id": "demo"}
         
     key_hash = _hash_key(x_api_key)
