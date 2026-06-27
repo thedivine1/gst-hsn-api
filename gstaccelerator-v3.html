@@ -482,7 +482,7 @@
   <div class="demo-card">
     <div class="demo-topbar">
       <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
-      <span class="demo-url">POST gstaccelerator.in/v1/lookup</span>
+      <span class="demo-url">POST gstaccelerator.in/api/v1/lookup</span>
     </div>
     <div class="demo-body">
       <div class="demo-qs">
@@ -657,7 +657,7 @@
   </div>
 
   <div class="code on" id="tc"><span class="cc"># Lookup by product description — intrastate supply</span>
-curl -X POST https://gstaccelerator.in/v1/lookup \
+curl -X POST https://gstaccelerator.in/api/v1/lookup \
   -H <span class="cs">"X-API-Key: gsta_your_key"</span> \
   -H <span class="cs">"Content-Type: application/json"</span> \
   -d <span class="cs">'{
@@ -811,7 +811,7 @@ async function runQ() {
   out.innerHTML = '<span style="color:#3D4E6A">// Fetching from real API via CBIC-sourced data…</span>';
   
   try {
-    const res = await fetch('/v1/lookup', {
+    const res = await fetch('/api/v1/lookup', {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',

@@ -10,6 +10,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.middleware.base import BaseHTTPMiddleware
 # pyrefly: ignore [missing-import]
 from pydantic import BaseModel, Field
 from supabase import create_client, Client  # pyright: ignore [missing-import]
@@ -46,6 +47,46 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+import time
+START_TIME = time.time()
+rate_limit_db = {}
+rate_limit_timestamps = {}
+
+class IPRateLimitMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if not request.url.path.startswith("/api/v1/"):
+            return await call_next(request)
+            
+        client_ip = request.client.host if request.client else "unknown"
+        now = time.time()
+        
+        # Reset counters every minute
+        if client_ip not in rate_limit_timestamps or now - rate_limit_timestamps[client_ip] > 60:
+            rate_limit_timestamps[client_ip] = now
+            rate_limit_db[client_ip] = 0
+            
+        rate_limit_db[client_ip] += 1
+        remaining = max(0, 100 - rate_limit_db[client_ip])
+        
+        if rate_limit_db[client_ip] > 100:
+            return JSONResponse(
+                status_code=429,
+                content={"error": "Too Many Requests", "code": 429, "suggestions": ["Please wait a minute before trying again"]},
+                headers={
+                    "X-RateLimit-Limit": "100",
+                    "X-RateLimit-Remaining": str(remaining),
+                    "Content-Type": "application/json"
+                }
+            )
+            
+        response = await call_next(request)
+        response.headers["X-RateLimit-Limit"] = "100"
+        response.headers["X-RateLimit-Remaining"] = str(remaining)
+        response.headers["Content-Type"] = "application/json"
+        return response
+
+app.add_middleware(IPRateLimitMiddleware)
 
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
@@ -156,6 +197,8 @@ class HsnRate(BaseModel):
     needs_review: Optional[bool] = False
     tax_rates: TaxRates
     applicable_rate: ApplicableRate
+    last_updated: str = "2025-06-01"
+    source: str = "GST Council Notification 09/2025-CT(Rate)"
 
 
 class SacRate(BaseModel):
@@ -170,6 +213,8 @@ class SacRate(BaseModel):
     needs_review: Optional[bool] = False
     tax_rates: TaxRates
     applicable_rate: ApplicableRate
+    last_updated: str = "2025-06-01"
+    source: str = "GST Council Notification 09/2025-CT(Rate)"
 
 
 class SupplyNature(str, Enum):
@@ -221,6 +266,8 @@ class LookupResult(BaseModel):
     confidence: float
     notification_ref: Optional[str] = None
     needs_review: bool = False
+    last_updated: str = "2025-06-01"
+    source: str = "GST Council Notification 09/2025-CT(Rate)"
 
 
 class ScheduleBreakdown(BaseModel):
@@ -687,6 +734,30 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 """
 
+
+@app.get("/api/v1/health", tags=["Meta"])
+async def get_health():
+    return {
+        "status": "ok",
+        "version": "1.0.0",
+        "uptime": time.time() - START_TIME
+    }
+
+@app.get("/api/v1/meta", tags=["Meta"])
+async def get_meta():
+    res_hsn = supabase.table("hsn_rates").select("id", count="exact").execute()
+    res_sac = supabase.table("sac_rates").select("id", count="exact").execute()
+    return {
+        "total_hsn": res_hsn.count or 0,
+        "total_sac": res_sac.count or 0,
+        "last_updated": "2025-06-01",
+        "source": "GST Council Notification 09/2025-CT(Rate)"
+    }
+
+from fastapi.responses import RedirectResponse
+@app.api_route("/v1/{path:path}", methods=["GET", "POST", "PUT", "DELETE"], include_in_schema=False)
+async def redirect_old_v1(path: str, request: Request):
+    return RedirectResponse(url=f"/api/v1/{path}", status_code=301)
 
 @app.get("/demo.js", include_in_schema=False)
 async def demo_js():
@@ -1528,7 +1599,7 @@ def _map_db_to_sac_rate(row: dict, supply_type: Optional[str]) -> SacRate:
 
 
 @app.get(
-    "/v1/hsn/{code}",
+    "/api/v1/hsn/{code}",
     response_model=List[HsnRate],
     summary="Lookup HSN rate by code",
     tags=["HSN"],
@@ -1581,7 +1652,7 @@ async def get_hsn(
 
 
 @app.get(
-    "/v1/sac/{code}",
+    "/api/v1/sac/{code}",
     response_model=List[SacRate],
     summary="Lookup SAC rate by code",
     tags=["SAC"],
@@ -1617,7 +1688,7 @@ async def get_sac(
 
 
 @app.post(
-    "/v1/lookup",
+    "/api/v1/lookup",
     response_model=List[LookupResult],
     summary="Lookup rate by description",
     tags=["Lookup"],
@@ -1675,7 +1746,7 @@ async def lookup_rate(req: LookupRequest, _: dict = Depends(verify_api_key)):
 
 
 @app.post(
-    "/v1/bulk",
+    "/api/v1/bulk",
     response_model=List[List[LookupResult]],
     summary="Bulk rate lookup (up to 100 items)",
     tags=["Lookup"],
@@ -1726,7 +1797,7 @@ async def bulk_lookup(requests: List[LookupRequest], _: dict = Depends(verify_ap
 
 
 @app.get(
-    "/v1/rates/summary",
+    "/api/v1/rates/summary",
     response_model=SummaryResponse,
     summary="Rate coverage statistics",
     tags=["Meta"],
@@ -1851,7 +1922,7 @@ async def api_docs_page():
 class KeyCreateRequest(BaseModel):
     name: str = "Default Key"
 
-@app.get("/v1/dashboard/keys", tags=["Dashboard"])
+@app.get("/api/v1/dashboard/keys", tags=["Dashboard"])
 async def get_dashboard_keys(user=Depends(verify_jwt)):
     res = (
         supabase.table("api_keys")
@@ -1862,7 +1933,7 @@ async def get_dashboard_keys(user=Depends(verify_jwt)):
     )
     return res.data
 
-@app.post("/v1/dashboard/keys", tags=["Dashboard"])
+@app.post("/api/v1/dashboard/keys", tags=["Dashboard"])
 async def create_dashboard_key(req: KeyCreateRequest, user=Depends(verify_jwt)):
     # Generate a new random key
     raw_key = f"gsta_live_{secrets.token_urlsafe(24)}"
@@ -1888,7 +1959,7 @@ async def create_dashboard_key(req: KeyCreateRequest, user=Depends(verify_jwt)):
         
     return {"raw_key": raw_key, "key_id": res.data[0]["id"]}
 
-@app.delete("/v1/dashboard/keys/{key_id}", tags=["Dashboard"])
+@app.delete("/api/v1/dashboard/keys/{key_id}", tags=["Dashboard"])
 async def revoke_dashboard_key(key_id: str, user=Depends(verify_jwt)):
     # Instead of deleting, just mark as inactive
     res = (

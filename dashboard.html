@@ -485,7 +485,7 @@
   // ── Keys ──
   async function fetchKeys() {
     try {
-      const res = await fetch('/v1/dashboard/keys', {
+      const res = await fetch('/api/v1/dashboard/keys', {
         headers: { Authorization: `Bearer ${sessionToken}` }
       });
       if (!res.ok) throw new Error();
@@ -522,7 +522,7 @@
     btn.disabled = true;
     btn.innerHTML = '<span>⟳</span> Generating...';
     try {
-      const res = await fetch('/v1/dashboard/keys', {
+      const res = await fetch('/api/v1/dashboard/keys', {
         method: 'POST',
         headers: { Authorization: `Bearer ${sessionToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: 'Production Key' })
@@ -543,7 +543,7 @@
   async function revokeKey(id) {
     if (!confirm('Revoke this key? All applications using it will stop working immediately.')) return;
     try {
-      const res = await fetch(`/v1/dashboard/keys/${id}`, {
+      const res = await fetch(`/api/v1/dashboard/keys/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${sessionToken}` }
       });

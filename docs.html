@@ -320,7 +320,7 @@
     </div>
     <div class="sidebar-group">
       <span class="sidebar-label">Endpoints</span>
-      <a href="#lookup"><span class="method-pill post">POST</span> /v1/lookup</a>
+      <a href="#lookup"><span class="method-pill post">POST</span> /api/v1/lookup</a>
     </div>
     <div class="sidebar-group">
       <span class="sidebar-label">Guides</span>
@@ -391,7 +391,7 @@
             <span class="code-block-lang">cURL — First Request</span>
             <button class="copy-btn" onclick="copyCode(this)">Copy</button>
           </div>
-          <pre><code>curl -X POST <span class="s-url">https://gstaccelerator.in/v1/lookup</span> \
+          <pre><code>curl -X POST <span class="s-url">https://gstaccelerator.in/api/v1/lookup</span> \
   -H <span class="s-header">"X-API-Key: gsta_live_*******************"</span> \
   -H <span class="s-header">"Content-Type: application/json"</span> \
   -d <span class="s-str">'{
@@ -459,7 +459,7 @@
         <h2>Lookup GST Rate</h2>
         <div class="endpoint-badge">
           <span class="ep-method">POST</span>
-          <span class="ep-path">/v1/lookup</span>
+          <span class="ep-path">/api/v1/lookup</span>
         </div>
         <p>The primary endpoint. Searches the CBIC Master Database for HSN/SAC codes matching your description, evaluates applicable conditions, and returns the exact GST rate for your transaction context.</p>
 
@@ -508,7 +508,7 @@
               <span class="code-block-lang">cURL</span>
               <button class="copy-btn" onclick="copyCode(this)">Copy</button>
             </div>
-            <pre><code>curl -X POST <span class="s-url">https://gstaccelerator.in/v1/lookup</span> \
+            <pre><code>curl -X POST <span class="s-url">https://gstaccelerator.in/api/v1/lookup</span> \
   -H <span class="s-header">"X-API-Key: gsta_live_******************"</span> \
   -H <span class="s-header">"Content-Type: application/json"</span> \
   -d <span class="s-str">'{
@@ -531,7 +531,7 @@ session = requests.Session()
 session.headers[<span class="s-str">"X-API-Key"</span>] = <span class="s-str">"gsta_live_******************"</span>
 
 r = session.post(
-    <span class="s-str">"https://gstaccelerator.in/v1/lookup"</span>,
+    <span class="s-str">"https://gstaccelerator.in/api/v1/lookup"</span>,
     json={
         <span class="s-str">"description"</span>: <span class="s-str">"split AC unit"</span>,
         <span class="s-str">"supply_type"</span>: <span class="s-str">"intrastate"</span>,
@@ -550,7 +550,7 @@ result = r.json()[<span class="s-num">0</span>]
               <span class="code-block-lang">JavaScript (fetch)</span>
               <button class="copy-btn" onclick="copyCode(this)">Copy</button>
             </div>
-            <pre><code><span class="s-keyword">const</span> res = <span class="s-keyword">await</span> <span class="s-fn">fetch</span>(<span class="s-str">"https://gstaccelerator.in/v1/lookup"</span>, {
+            <pre><code><span class="s-keyword">const</span> res = <span class="s-keyword">await</span> <span class="s-fn">fetch</span>(<span class="s-str">"https://gstaccelerator.in/api/v1/lookup"</span>, {
   method: <span class="s-str">"POST"</span>,
   headers: {
     <span class="s-str">"X-API-Key"</span>: <span class="s-str">"gsta_live_******************"</span>,
