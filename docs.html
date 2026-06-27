@@ -492,6 +492,54 @@
     </div>
 
     <!-- LOOKUP ENDPOINT -->
+    
+<!-- ============================================== -->
+<!-- HEALTH & META -->
+<!-- ============================================== -->
+<div class="doc-row" id="health">
+  <div class="doc-left">
+    <h2>Health Check</h2>
+    <div class="endpoint-badge">
+      <span class="ep-method" style="background: rgba(96,165,250,0.15); color: var(--blue);">GET</span>
+      <span class="ep-path">/api/v1/health</span>
+    </div>
+    <p>Check the uptime and version of the API.</p>
+  </div>
+  <div class="doc-right">
+    <div class="code-block">
+      <div class="code-block-header"><span class="code-block-lang">Response (200 OK)</span></div>
+      <pre><code>{
+  "status": "ok",
+  "version": "1.0.0",
+  "uptime": 3600.5
+}</code></pre>
+    </div>
+  </div>
+</div>
+
+<div class="doc-row" id="meta">
+  <div class="doc-left">
+    <h2>Database Meta</h2>
+    <div class="endpoint-badge">
+      <span class="ep-method" style="background: rgba(96,165,250,0.15); color: var(--blue);">GET</span>
+      <span class="ep-path">/api/v1/meta</span>
+    </div>
+    <p>Returns the total number of indexed HSN and SAC codes, and the CBIC notification source version.</p>
+  </div>
+  <div class="doc-right">
+    <div class="code-block">
+      <div class="code-block-header"><span class="code-block-lang">Response (200 OK)</span></div>
+      <pre><code>{
+  "total_hsn": 12054,
+  "total_sac": 845,
+  "last_updated": "2025-06-01",
+  "source": "GST Council Notification 09/2025-CT(Rate)"
+}</code></pre>
+    </div>
+  </div>
+</div>
+<!-- END HEALTH & META -->
+
     <div class="doc-row" id="lookup">
       <div class="doc-left">
         <h2>Lookup GST Rate</h2>
@@ -634,6 +682,164 @@ console.<span class="s-fn">log</span>(result.tax_rates.igst); <span class="s-com
     </div>
 
     <!-- CONDITION RESOLVER -->
+    
+<!-- ============================================== -->
+<!-- LOOKUP GET -->
+<!-- ============================================== -->
+<div class="doc-row" id="lookup-get">
+  <div class="doc-left">
+    <h2>Lookup GST Rate (GET)</h2>
+    <div class="endpoint-badge">
+      <span class="ep-method" style="background: rgba(96,165,250,0.15); color: var(--blue);">GET</span>
+      <span class="ep-path">/api/v1/lookup</span>
+    </div>
+    <p>Search for GST rates via query parameters. Identical behavior to the POST version, but useful for caching and simple integrations.</p>
+    
+    <h3>Query Parameters</h3>
+    <table class="params-table">
+      <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="p-name">q<span class="req">*</span></span></td>
+          <td><span class="p-type">string</span></td>
+          <td class="p-desc">The description keyword (e.g. <code>?q=cotton+shirt</code>)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="doc-right">
+    <div class="code-block">
+      <div class="code-block-header">
+        <span class="code-block-lang">cURL</span>
+      </div>
+      <pre><code>curl -X GET <span class="s-url">"https://gstaccelerator.in/api/v1/lookup?q=cotton%20shirt"</span>   -H <span class="s-header">"X-API-Key: gsta_live_***"</span></code></pre>
+    </div>
+  </div>
+</div>
+
+<div class="doc-row" id="autocomplete">
+  <div class="doc-left">
+    <h2>Autocomplete</h2>
+    <div class="endpoint-badge">
+      <span class="ep-method" style="background: rgba(96,165,250,0.15); color: var(--blue);">GET</span>
+      <span class="ep-path">/api/v1/autocomplete</span>
+    </div>
+    <p>Get fast typeahead suggestions for HSN descriptions based on a partial query. Returns up to 10 lightweight results.</p>
+    
+    <h3>Query Parameters</h3>
+    <table class="params-table">
+      <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="p-name">q<span class="req">*</span></span></td>
+          <td><span class="p-type">string</span></td>
+          <td class="p-desc">Partial query (e.g. <code>?q=batt</code>)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="doc-right">
+    <div class="code-block">
+      <div class="code-block-header"><span class="code-block-lang">Response (200 OK)</span></div>
+      <pre><code>[
+  {
+    "hsn_code": "8506",
+    "hsn_description": "Primary cells and primary batteries"
+  }
+]</code></pre>
+    </div>
+  </div>
+</div>
+<!-- END LOOKUP GET & AUTOCOMPLETE -->
+
+<!-- ============================================== -->
+<!-- HSN & SAC ENDPOINTS -->
+<!-- ============================================== -->
+<div class="doc-row" id="hsn">
+  <div class="doc-left">
+    <h2>Lookup exact HSN code</h2>
+    <div class="endpoint-badge">
+      <span class="ep-method" style="background: rgba(96,165,250,0.15); color: var(--blue);">GET</span>
+      <span class="ep-path">/api/v1/hsn/{code}</span>
+    </div>
+    <p>Fetch the exact GST rate object for a specific 4-digit, 6-digit, or 8-digit HSN code.</p>
+  </div>
+  <div class="doc-right">
+    <div class="code-block">
+      <div class="code-block-header"><span class="code-block-lang">cURL</span></div>
+      <pre><code>curl -X GET <span class="s-url">"https://gstaccelerator.in/api/v1/hsn/8415"</span>   -H <span class="s-header">"X-API-Key: gsta_live_***"</span></code></pre>
+    </div>
+  </div>
+</div>
+
+<div class="doc-row" id="sac">
+  <div class="doc-left">
+    <h2>Lookup exact SAC code</h2>
+    <div class="endpoint-badge">
+      <span class="ep-method" style="background: rgba(96,165,250,0.15); color: var(--blue);">GET</span>
+      <span class="ep-path">/api/v1/sac/{code}</span>
+    </div>
+    <p>Fetch the exact GST rate object for a specific SAC code (services).</p>
+  </div>
+  <div class="doc-right">
+    <div class="code-block">
+      <div class="code-block-header"><span class="code-block-lang">cURL</span></div>
+      <pre><code>curl -X GET <span class="s-url">"https://gstaccelerator.in/api/v1/sac/9983"</span>   -H <span class="s-header">"X-API-Key: gsta_live_***"</span></code></pre>
+    </div>
+  </div>
+</div>
+
+<div class="doc-row" id="gst-rate">
+  <div class="doc-left">
+    <h2>Get GST Rate by HSN</h2>
+    <div class="endpoint-badge">
+      <span class="ep-method" style="background: rgba(96,165,250,0.15); color: var(--blue);">GET</span>
+      <span class="ep-path">/api/v1/gst-rate</span>
+    </div>
+    <p>A convenient query-parameter based endpoint to get the GST rate for a given HSN code.</p>
+    
+    <h3>Query Parameters</h3>
+    <table class="params-table">
+      <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="p-name">hsn<span class="req">*</span></span></td>
+          <td><span class="p-type">string</span></td>
+          <td class="p-desc">The exact HSN code</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="doc-right">
+    <div class="code-block">
+      <div class="code-block-header"><span class="code-block-lang">cURL</span></div>
+      <pre><code>curl -X GET <span class="s-url">"https://gstaccelerator.in/api/v1/gst-rate?hsn=8517"</span>   -H <span class="s-header">"X-API-Key: gsta_live_***"</span></code></pre>
+    </div>
+  </div>
+</div>
+
+<div class="doc-row" id="bulk">
+  <div class="doc-left">
+    <h2>Bulk Lookup</h2>
+    <div class="endpoint-badge">
+      <span class="ep-method" style="background: rgba(232,101,10,0.15); color: var(--amber);">POST</span>
+      <span class="ep-path">/api/v1/bulk</span>
+    </div>
+    <p>Look up multiple HSN or SAC codes in a single request. Max 100 codes per request.</p>
+  </div>
+  <div class="doc-right">
+    <div class="code-block">
+      <div class="code-block-header"><span class="code-block-lang">Request Body</span></div>
+      <pre><code>[
+  "8415",
+  "85171300",
+  "9983"
+]</code></pre>
+    </div>
+  </div>
+</div>
+<!-- END HSN & SAC ENDPOINTS -->
+
     <div class="doc-row" id="condition-resolver">
       <div class="doc-left">
         <h2>Condition Resolver</h2>
