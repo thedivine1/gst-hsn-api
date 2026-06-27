@@ -1203,11 +1203,12 @@ async def root():
       padding: 0.6rem; border-radius: 7px; text-align: center;
       font-family: var(--font-body); font-size: 0.875rem; font-weight: 600;
       text-decoration: none; cursor: pointer; border: none;
-      transition: opacity 0.15s;
+      transition: all 0.2s;
     }
     .pa-outline { background: transparent; border: 1px solid var(--border-md); color: var(--white); }
-    .pa-solid { background: var(--amber); color: #fff; }
-    .pa-outline:hover, .pa-solid:hover { opacity: 0.8; }
+    .pa-solid { background: var(--amber); border: 1px solid var(--amber); color: #fff; }
+    .pa-outline:hover { background: var(--amber); border-color: var(--amber); color: #fff; }
+    .pa-solid:hover { opacity: 0.8; }
     .upi-note {
       font-size: 0.68rem; color: var(--muted);
       text-align: center; margin-top: 8px;
@@ -1467,7 +1468,7 @@ async def root():
       <div class="pf off">Condition resolver</div>
       <div class="pf off">MCP endpoint</div>
       <div class="pf off">Rate-change alerts</div>
-      <a class="plan-action pa-outline" href="mailto:hello@gstaccelerator.in?subject=Free API Key Request">Get free key</a>
+      <a class="plan-action pa-outline" href="/dashboard">Get free key</a>
     </div>
 
     <div class="plan featured">
@@ -1482,7 +1483,7 @@ async def root():
       <div class="pf">99.5% uptime SLA</div>
       <div class="pf">Rate-change email alerts</div>
       <div class="pf off">Webhooks</div>
-      <a class="plan-action pa-solid" href="mailto:hello@gstaccelerator.in?subject=Developer Plan - Rs 399">Get started</a>
+      <a class="plan-action pa-solid" href="/dashboard">Get started</a>
       <div class="upi-note">Pay via UPI · Instant activation</div>
     </div>
 
@@ -1497,7 +1498,7 @@ async def root():
       <div class="pf">99.9% uptime SLA</div>
       <div class="pf">Priority support</div>
       <div class="pf">Superseded rates feed</div>
-      <a class="plan-action pa-outline" href="mailto:hello@gstaccelerator.in?subject=Pro Plan">Get started</a>
+      <a class="plan-action pa-outline" href="/dashboard">Get started</a>
     </div>
 
     <div class="plan">
@@ -1511,7 +1512,7 @@ async def root():
       <div class="pf">Dedicated SLA</div>
       <div class="pf">WhatsApp support</div>
       <div class="pf">GST invoice included</div>
-      <a class="plan-action pa-outline" href="mailto:hello@gstaccelerator.in?subject=Business Plan Enquiry">Contact us</a>
+      <a class="plan-action pa-outline" href="/dashboard">Get started</a>
     </div>
   </div>
 </section>
