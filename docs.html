@@ -82,29 +82,27 @@
 
     /* ── SIDEBAR ── */
     .sidebar {
-      width: 300px;
-      min-width: 220px;
-      max-width: 300px;
-      flex-shrink: 0;
-      flex-grow: 0;
+      width: 300px !important;
+      min-width: 220px !important;
+      max-width: 300px !important;
+      height: 100% !important;
+      min-height: 100% !important;
+      flex-shrink: 0 !important;
+      flex-grow: 0 !important;
       background: var(--surface);
       border-right: 1px solid var(--border);
       overflow-y: auto;
       overflow-x: hidden;
       padding: 2rem 0;
-      /* Ensure sidebar is always visible and never collapses */
+      /* Ensure sidebar is always visible and stretched */
       visibility: visible !important;
-      display: block !important;
+      display: flex !important;
+      flex-direction: column !important;
     }
 
     /* Always show sidebar as column on screens wider than 768px */
     @media (min-width: 769px) {
-      .shell { display: flex; flex-direction: row; }
-      .sidebar {
-        width: 300px !important;
-        min-width: 220px !important;
-        display: block !important;
-      }
+      .shell { display: flex; flex-direction: row; height: 100%; min-height: 0; }
     }
     .sidebar-group { margin-bottom: 2rem; }
     .sidebar-label {
@@ -870,9 +868,11 @@ igst = (invoice_value × <span class="s-num">18</span>) / <span class="s-num">10
         sidebar.style.minWidth = '220px';
         sidebar.style.maxWidth = '300px';
         sidebar.style.width    = '300px';
+        sidebar.style.height   = '100%';
         sidebar.style.flexShrink = '0';
         sidebar.style.flexGrow  = '0';
-        sidebar.style.display   = 'block';
+        sidebar.style.display   = 'flex';
+        sidebar.style.flexDirection = 'column';
         sidebar.style.visibility = 'visible';
       }
     });
