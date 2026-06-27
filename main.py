@@ -22,6 +22,7 @@ load_dotenv()
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
+NEXT_PUBLIC_SITE_URL = os.environ.get("NEXT_PUBLIC_SITE_URL", "http://localhost:8000")
 
 supabase: Optional[Client] = None
 if SUPABASE_URL and SUPABASE_KEY:
@@ -2087,9 +2088,21 @@ async def dashboard_page():
             content = f.read()
         content = content.replace("{{ SUPABASE_URL }}", SUPABASE_URL or "")
         content = content.replace("{{ SUPABASE_ANON_KEY }}", SUPABASE_ANON_KEY or "")
+        content = content.replace("{{ NEXT_PUBLIC_SITE_URL }}", NEXT_PUBLIC_SITE_URL)
         return HTMLResponse(content)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Dashboard template not found.")
+
+@app.get("/auth/callback", include_in_schema=False)
+async def auth_callback(request: Request):
+    """
+    Catches auth redirects (like magic links) from Supabase and redirects them
+    to the dashboard, preserving the URL fragment or query parameters so the
+    client-side Supabase JS can process the auth session.
+    """
+    query = request.url.query
+    redirect_url = f"/dashboard?{query}" if query else "/dashboard"
+    return RedirectResponse(url=redirect_url, status_code=302)
 
 @app.get("/docs", include_in_schema=False, response_class=HTMLResponse)
 async def api_docs_page():
