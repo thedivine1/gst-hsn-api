@@ -82,12 +82,29 @@
 
     /* ── SIDEBAR ── */
     .sidebar {
-      width: 300px; flex-shrink: 0;
+      width: 300px;
+      min-width: 220px;
+      max-width: 300px;
+      flex-shrink: 0;
+      flex-grow: 0;
       background: var(--surface);
       border-right: 1px solid var(--border);
       overflow-y: auto;
       overflow-x: hidden;
       padding: 2rem 0;
+      /* Ensure sidebar is always visible and never collapses */
+      visibility: visible !important;
+      display: block !important;
+    }
+
+    /* Always show sidebar as column on screens wider than 768px */
+    @media (min-width: 769px) {
+      .shell { display: flex; flex-direction: row; }
+      .sidebar {
+        width: 300px !important;
+        min-width: 220px !important;
+        display: block !important;
+      }
     }
     .sidebar-group { margin-bottom: 2rem; }
     .sidebar-label {
@@ -821,6 +838,46 @@ igst = (invoice_value × <span class="s-num">18</span>) / <span class="s-num">10
 </div><!-- end .shell -->
 
 <script>
+  // ── Sidebar localStorage guard ──────────────────────────────────────────
+  // Clear any persisted sidebar width that might have been stored by a
+  // previous drag-resize widget (e.g. from another tool or session).
+  // Common keys used by various layout libraries:
+  (function guardSidebarWidth() {
+    const SIDEBAR_KEYS = [
+      'sidebar-width', 'nav-width', 'sidebarWidth', 'navWidth',
+      'sidebar_width', 'nav_width', 'leftPanelWidth', 'left-panel-width'
+    ];
+    const MIN_SAFE = 100; // px — reset anything below this
+    const DEFAULT  = 220; // px
+    SIDEBAR_KEYS.forEach(key => {
+      try {
+        const stored = localStorage.getItem(key);
+        if (stored !== null) {
+          const parsed = parseInt(stored, 10);
+          if (isNaN(parsed) || parsed < MIN_SAFE) {
+            localStorage.setItem(key, String(DEFAULT));
+          }
+        }
+      } catch (_) { /* localStorage may be unavailable (private browsing) */ }
+    });
+
+    // Also imperatively enforce the min-width on the sidebar element
+    document.addEventListener('DOMContentLoaded', () => {
+      const sidebar = document.querySelector('.sidebar');
+      if (sidebar) {
+        // Remove any inline style that might shrink the sidebar
+        sidebar.style.removeProperty('width');
+        sidebar.style.minWidth = '220px';
+        sidebar.style.maxWidth = '300px';
+        sidebar.style.width    = '300px';
+        sidebar.style.flexShrink = '0';
+        sidebar.style.flexGrow  = '0';
+        sidebar.style.display   = 'block';
+        sidebar.style.visibility = 'visible';
+      }
+    });
+  })();
+
   // Tab switcher
   function switchTab(btn, id) {
     const tabBar = btn.closest('.tab-bar');
