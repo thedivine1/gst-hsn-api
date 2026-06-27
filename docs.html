@@ -82,31 +82,32 @@
 
     /* ── SIDEBAR ── */
     .sidebar {
-      width: 230px; flex-shrink: 0;
+      width: 290px; flex-shrink: 0;
       background: var(--surface);
       border-right: 1px solid var(--border);
-      overflow-y: auto; padding: 1.5rem 0;
+      overflow-y: auto; padding: 2rem 0;
     }
-    .sidebar-group { margin-bottom: 1.75rem; }
+    .sidebar-group { margin-bottom: 2rem; }
     .sidebar-label {
-      font-size: 0.68rem; font-weight: 700;
+      font-size: 0.7rem; font-weight: 700;
       text-transform: uppercase; letter-spacing: 0.1em;
-      color: var(--text-muted); padding: 0 1.25rem;
-      margin-bottom: 0.5rem; display: block;
+      color: var(--text-muted); padding: 0 1.5rem;
+      margin-bottom: 0.6rem; display: block;
     }
     .sidebar a {
-      display: flex; align-items: center; gap: 0.5rem;
+      display: flex; align-items: center; gap: 0.6rem;
       color: var(--text-2); text-decoration: none;
-      font-size: 0.875rem; padding: 0.45rem 1.25rem;
+      font-size: 0.9rem; padding: 0.55rem 1.5rem;
       border-left: 2px solid transparent;
       transition: all 0.15s;
     }
-    .sidebar a:hover { color: var(--text); background: rgba(255,255,255,0.03); }
-    .sidebar a.active { color: var(--amber); border-left-color: var(--amber); background: var(--amber-dim); }
+    .sidebar a:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+    .sidebar a.active { color: var(--amber); border-left-color: var(--amber); background: var(--amber-dim); font-weight: 500; }
     .method-pill {
-      font-size: 0.62rem; font-weight: 700; padding: 1px 5px;
+      font-size: 0.65rem; font-weight: 700; padding: 2px 7px;
       border-radius: 3px; font-family: 'JetBrains Mono', monospace;
       background: rgba(16,185,129,0.15); color: var(--success);
+      flex-shrink: 0; line-height: 1.5;
     }
     .method-pill.post { background: rgba(232,101,10,0.15); color: var(--amber); }
 
@@ -319,13 +320,12 @@
     </div>
     <div class="sidebar-group">
       <span class="sidebar-label">Endpoints</span>
-      <a href="#lookup"><span class="method-pill post">POST</span>/v1/lookup</a>
+      <a href="#lookup"><span class="method-pill post">POST</span> /v1/lookup</a>
     </div>
     <div class="sidebar-group">
       <span class="sidebar-label">Guides</span>
       <a href="#condition-resolver">Condition Resolver</a>
       <a href="#supply-types">Supply Types</a>
-      <a href="#code-examples">Code Examples</a>
     </div>
     <div class="sidebar-group">
       <span class="sidebar-label">Reference</span>
