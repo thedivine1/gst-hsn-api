@@ -52,6 +52,8 @@ import time
 START_TIME = time.time()
 rate_limit_db = {}
 rate_limit_timestamps = {}
+demo_rate_limit_db = {}
+demo_rate_limit_timestamps = {}
 
 class IPRateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -718,19 +720,24 @@ function runQ() {
   out.classList.remove('has-result');
   out.innerHTML = '<span style="color:#3D4E6A">// Fetching from CBIC-sourced data...</span>';
 
-  fetch('/v1/lookup', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-API-Key': 'gsta_demo_frontend' },
-    body: JSON.stringify({ description: val })
+  fetch('/api/demo/lookup?q=' + encodeURIComponent(val), {
+    method: 'GET'
   })
   .then(function(res) {
     return res.json().then(function(data) {
       if (res.ok && data && data.length > 0) {
         out.innerHTML = fmt(data[0]);
         out.classList.add('has-result');
+      } else if (!res.ok && data && data.detail) {
+        out.innerHTML = '<span style="color:#F97583">// Error: ' + data.detail + '</span>';
       } else {
         out.innerHTML = '<span style="color:#3D4E6A">// No match found for "' + val + '".\n// Try: AC unit, gold jewellery, basmati rice, namkeen\n// All 48,752 HSN codes available with an API key.</span>';
       }
+      btn.disabled = false;
+      btn.textContent = 'Lookup \u2192';
+    }).catch(function() {
+      // JSON parse error
+      out.innerHTML = '<span style="color:#F97583">// Error: Unexpected API response</span>';
       btn.disabled = false;
       btn.textContent = 'Lookup \u2192';
     });
@@ -1802,6 +1809,38 @@ async def get_sac(
 async def get_lookup_rate(q: str, _: dict = Depends(verify_api_key)):
     req = LookupRequest(description=q)
     return await lookup_rate(req, _)
+
+
+@app.get(
+    "/api/demo/lookup",
+    response_model=List[LookupResult],
+    summary="Public Demo Lookup",
+    tags=["Demo"],
+)
+async def demo_lookup(q: str, request: Request):
+    """
+    Public endpoint for the landing page demo widget.
+    Strictly rate limited to 6 requests per minute per IP.
+    """
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    now = time.time()
+    
+    # Clean up old timestamps (older than 60s)
+    if now - demo_rate_limit_timestamps.get(client_ip, 0) > 60:
+        demo_rate_limit_db[client_ip] = 0
+        demo_rate_limit_timestamps[client_ip] = now
+        
+    demo_rate_limit_db[client_ip] = demo_rate_limit_db.get(client_ip, 0) + 1
+    
+    if demo_rate_limit_db[client_ip] > 6:
+        raise HTTPException(
+            status_code=429,
+            detail="Demo rate limit reached. Get a free API key for unlimited access."
+        )
+        
+    # Reuse existing lookup logic (pass None or a mock dict for the key dependency)
+    req = LookupRequest(description=q)
+    return await lookup_rate(req, {"key": "demo_public_key", "tier": "free"})
 
 @app.get(
     "/api/v1/autocomplete",
