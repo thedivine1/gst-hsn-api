@@ -2142,6 +2142,16 @@ async def api_docs_page():
     except Exception as e:
         raise HTTPException(status_code=500, detail="Docs template not found.")
 
+@app.get("/blog/gst-api-for-developers", include_in_schema=False, response_class=HTMLResponse)
+async def gst_api_blog_page():
+    try:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(base_dir, "gst-api-for-developers.html"), "r", encoding="utf-8") as f:
+            content = f.read()
+        return HTMLResponse(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Blog template not found.")
+
 class KeyCreateRequest(BaseModel):
     name: str = "Default Key"
 

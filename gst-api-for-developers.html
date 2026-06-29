@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- ── Primary SEO meta ── -->
+  <title>GST API for Developers in India 2026 — HSN, SAC, CGST/SGST/IGST Lookup</title>
+  <meta name="description" content="A technical guide to GST APIs for Indian developers. Covers HSN lookup, CGST/SGST/IGST split, condition resolver, SAC codes, free vs paid tiers, and integration examples in Python and cURL." />
+  <meta name="keywords" content="gst api for developers, gst api, gst hsn code api, gst verification api free, hsn lookup api, india gst api, cgst sgst igst api, sac code api, gst api india, gst developer portal" />
+  <meta name="author" content="GST Accelerator" />
+  <link rel="canonical" href="https://gstaccelerator.in/blog/gst-api-for-developers" />
+
+  <!-- ── Open Graph ── -->
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="GST API for Developers in India 2026 — HSN, SAC, CGST/SGST/IGST Lookup" />
+  <meta property="og:description" content="A technical guide to GST APIs for Indian developers. HSN lookup, CGST/SGST/IGST split, condition resolver, SAC codes, integration examples." />
+  <meta property="og:url" content="https://gstaccelerator.in/blog/gst-api-for-developers" />
+  <meta property="og:site_name" content="GST Accelerator" />
+  <meta property="article:published_time" content="2026-06-30" />
+  <meta property="article:modified_time" content="2026-06-30" />
+  <meta property="article:tag" content="GST API" />
+  <meta property="article:tag" content="HSN Lookup" />
+  <meta property="article:tag" content="India Tax API" />
+
+  <!-- ── Twitter Card ── -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="GST API for Developers in India 2026" />
+  <meta name="twitter:description" content="Everything Indian developers need to know about GST APIs — HSN lookup, CGST/SGST split, condition resolver, free tiers." />
+  <meta name="twitter:site" content="@gstaccelerator" />
+
+  <!-- ── JSON-LD Article schema ── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "GST API for Developers in India 2026 — HSN, SAC, CGST/SGST/IGST Lookup",
+    "description": "A technical guide to GST APIs for Indian developers. Covers HSN lookup, CGST/SGST/IGST split, condition resolver, SAC codes, and integration examples.",
+    "datePublished": "2026-06-30",
+    "dateModified": "2026-06-30",
+    "author": { "@type": "Organization", "name": "GST Accelerator", "url": "https://gstaccelerator.in" },
+    "publisher": { "@type": "Organization", "name": "GST Accelerator", "url": "https://gstaccelerator.in" },
+    "mainEntityOfPage": { "@type": "WebPage", "@id": "https://gstaccelerator.in/blog/gst-api-for-developers" },
+    "keywords": "GST API, HSN lookup API, India tax API, CGST SGST IGST, SAC code API"
+  }
+  </script>
+
+  <!-- ── FAQ schema ── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is a GST API?",
+        "acceptedAnswer": { "@type": "Answer", "text": "A GST API is a REST endpoint that returns GST rate data — CGST, SGST, and IGST — for a given HSN or SAC code. It lets software applications look up tax rates programmatically instead of hardcoding them or reading government PDFs manually." }
+      },
+      {
+        "@type": "Question",
+        "name": "What is the difference between a GST HSN API and a GSTIN verification API?",
+        "acceptedAnswer": { "@type": "Answer", "text": "An HSN API returns the GST rate for a product category code. A GSTIN verification API validates whether a business's GST registration number is active and returns their legal name, registration status, and filing history. They are different tools for different problems." }
+      },
+      {
+        "@type": "Question",
+        "name": "Is there a free GST API for developers?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. GST Accelerator offers 100 free API calls per month with no credit card required. The free tier includes HSN lookup, SAC lookup, and full CGST/SGST/IGST rate data." }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I get the CGST and SGST split from a GST API?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Pass supply_type: intrastate in your request. The API returns CGST and SGST as separate fields — both equal to half the total GST rate. For interstate supply, pass supply_type: interstate and the API returns the IGST rate instead." }
+      }
+    ]
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink: #06090F;
+      --ink-2: #0D1220;
+      --amber: #E8650A;
+      --amber-dim: rgba(232,101,10,0.10);
+      --amber-mid: rgba(232,101,10,0.25);
+      --navy: #1A5FA8;
+      --navy-lit: #4A8FD4;
+      --navy-dim: rgba(26,95,168,0.10);
+      --green-lit: #2DC994;
+      --green-dim: rgba(26,158,114,0.10);
+      --white: #F2F4F8;
+      --muted: #6B7A99;
+      --border: rgba(107,122,153,0.16);
+      --border-md: rgba(107,122,153,0.30);
+      --font-serif: 'DM Serif Display', Georgia, serif;
+      --font-body: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--ink);
+      color: var(--white);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* NAV */
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.875rem 2rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(6,9,15,0.9);
+      position: sticky; top: 0; z-index: 50;
+      backdrop-filter: blur(12px);
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 8px;
+      text-decoration: none; color: var(--white);
+      font-weight: 600; font-size: 0.95rem;
+    }
+    .nav-rupee {
+      width: 28px; height: 28px; background: var(--amber);
+      border-radius: 6px; display: flex; align-items: center;
+      justify-content: center; font-family: var(--font-mono);
+      font-size: 13px; color: #fff; flex-shrink: 0;
+    }
+    .nav-cta {
+      background: var(--amber); color: #fff;
+      text-decoration: none; padding: 0.4rem 1rem;
+      border-radius: 7px; font-size: 0.85rem; font-weight: 600;
+    }
+
+    /* ARTICLE LAYOUT */
+    .article-wrap {
+      max-width: 740px;
+      margin: 0 auto;
+      padding: 3.5rem 1.5rem 5rem;
+    }
+
+    /* METADATA */
+    .article-meta {
+      display: flex; gap: 10px; flex-wrap: wrap;
+      margin-bottom: 1.75rem;
+    }
+    .tag {
+      font-size: 0.72rem; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 3px 10px; border-radius: 100px;
+    }
+    .tag-cat { background: var(--amber-dim); border: 1px solid var(--amber-mid); color: var(--amber); }
+    .tag-date { background: var(--navy-dim); border: 1px solid rgba(26,95,168,0.25); color: var(--navy-lit); }
+    .tag-read { background: rgba(107,122,153,0.1); border: 1px solid var(--border); color: var(--muted); }
+
+    /* HEADLINE */
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(2rem, 4.5vw, 3rem);
+      font-weight: 400; line-height: 1.15;
+      letter-spacing: -0.01em;
+      margin-bottom: 1.25rem;
+      color: var(--white);
+    }
+    .article-deck {
+      font-size: 1.1rem; color: var(--muted);
+      line-height: 1.65; margin-bottom: 2.5rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* BODY */
+    h2 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.4rem, 3vw, 1.8rem);
+      font-weight: 400; line-height: 1.2;
+      margin: 2.75rem 0 0.75rem;
+      color: var(--white);
+    }
+    h3 {
+      font-family: var(--font-body);
+      font-size: 1rem; font-weight: 600;
+      color: var(--white); margin: 1.75rem 0 0.5rem;
+    }
+    p { margin-bottom: 1.25rem; color: var(--white); }
+    p + p { margin-top: 0; }
+
+    /* CALLOUT — key point */
+    .callout {
+      background: var(--amber-dim);
+      border: 1px solid var(--amber-mid);
+      border-left: 3px solid var(--amber);
+      border-radius: 0 10px 10px 0;
+      padding: 1rem 1.25rem;
+      margin: 1.75rem 0;
+      font-size: 0.95rem;
+      color: var(--white);
+      line-height: 1.65;
+    }
+    .callout strong { color: var(--amber); }
+
+    .callout-blue {
+      background: var(--navy-dim);
+      border: 1px solid rgba(26,95,168,0.25);
+      border-left: 3px solid var(--navy-lit);
+      border-radius: 0 10px 10px 0;
+      padding: 1rem 1.25rem;
+      margin: 1.75rem 0;
+      font-size: 0.95rem;
+      color: var(--white);
+    }
+    .callout-blue strong { color: var(--navy-lit); }
+
+    /* CODE BLOCKS */
+    pre {
+      background: #0D1220;
+      border: 1px solid var(--border-md);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      overflow-x: auto;
+      margin: 1.5rem 0;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      line-height: 1.75;
+    }
+    code { font-family: var(--font-mono); }
+    p code, li code {
+      background: rgba(107,122,153,0.15);
+      padding: 1px 6px; border-radius: 4px;
+      font-size: 0.85em;
+      color: var(--navy-lit);
+    }
+    .ck { color: #4A8FD4; }
+    .cs { color: #2DC994; }
+    .cn { color: #F97583; }
+    .cm { color: #4A5E82; }
+
+    /* TABLE */
+    .table-wrap { overflow-x: auto; margin: 1.75rem 0; border-radius: 10px; border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    th {
+      background: var(--ink-2); text-align: left;
+      padding: 10px 14px; font-size: 0.75rem;
+      font-weight: 600; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+    td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--white); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: rgba(107,122,153,0.04); }
+    .check { color: var(--green-lit); font-weight: 600; }
+    .cross { color: #F97583; font-weight: 600; }
+
+    /* FAQ */
+    .faq { margin-top: 3rem; border-top: 1px solid var(--border); padding-top: 2rem; }
+    details {
+      border: 1px solid var(--border);
+      border-radius: 10px; margin-bottom: 8px;
+      overflow: hidden;
+    }
+    summary {
+      padding: 1rem 1.25rem;
+      font-weight: 500; font-size: 0.95rem;
+      cursor: pointer; list-style: none;
+      display: flex; justify-content: space-between; align-items: center;
+      background: var(--ink-2);
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::after {
+      content: '+'; color: var(--amber);
+      font-size: 1.1rem; flex-shrink: 0; margin-left: 12px;
+    }
+    details[open] summary::after { content: '−'; }
+    .faq-body { padding: 1rem 1.25rem; font-size: 0.9rem; color: var(--muted); line-height: 1.7; }
+
+    /* CTA */
+    .cta-box {
+      background: linear-gradient(160deg, rgba(232,101,10,0.08), var(--ink-2));
+      border: 1px solid var(--amber-mid);
+      border-radius: 14px; padding: 2rem;
+      margin: 3rem 0; text-align: center;
+    }
+    .cta-box h3 { margin: 0 0 0.5rem; font-size: 1.1rem; }
+    .cta-box p { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.25rem; }
+    .cta-btn {
+      display: inline-block;
+      background: var(--amber); color: #fff;
+      text-decoration: none; padding: 0.65rem 1.75rem;
+      border-radius: 8px; font-weight: 600; font-size: 0.95rem;
+      transition: opacity 0.15s;
+    }
+    .cta-btn:hover { opacity: 0.85; }
+    .cta-sub { font-size: 0.75rem; color: var(--muted); margin-top: 8px; margin-bottom: 0; }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem 1.5rem;
+      text-align: center;
+      font-size: 0.78rem; color: var(--muted);
+    }
+    footer a { color: var(--muted); }
+
+    @media (max-width: 640px) {
+      nav { padding: 0.75rem 1rem; }
+      .article-wrap { padding: 2.5rem 1rem 4rem; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="https://gstaccelerator.in">
+    <div class="nav-rupee">₹</div>
+    GST Accelerator
+  </a>
+  <a class="nav-cta" href="https://gst-hsn-api.vercel.app/dashboard">Get free API key</a>
+</nav>
+
+<article class="article-wrap">
+
+  <div class="article-meta">
+    <span class="tag tag-cat">Developer Guide</span>
+    <span class="tag tag-date">Updated June 2026</span>
+    <span class="tag tag-read">~1,000 words · 6 min read</span>
+  </div>
+
+  <h1>GST API for Developers — What It Is, How It Works, and Which One to Use</h1>
+
+  <p class="article-deck">Most GST APIs in India return one number. One flat rate. No conditions, no CGST/SGST split, no notification reference. You paste that number into your checkout flow, your CA finds it wrong six months later, and your company gets a compliance notice. Here's everything you actually need to know before picking a GST API.</p>
+
+  <h2>What a GST API actually does</h2>
+
+  <p>A GST API is a REST endpoint. You send it an HSN code or a product description. It returns the applicable tax rate — and if it's well-built, it returns three rates: CGST, SGST, and IGST.</p>
+
+  <p>That distinction matters immediately. Whether you apply CGST + SGST or IGST depends entirely on whether the supply is intrastate or interstate. A seller in Maharashtra billing a buyer in Maharashtra pays CGST 9% + SGST 9%. That same seller billing a buyer in Delhi pays IGST 18%. The total is identical. The tax authority receiving the money is not. Getting this wrong means your GSTR-1 misfires and your buyer loses ITC.</p>
+
+  <div class="callout">
+    <strong>The rule:</strong> Intrastate supply → CGST + SGST (equal halves of total rate). Interstate supply → IGST (full rate). A GST API that doesn't accept a <code>supply_type</code> parameter is incomplete.
+  </div>
+
+  <h2>The three types of GST API — and which one you need</h2>
+
+  <p>Developers conflate three different tools. They are not the same.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>API type</th><th>What it does</th><th>Who needs it</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>HSN/SAC rate API</strong></td>
+          <td>Returns CGST, SGST, IGST for a product code or description</td>
+          <td>E-commerce, billing software, ERP, AI agents building invoices</td>
+        </tr>
+        <tr>
+          <td><strong>GSTIN verification API</strong></td>
+          <td>Validates a business's GST number, returns legal name + status</td>
+          <td>Fintech onboarding, KYC, B2B invoice validation</td>
+        </tr>
+        <tr>
+          <td><strong>GST filing API</strong></td>
+          <td>Submits GSTR-1, GSTR-3B, pulls GSTR-2B reconciliation</td>
+          <td>CA firms, accounting platforms — requires GSP/ASP licence</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>If you're building a checkout, an invoice generator, or an AI agent that handles product listings — you need the HSN/SAC rate API. You do not need filing capabilities. Most developers overbuy and pay for complexity they don't use.</p>
+
+  <h2>The problem with flat-rate GST APIs</h2>
+
+  <p>India's GST structure is conditional. The same HSN code can return different rates depending on:</p>
+
+  <ul style="list-style: none; padding: 0; margin: 0 0 1.25rem;">
+    <li style="padding: 4px 0; padding-left: 1rem; position: relative;"><span style="position: absolute; left: 0; color: var(--amber);">→</span> Whether the product is branded or unbranded (namkeens, flour, spices)</li>
+    <li style="padding: 4px 0; padding-left: 1rem; position: relative;"><span style="position: absolute; left: 0; color: var(--amber);">→</span> Whether it's pre-packaged and labelled vs loose</li>
+    <li style="padding: 4px 0; padding-left: 1rem; position: relative;"><span style="position: absolute; left: 0; color: var(--amber);">→</span> Sale value thresholds (hotel rooms above/below ₹7,500)</li>
+    <li style="padding: 4px 0; padding-left: 1rem; position: relative;"><span style="position: absolute; left: 0; color: var(--amber);">→</span> B2B vs B2C supply (restaurant with or without ITC claim)</li>
+    <li style="padding: 4px 0; padding-left: 1rem; position: relative;"><span style="position: absolute; left: 0; color: var(--amber);">→</span> Works contract vs outright sale</li>
+  </ul>
+
+  <p>A flat-rate API returns 5% for unbranded rice. That's correct. It also returns 5% for branded pre-packaged rice — also correct. But it cannot tell you <em>which</em> condition applies to your specific transaction. You guess. Your CA corrects you. You pay the penalty.</p>
+
+  <p>A condition-aware API accepts parameters like <code>branded: true</code>, <code>supply_type: "intrastate"</code>, <code>sale_value_inr: 9500</code>, and resolves the rate correctly. That is the difference between a lookup table and a compliance engine.</p>
+
+  <h2>How to integrate a GST HSN API — in 3 minutes</h2>
+
+  <h3>cURL</h3>
+<pre><span class="cm"># Lookup GST rate for an AC unit — intrastate supply</span>
+curl -X POST https://gst-hsn-api.vercel.app/v1/lookup \
+  -H <span class="cs">"X-API-Key: your_api_key"</span> \
+  -H <span class="cs">"Content-Type: application/json"</span> \
+  -d <span class="cs">'{
+    "description": "split AC unit",
+    "supply_type": "intrastate",
+    "branded": true
+  }'</span></pre>
+
+  <h3>Response</h3>
+<pre>{
+  <span class="ck">"hsn_code"</span>: <span class="cs">"84151010"</span>,
+  <span class="ck">"description"</span>: <span class="cs">"Air conditioning machines, split system"</span>,
+  <span class="ck">"tax_rates"</span>: {
+    <span class="ck">"igst"</span>: <span class="cn">18.0</span>,
+    <span class="ck">"cgst"</span>: <span class="cn">9.0</span>,
+    <span class="ck">"sgst"</span>: <span class="cn">9.0</span>,
+    <span class="ck">"cess"</span>: <span class="cn">0.0</span>
+  },
+  <span class="ck">"applicable_rate"</span>: <span class="cs">"CGST 9% + SGST 9% = 18%"</span>,
+  <span class="ck">"notification_ref"</span>: <span class="cs">"09/2025-CT(Rate), Schedule II"</span>,
+  <span class="ck">"effective_date"</span>: <span class="cs">"2025-09-22"</span>
+}</pre>
+
+  <h3>Python</h3>
+<pre><span class="cm"># pip install gstaccelerator</span>
+<span class="ck">from</span> gstaccelerator <span class="ck">import</span> GSTAccelerator
+
+gst = GSTAccelerator(<span class="cs">"your_api_key"</span>)
+
+<span class="cm"># Intrastate supply — returns CGST + SGST</span>
+rate = gst.lookup(<span class="cs">"gold jewellery"</span>, supply_type=<span class="cs">"intrastate"</span>)
+invoice_value = <span class="cn">50000</span>
+cgst = invoice_value * rate[<span class="cn">0</span>][<span class="cs">"tax_rates"</span>][<span class="cs">"cgst"</span>] / <span class="cn">100</span>  <span class="cm"># ₹750</span>
+sgst = invoice_value * rate[<span class="cn">0</span>][<span class="cs">"tax_rates"</span>][<span class="cs">"sgst"</span>] / <span class="cn">100</span>  <span class="cm"># ₹750</span></pre>
+
+  <div class="callout-blue">
+    <strong>GST 2.0 update (Sept 2025):</strong> India simplified its rate structure to primarily 5% and 18%, eliminating 12% and 28% for most goods. If your API or hardcoded rate table predates September 2025, your rates are wrong. The new structure is governed by CBIC Notification 09/2025-CT(Rate).
+  </div>
+
+  <h2>Free vs paid GST APIs — what the tiers actually mean</h2>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Feature</th><th>Free tier</th><th>Paid (Developer)</th><th>Paid (Pro)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>HSN + SAC lookup</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>CGST/SGST/IGST split</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>Condition resolver</td><td class="cross">✗</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>Notification reference in response</td><td class="cross">✗</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>MCP / AI agent endpoint</td><td class="cross">✗</td><td class="check">✓</td><td class="check">✓</td></tr>
+        <tr><td>Bulk CSV classification</td><td class="cross">✗</td><td class="cross">✗</td><td class="check">✓</td></tr>
+        <tr><td>Rate-change webhook</td><td class="cross">✗</td><td class="cross">✗</td><td class="check">✓</td></tr>
+        <tr><td>Monthly call limit</td><td>100</td><td>5,000</td><td>50,000</td></tr>
+        <tr><td>Price</td><td>₹0</td><td>₹399/mo</td><td>₹1,499/mo</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>Use the free tier to build and test your integration. You'll hit the 100-call limit in development within a week if you're actually building something. That's the forcing function — it tells you you're integrating correctly, and it's time to upgrade.</p>
+
+  <h2>What to look for when choosing a GST API</h2>
+
+  <p>Five questions. If a provider can't answer all five clearly on their website, move on.</p>
+
+  <p><strong>1. What notifications does the data come from?</strong> The answer must be specific — "09/2025-CT(Rate)" or similar. "Government sources" is not an answer.</p>
+  <p><strong>2. When was the data last updated?</strong> The GST Council meets every few months. Rates change. If the provider can't show you a last-updated timestamp in the API response itself, your data may be stale.</p>
+  <p><strong>3. Does the API resolve conditions?</strong> Ask them to look up unbranded flour vs branded flour. The rates should differ. If they return the same number, it's a lookup table, not a compliance tool.</p>
+  <p><strong>4. What happens on rate-change day?</strong> The GST Council announces changes. Your invoices go live the next day. Does the provider push updates the same day? Do they offer webhooks?</p>
+  <p><strong>5. Is there a notification reference in each response?</strong> If your CA challenges a rate, you need to be able to say exactly which CBIC notification authorised it. Without the notification reference, you have a number with no legal backing.</p>
+
+  <div class="callout">
+    <strong>The audit trail matters:</strong> "notification_ref": "09/2025-CT(Rate), Schedule II" in your API response is not a nice-to-have. It's the difference between "we applied the correct rate" and "we can prove we applied the correct rate."
+  </div>
+
+  <h2>Who actually needs a GST API</h2>
+
+  <p>Four categories of builders where a GST API pays for itself immediately:</p>
+
+  <p><strong>E-commerce checkout flows.</strong> Every product on your platform has an HSN code. Every invoice needs the correct CGST/SGST split. Hardcoding rates means touching code after every GST Council meeting.</p>
+  <p><strong>Billing and invoicing SaaS.</strong> Your customers are CAs and business owners. One wrong rate on one invoice creates a compliance liability for your customer. A GST API with notification references converts that liability from yours to provably-correct.</p>
+  <p><strong>ERP and Tally integrators.</strong> Product masters have 10,000+ SKUs. Classifying each one manually takes weeks. A bulk classification endpoint with natural language input turns that into an overnight job.</p>
+  <p><strong>AI agents and LLM workflows.</strong> Any agent that writes invoices, generates purchase orders, or classifies products needs a reliable GST tool call. The MCP endpoint makes this native — the agent calls it the same way it calls any other tool, with no custom integration required.</p>
+
+  <!-- FAQ -->
+  <div class="faq">
+    <h2 style="margin-top: 0; margin-bottom: 1rem;">Frequently asked questions</h2>
+
+    <details>
+      <summary>What is a GST API?</summary>
+      <div class="faq-body">A GST API is a REST endpoint that returns the correct GST rate — CGST, SGST, and IGST — for a given HSN or SAC code. It lets software systems look up tax rates programmatically, removing the need to hardcode rates or parse government PDFs manually.</div>
+    </details>
+
+    <details>
+      <summary>What is the difference between a GST HSN API and a GSTIN verification API?</summary>
+      <div class="faq-body">An HSN API returns the tax rate for a product classification code. A GSTIN verification API validates a business's GST registration number and returns their legal name and filing status. They solve different problems — rate lookup vs identity verification.</div>
+    </details>
+
+    <details>
+      <summary>Is there a free GST API for developers in India?</summary>
+      <div class="faq-body">Yes. GST Accelerator offers 100 free API calls per month with no credit card required. The free tier includes HSN lookup, SAC lookup, and CGST/SGST/IGST rate data. Get a key at gst-hsn-api.vercel.app/dashboard.</div>
+    </details>
+
+    <details>
+      <summary>How do I get the CGST and SGST split from a GST rate API?</summary>
+      <div class="faq-body">Pass supply_type: "intrastate" in your POST request body. The API returns CGST and SGST as separate fields — both equal to half the total GST rate. For interstate supply, pass supply_type: "interstate" and receive IGST instead.</div>
+    </details>
+
+    <details>
+      <summary>How often do GST rates change?</summary>
+      <div class="faq-body">The GST Council meets approximately every 2–3 months. Rate changes are announced via CBIC notifications and are effective from the date specified — often 1–7 days after announcement. Your GST API should reflect rate changes within 24 hours of the notification going live.</div>
+    </details>
+
+    <details>
+      <summary>What is a condition resolver in a GST API?</summary>
+      <div class="faq-body">A condition resolver evaluates inline conditions from GST notifications — like "branded vs unbranded" or "pre-packaged and labelled" — against your transaction parameters. Instead of returning a flat rate, it applies the notification conditions to return the rate that specifically applies to your supply. This is the difference between a lookup table and a compliance engine.</div>
+    </details>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-box">
+    <h3>Start with 100 free calls — no card needed</h3>
+    <p>Get your API key in 30 seconds. HSN lookup, SAC codes, CGST/SGST/IGST split, notification references — all in the free tier.</p>
+    <a class="cta-btn" href="https://gst-hsn-api.vercel.app/dashboard">Get free API key →</a>
+    <p class="cta-sub">Developer plan ₹399/month · 5,000 calls · Condition resolver · MCP endpoint</p>
+  </div>
+
+</article>
+
+<footer>
+  <p><a href="https://gstaccelerator.in">GST Accelerator</a> · Compliance. Accelerated. · Data source: CBIC 09/2025-CT(Rate), effective 22 September 2025.</p>
+  <p style="margin-top: 6px;">Not tax advice. Verify rates with a CA for filing decisions.</p>
+</footer>
+
+</body>
+</html>
