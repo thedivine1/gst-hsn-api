@@ -24,6 +24,11 @@ SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
 NEXT_PUBLIC_SITE_URL = os.environ.get("NEXT_PUBLIC_SITE_URL", "http://localhost:8000")
 
+# Razorpay Payment Button IDs (create these in your Razorpay Dashboard → Payment Buttons)
+RAZORPAY_BTN_DEVELOPER = os.environ.get("RAZORPAY_BTN_DEVELOPER", "pl_DEVELOPER_BUTTON_ID")
+RAZORPAY_BTN_PRO       = os.environ.get("RAZORPAY_BTN_PRO",       "pl_PRO_BUTTON_ID")
+RAZORPAY_BTN_BUSINESS  = os.environ.get("RAZORPAY_BTN_BUSINESS",  "pl_BUSINESS_BUTTON_ID")
+
 supabase: Optional[Client] = None
 if SUPABASE_URL and SUPABASE_KEY:
     try:
@@ -1483,8 +1488,8 @@ async def root():
       <div class="pf">99.5% uptime SLA</div>
       <div class="pf">Rate-change email alerts</div>
       <div class="pf off">Webhooks</div>
-      <a class="plan-action pa-solid" href="/dashboard">Get started</a>
-      <div class="upi-note">Pay via UPI · Instant activation</div>
+      <a class="plan-action pa-solid" href="/pricing">Get started</a>
+      <div class="upi-note">Pay via UPI · Cards · Net Banking</div>
     </div>
 
     <div class="plan">
@@ -1498,7 +1503,7 @@ async def root():
       <div class="pf">99.9% uptime SLA</div>
       <div class="pf">Priority support</div>
       <div class="pf">Superseded rates feed</div>
-      <a class="plan-action pa-outline" href="/dashboard">Get started</a>
+      <a class="plan-action pa-outline" href="/pricing">Get started</a>
     </div>
 
     <div class="plan">
@@ -1512,7 +1517,7 @@ async def root():
       <div class="pf">Dedicated SLA</div>
       <div class="pf">WhatsApp support</div>
       <div class="pf">GST invoice included</div>
-      <a class="plan-action pa-outline" href="/dashboard">Get started</a>
+      <a class="plan-action pa-outline" href="/pricing">Get started</a>
     </div>
   </div>
 </section>
@@ -2080,6 +2085,23 @@ async def verify_jwt(credentials: HTTPAuthorizationCredentials = Depends(securit
         return user_res.user
     except Exception as e:
         raise HTTPException(status_code=401, detail=f"Invalid or expired JWT: {str(e)}")
+
+@app.get("/pricing", include_in_schema=False, response_class=HTMLResponse)
+async def pricing_page():
+    """Razorpay payment page — served as a standalone HTML file with injected keys."""
+    try:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(base_dir, "pricing.html"), "r", encoding="utf-8") as f:
+            content = f.read()
+        content = content.replace("{{ SUPABASE_URL }}",          SUPABASE_URL or "")
+        content = content.replace("{{ SUPABASE_ANON_KEY }}",     SUPABASE_ANON_KEY or "")
+        content = content.replace("{{ NEXT_PUBLIC_SITE_URL }}",  NEXT_PUBLIC_SITE_URL)
+        content = content.replace("{{ RAZORPAY_BTN_DEVELOPER }}", RAZORPAY_BTN_DEVELOPER)
+        content = content.replace("{{ RAZORPAY_BTN_PRO }}",       RAZORPAY_BTN_PRO)
+        content = content.replace("{{ RAZORPAY_BTN_BUSINESS }}",  RAZORPAY_BTN_BUSINESS)
+        return HTMLResponse(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Pricing page template not found.")
 
 @app.get("/dashboard", include_in_schema=False, response_class=HTMLResponse)
 async def dashboard_page():

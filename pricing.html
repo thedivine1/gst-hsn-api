@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pricing — GST Accelerator API</title>
+  <meta name="description" content="Choose a plan that scales with you. Start free, upgrade when you're ready. GST invoice included." />
+  <meta name="robots" content="noindex" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink:       #06090F;
+      --ink-2:     #0D1220;
+      --ink-3:     #141B2D;
+      --ink-4:     #1C2A3E;
+
+      --amber:     #E8650A;
+      --amber-dim: rgba(232,101,10,0.10);
+      --amber-mid: rgba(232,101,10,0.25);
+      --amber-glow: rgba(232,101,10,0.45);
+
+      --navy:      #1A5FA8;
+      --navy-dim:  rgba(26,95,168,0.12);
+      --navy-mid:  rgba(26,95,168,0.28);
+      --navy-lit:  #4A8FD4;
+
+      --green:     #1A9E72;
+      --green-dim: rgba(26,158,114,0.10);
+      --green-mid: rgba(26,158,114,0.25);
+      --green-lit: #2DC994;
+
+      --white:     #F2F4F8;
+      --muted:     #6B7A99;
+      --border:    rgba(107,122,153,0.14);
+      --border-md: rgba(107,122,153,0.28);
+
+      --font-serif: 'DM Serif Display', Georgia, serif;
+      --font-body:  'Inter', sans-serif;
+      --font-mono:  'JetBrains Mono', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--ink);
+      color: var(--white);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    /* ── AUTH LOADING OVERLAY ── */
+    #auth-loading {
+      position: fixed; inset: 0;
+      background: var(--ink);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.3s;
+    }
+    #auth-loading.hidden { opacity: 0; pointer-events: none; }
+    .loading-icon {
+      width: 40px; height: 40px;
+      border: 3px solid var(--border-md);
+      border-top-color: var(--amber);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.875rem 2rem;
+      background: rgba(6,9,15,0.88);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      font-family: var(--font-body);
+      font-weight: 600; font-size: 1rem;
+      color: var(--white); text-decoration: none;
+      display: flex; align-items: center; gap: 10px;
+      letter-spacing: -0.01em;
+    }
+    .nav-rupee {
+      width: 30px; height: 30px;
+      background: var(--amber);
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; font-weight: 700; color: #fff;
+      font-family: var(--font-mono);
+      flex-shrink: 0;
+    }
+    .nav-right { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-right a {
+      color: var(--muted); text-decoration: none;
+      font-size: 0.875rem; font-weight: 500;
+      transition: color 0.15s;
+    }
+    .nav-right a:hover { color: var(--white); }
+    .nav-user-pill {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--ink-3); border: 1px solid var(--border-md);
+      padding: 5px 12px 5px 8px; border-radius: 100px;
+      font-size: 0.8rem; color: var(--muted);
+    }
+    .nav-user-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--green-lit); flex-shrink: 0;
+    }
+    #nav-email { color: var(--white); font-weight: 500; }
+
+    /* ── MAIN ── */
+    main {
+      max-width: 1060px;
+      margin: 0 auto;
+      padding: 7rem 1.5rem 5rem;
+    }
+
+    /* ── HERO ── */
+    .page-hero {
+      text-align: center;
+      margin-bottom: 4rem;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: var(--amber-dim);
+      border: 1px solid var(--amber-mid);
+      color: var(--amber);
+      font-size: 0.7rem; font-weight: 600;
+      letter-spacing: 0.09em; text-transform: uppercase;
+      padding: 0.3rem 0.9rem; border-radius: 100px;
+      margin-bottom: 1.5rem;
+    }
+    .hero-badge-dot {
+      width: 5px; height: 5px;
+      background: var(--amber); border-radius: 50%;
+      animation: pulse 2.4s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.35; transform: scale(0.7); }
+    }
+    .page-hero h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(2.2rem, 4.5vw, 3.8rem);
+      font-weight: 400; line-height: 1.1;
+      letter-spacing: -0.01em;
+      margin-bottom: 0.75rem;
+      color: var(--white);
+    }
+    .page-hero p {
+      color: var(--muted);
+      font-size: 1rem; max-width: 440px;
+      margin: 0 auto;
+    }
+
+    /* ── PRICING GRID ── */
+    .price-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.1fr 1fr 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .price-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 560px) {
+      .price-grid { grid-template-columns: 1fr; }
+    }
+
+    .plan {
+      background: var(--ink-2);
+      border: 1px solid var(--border-md);
+      border-radius: 14px;
+      padding: 1.6rem 1.4rem;
+      position: relative;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .plan:hover { border-color: var(--border-md); }
+    .plan.featured {
+      border-color: var(--amber);
+      background: linear-gradient(160deg, rgba(232,101,10,0.07), var(--ink-2));
+      box-shadow: 0 0 0 1px rgba(232,101,10,0.12), 0 20px 60px rgba(0,0,0,0.4);
+    }
+    .plan-badge {
+      position: absolute; top: -11px; left: 50%; transform: translateX(-50%);
+      background: var(--amber); color: #fff;
+      font-size: 0.62rem; font-weight: 700;
+      letter-spacing: 0.07em; text-transform: uppercase;
+      padding: 3px 14px; border-radius: 100px; white-space: nowrap;
+    }
+
+    .plan-tier {
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.12em; color: var(--muted);
+      margin-bottom: 0.6rem;
+    }
+    .plan.featured .plan-tier { color: var(--amber); }
+
+    .plan-price {
+      font-family: var(--font-serif);
+      font-size: 2.8rem; font-weight: 400;
+      color: var(--white); line-height: 1;
+      margin-bottom: 2px; display: flex; align-items: baseline; gap: 2px;
+    }
+    .plan-price sup {
+      font-family: var(--font-body);
+      font-size: 1.1rem; font-weight: 500;
+      vertical-align: super; line-height: 0;
+      margin-top: 4px;
+    }
+    .plan-mo { font-size: 0.75rem; color: var(--muted); margin-bottom: 0.4rem; }
+
+    .plan-quota {
+      font-family: var(--font-mono); font-size: 0.7rem;
+      color: var(--green-lit); margin-bottom: 1.25rem;
+      padding-bottom: 1rem; border-bottom: 1px solid var(--border);
+    }
+
+    .pf {
+      font-size: 0.82rem; color: var(--muted);
+      padding: 4px 0; display: flex; gap: 8px; align-items: flex-start;
+      line-height: 1.4;
+    }
+    .pf::before { content: "✓"; color: var(--green-lit); flex-shrink: 0; margin-top: 1px; }
+    .pf.off { opacity: 0.32; }
+    .pf.off::before { content: "·"; color: var(--muted); }
+
+    /* ── RAZORPAY BUTTON CONTAINER ── */
+    .rzp-wrap {
+      margin-top: 1.4rem;
+      border-top: 1px solid var(--border);
+      padding-top: 1.25rem;
+    }
+    /* Restyle the Razorpay-injected button to match our design */
+    .rzp-wrap form { width: 100%; }
+    .rzp-wrap .razorpay-payment-button {
+      width: 100% !important;
+      padding: 0.65rem 1rem !important;
+      border-radius: 8px !important;
+      font-family: var(--font-body) !important;
+      font-size: 0.9rem !important;
+      font-weight: 600 !important;
+      cursor: pointer !important;
+      border: none !important;
+      transition: all 0.2s !important;
+      letter-spacing: 0 !important;
+    }
+    /* Featured plan → solid amber */
+    .rzp-featured .razorpay-payment-button {
+      background: var(--amber) !important;
+      color: #fff !important;
+    }
+    .rzp-featured .razorpay-payment-button:hover {
+      opacity: 0.85 !important;
+      box-shadow: 0 4px 20px rgba(232,101,10,0.35) !important;
+    }
+    /* Other plans → outline → amber on hover */
+    .rzp-outline .razorpay-payment-button {
+      background: transparent !important;
+      color: var(--white) !important;
+      border: 1px solid var(--border-md) !important;
+    }
+    .rzp-outline .razorpay-payment-button:hover {
+      background: var(--amber) !important;
+      border-color: var(--amber) !important;
+      color: #fff !important;
+    }
+    .plan-note {
+      text-align: center;
+      font-size: 0.68rem; color: var(--muted);
+      margin-top: 8px; line-height: 1.5;
+    }
+
+    /* Free plan CTA */
+    .btn-free {
+      display: block; width: 100%;
+      margin-top: 1.4rem; padding: 0.65rem;
+      border-radius: 8px; text-align: center;
+      font-family: var(--font-body); font-size: 0.9rem; font-weight: 600;
+      text-decoration: none; cursor: pointer;
+      border: 1px solid var(--border-md); color: var(--white);
+      background: transparent;
+      transition: all 0.2s;
+    }
+    .btn-free:hover { background: var(--amber); border-color: var(--amber); }
+
+    /* ── TRUST STRIP ── */
+    .trust-strip {
+      display: flex; align-items: center; justify-content: center;
+      gap: 2rem; flex-wrap: wrap;
+      margin-top: 3.5rem; padding-top: 2rem;
+      border-top: 1px solid var(--border);
+    }
+    .trust-item {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.8rem; color: var(--muted);
+    }
+    .trust-icon { font-size: 1.1rem; }
+
+    /* ── FAQ ── */
+    .faq { margin-top: 4rem; max-width: 680px; margin-left: auto; margin-right: auto; }
+    .faq h2 {
+      font-family: var(--font-serif);
+      font-size: 1.8rem; font-weight: 400;
+      text-align: center; margin-bottom: 2rem;
+      color: var(--white);
+    }
+    .faq-item {
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 0;
+    }
+    .faq-q {
+      font-size: 0.9rem; font-weight: 600; color: var(--white);
+      cursor: pointer; display: flex; justify-content: space-between;
+      user-select: none;
+      gap: 1rem;
+    }
+    .faq-q::after { content: "+"; color: var(--amber); font-size: 1.2rem; flex-shrink: 0; }
+    .faq-item.open .faq-q::after { content: "−"; }
+    .faq-a {
+      font-size: 0.85rem; color: var(--muted);
+      line-height: 1.7; max-height: 0;
+      overflow: hidden; transition: max-height 0.3s ease, padding 0.2s;
+    }
+    .faq-item.open .faq-a { max-height: 200px; padding-top: 0.75rem; }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center;
+      padding: 2.5rem 1.5rem;
+      border-top: 1px solid var(--border);
+      margin-top: 5rem;
+    }
+    footer a {
+      color: var(--muted); text-decoration: none;
+      font-size: 0.82rem; margin: 0 0.6rem;
+      transition: color 0.15s;
+    }
+    footer a:hover { color: var(--white); }
+    .footer-copy {
+      font-size: 0.75rem; color: var(--muted);
+      margin-top: 1rem; line-height: 1.7;
+    }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+      background: var(--ink-3); border: 1px solid var(--border-md);
+      color: var(--white); padding: 0.7rem 1.4rem; border-radius: 8px;
+      font-size: 0.875rem; font-weight: 500;
+      opacity: 0; pointer-events: none; transition: opacity 0.25s;
+      white-space: nowrap; z-index: 500;
+    }
+    #toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<!-- Auth loading gate -->
+<div id="auth-loading"><div class="loading-icon"></div></div>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="/">
+    <div class="nav-rupee">₹</div>
+    GST Accelerator
+  </a>
+  <div class="nav-right">
+    <a href="/docs">API Docs</a>
+    <a href="/#pricing">Features</a>
+    <div class="nav-user-pill">
+      <div class="nav-user-dot"></div>
+      <span id="nav-email">Loading…</span>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <!-- HERO -->
+  <div class="page-hero">
+    <div class="hero-badge">
+      <div class="hero-badge-dot"></div>
+      Simple, transparent pricing
+    </div>
+    <h1>Start free.<br/>Scale as you grow.</h1>
+    <p>No contracts. Cancel any time. GST invoice on all paid plans.</p>
+  </div>
+
+  <!-- PRICING GRID -->
+  <div class="price-grid">
+
+    <!-- FREE -->
+    <div class="plan">
+      <div class="plan-tier">Free</div>
+      <div class="plan-price">₹0</div>
+      <div class="plan-mo">forever</div>
+      <div class="plan-quota">100 calls / month</div>
+      <div class="pf">HSN + SAC lookup</div>
+      <div class="pf">CGST / SGST / IGST output</div>
+      <div class="pf">JSON + Swagger docs</div>
+      <div class="pf off">Condition resolver</div>
+      <div class="pf off">MCP endpoint</div>
+      <div class="pf off">Rate-change alerts</div>
+      <a class="btn-free" href="/dashboard" id="free-btn">Get free key →</a>
+    </div>
+
+    <!-- DEVELOPER (FEATURED) -->
+    <div class="plan featured">
+      <div class="plan-badge">Recommended</div>
+      <div class="plan-tier">Developer</div>
+      <div class="plan-price"><sup>₹</sup>399</div>
+      <div class="plan-mo">one-time (30 days)</div>
+      <div class="plan-quota">5,000 calls + ₹0.10/extra</div>
+      <div class="pf">Everything in Free</div>
+      <div class="pf">Condition resolver</div>
+      <div class="pf">MCP endpoint</div>
+      <div class="pf">99.5% uptime SLA</div>
+      <div class="pf">Rate-change email alerts</div>
+      <div class="pf off">Webhooks</div>
+      <div class="rzp-wrap rzp-featured" id="rzp-developer">
+        <!-- Razorpay button injected here -->
+        <form>
+          <script
+            src="https://checkout.razorpay.com/v1/payment-button.js"
+            data-payment_button_id="{{ RAZORPAY_BTN_DEVELOPER }}"
+            async>
+          </script>
+        </form>
+      </div>
+      <div class="plan-note">UPI · Cards · Net Banking · Wallets</div>
+    </div>
+
+    <!-- PRO -->
+    <div class="plan">
+      <div class="plan-tier">Pro</div>
+      <div class="plan-price"><sup>₹</sup>1,499</div>
+      <div class="plan-mo">one-time (30 days)</div>
+      <div class="plan-quota">50,000 calls + ₹0.08/extra</div>
+      <div class="pf">Everything in Developer</div>
+      <div class="pf">Bulk CSV classification</div>
+      <div class="pf">Rate-change webhooks</div>
+      <div class="pf">99.9% uptime SLA</div>
+      <div class="pf">Priority support</div>
+      <div class="pf">Superseded rates feed</div>
+      <div class="rzp-wrap rzp-outline" id="rzp-pro">
+        <form>
+          <script
+            src="https://checkout.razorpay.com/v1/payment-button.js"
+            data-payment_button_id="{{ RAZORPAY_BTN_PRO }}"
+            async>
+          </script>
+        </form>
+      </div>
+      <div class="plan-note">UPI · Cards · Net Banking · Wallets</div>
+    </div>
+
+    <!-- BUSINESS -->
+    <div class="plan">
+      <div class="plan-tier">Business</div>
+      <div class="plan-price"><sup>₹</sup>5,999</div>
+      <div class="plan-mo">one-time (30 days)</div>
+      <div class="plan-quota">Unlimited calls</div>
+      <div class="pf">Everything in Pro</div>
+      <div class="pf">White-label option</div>
+      <div class="pf">Custom HSN taxonomy</div>
+      <div class="pf">Dedicated SLA</div>
+      <div class="pf">WhatsApp support</div>
+      <div class="pf">GST invoice included</div>
+      <div class="rzp-wrap rzp-outline" id="rzp-business">
+        <form>
+          <script
+            src="https://checkout.razorpay.com/v1/payment-button.js"
+            data-payment_button_id="{{ RAZORPAY_BTN_BUSINESS }}"
+            async>
+          </script>
+        </form>
+      </div>
+      <div class="plan-note">UPI · Cards · Net Banking · Wallets</div>
+    </div>
+
+  </div><!-- end price-grid -->
+
+  <!-- TRUST STRIP -->
+  <div class="trust-strip">
+    <div class="trust-item"><span class="trust-icon">🔒</span> Payments secured by Razorpay</div>
+    <div class="trust-item"><span class="trust-icon">🇮🇳</span> GST invoice on all paid orders</div>
+    <div class="trust-item"><span class="trust-icon">⚡</span> API key activated within minutes</div>
+    <div class="trust-item"><span class="trust-icon">📞</span> Support: hello@gstaccelerator.in</div>
+  </div>
+
+  <!-- FAQ -->
+  <div class="faq">
+    <h2>Frequently asked</h2>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">What happens after I pay?</div>
+      <div class="faq-a">Your payment is processed instantly by Razorpay. You will receive an email confirmation. Within minutes, your API key tier in the dashboard will be upgraded. If it takes longer than 30 minutes, email us at hello@gstaccelerator.in.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Is this a subscription or one-time payment?</div>
+      <div class="faq-a">All plans are currently one-time payments for 30 days of access. We will notify you before expiry so you can renew. No automatic charges.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">What payment methods are accepted?</div>
+      <div class="faq-a">All major Indian payment methods are accepted via Razorpay: UPI (GPay, PhonePe, Paytm), Credit/Debit cards (Visa, Mastercard, RuPay), Net Banking (all major banks), and wallets.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Do I get a GST invoice?</div>
+      <div class="faq-a">Yes. A GST-compliant tax invoice is emailed to you automatically after payment for all paid plans. If you need it on your company GSTIN, add your GST number in the Razorpay checkout form.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Can I try before I buy?</div>
+      <div class="faq-a">Absolutely. The Free tier gives you 100 API calls/month with no credit card required. Sign up at /dashboard and get your key immediately.</div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <div>
+    <a href="/">Home</a>
+    <a href="/docs">API Docs</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="mailto:hello@gstaccelerator.in">Contact</a>
+  </div>
+  <div class="footer-copy">
+    Data source: CBIC Notification 09/2025-CT(Rate), effective 22 September 2025.<br/>
+    GST Accelerator is not a tax advisor. Rates are for informational purposes only.<br/>
+    © 2026 GST Accelerator · gstaccelerator.in
+  </div>
+</footer>
+
+<div id="toast"></div>
+
+<script>
+  const SUPABASE_URL  = "{{ SUPABASE_URL }}";
+  const SUPABASE_ANON = "{{ SUPABASE_ANON_KEY }}";
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+  // ── AUTH GATE ──
+  async function initAuth() {
+    const { data: { session } } = await sb.auth.getSession();
+
+    if (!session) {
+      // Not logged in → redirect to dashboard (login/signup)
+      window.location.href = '/dashboard?next=/pricing';
+      return;
+    }
+
+    // Show user email in nav
+    const email = session.user.email || session.user.user_metadata?.full_name || 'Signed in';
+    document.getElementById('nav-email').textContent = email;
+
+    // If already on a paid plan, update free btn label
+    // (we can extend this later to show current plan badge)
+
+    // Dismiss loading overlay
+    const overlay = document.getElementById('auth-loading');
+    overlay.classList.add('hidden');
+    setTimeout(() => overlay.remove(), 350);
+  }
+
+  initAuth();
+
+  // ── FAQ TOGGLE ──
+  function toggleFaq(el) {
+    el.parentElement.classList.toggle('open');
+  }
+
+  // ── TOAST ──
+  function toast(msg, duration = 3500) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), duration);
+  }
+</script>
+
+</body>
+</html>
