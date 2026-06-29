@@ -16,6 +16,11 @@ from pydantic import BaseModel, Field
 from supabase import create_client, Client  # pyright: ignore [missing-import]
 # pyrefly: ignore [missing-import]
 from dotenv import load_dotenv
+import contextvars
+import mcp.types as types
+from mcp.server import Server
+from mcp.server.sse import SseServerTransport
+import json
 
 load_dotenv()
 
@@ -24,10 +29,10 @@ SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
 NEXT_PUBLIC_SITE_URL = os.environ.get("NEXT_PUBLIC_SITE_URL", "http://localhost:8000")
 
-# Razorpay Payment Button IDs (create these in your Razorpay Dashboard → Payment Buttons)
-RAZORPAY_BTN_DEVELOPER = os.environ.get("RAZORPAY_BTN_DEVELOPER", "pl_DEVELOPER_BUTTON_ID")
-RAZORPAY_BTN_PRO       = os.environ.get("RAZORPAY_BTN_PRO",       "pl_PRO_BUTTON_ID")
-RAZORPAY_BTN_BUSINESS  = os.environ.get("RAZORPAY_BTN_BUSINESS",  "pl_BUSINESS_BUTTON_ID")
+# Razorpay Payment Button IDs
+RAZORPAY_BTN_DEVELOPER = os.environ.get("RAZORPAY_BTN_DEVELOPER", "pl_T7XX9dBePAqE3A")
+RAZORPAY_BTN_PRO       = os.environ.get("RAZORPAY_BTN_PRO",       "pl_T7XijjsMTRfuBk")
+RAZORPAY_BTN_BUSINESS  = os.environ.get("RAZORPAY_BTN_BUSINESS",  "pl_T7Xpk3fkQwHzrt")
 
 supabase: Optional[Client] = None
 if SUPABASE_URL and SUPABASE_KEY:
@@ -2191,6 +2196,81 @@ async def revoke_dashboard_key(key_id: str, user=Depends(verify_jwt)):
         raise HTTPException(status_code=404, detail="Key not found or not owned by user.")
     return {"status": "revoked"}
 
+
+# ---------------------------------------------------------------------------
+# MCP Endpoints (SSE)
+# ---------------------------------------------------------------------------
+
+mcp_server = Server("gst-accelerator")
+sse_transport = SseServerTransport("/mcp/messages")
+mcp_api_key_ctx = contextvars.ContextVar("mcp_api_key_ctx", default=None)
+
+@mcp_server.list_tools()
+async def handle_list_tools() -> list[types.Tool]:
+    return [
+        types.Tool(
+            name="lookup_gst_rate",
+            description="Lookup GST rates based on product description.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "The product description, e.g., 'rice', 'software'"},
+                    "conditions": {
+                        "type": "object",
+                        "description": "Optional conditions.",
+                        "properties": {
+                            "sale_value_inr": {"type": "number"},
+                            "branded": {"type": "boolean"},
+                            "b2b": {"type": "boolean"},
+                            "end_use": {"type": "string"},
+                            "supply_type": {"type": "string", "enum": ["domestic", "export", "sez", "works_contract", "with_installation"]}
+                        }
+                    }
+                },
+                "required": ["query"]
+            }
+        )
+    ]
+
+@mcp_server.call_tool()
+async def handle_call_tool(name: str, arguments: dict | None) -> list[types.TextContent]:
+    if name == "lookup_gst_rate":
+        api_key_dict = mcp_api_key_ctx.get()
+        if not api_key_dict:
+            return [types.TextContent(type="text", text="Error: Unauthorized. Missing API key in MCP context.")]
+            
+        req = LookupRequest(description=arguments.get("query", ""))
+        cond_dict = arguments.get("conditions")
+        if cond_dict:
+            req.conditions = ConditionFlags(**cond_dict)
+            
+        results = await lookup_rate(req, api_key_dict)
+        text_results = [json.loads(r.model_dump_json()) for r in results]
+        return [types.TextContent(type="text", text=json.dumps(text_results, indent=2))]
+        
+    raise ValueError(f"Unknown tool: {name}")
+
+@app.get("/mcp/sse", include_in_schema=False)
+async def mcp_sse_route(request: Request):
+    api_key_header = request.headers.get("x-api-key")
+    if not api_key_header:
+        raise HTTPException(status_code=401, detail="Missing X-API-Key")
+    
+    auth_dict = await verify_api_key(api_key_header)
+    
+    async with sse_transport.connect_sse(request.scope, request.receive, request._send) as streams:
+        await mcp_server.run(streams[0], streams[1], mcp_server.create_initialization_options())
+
+@app.post("/mcp/messages", include_in_schema=False)
+async def mcp_messages_route(request: Request):
+    api_key_header = request.headers.get("x-api-key")
+    if not api_key_header:
+        raise HTTPException(status_code=401, detail="Missing X-API-Key header in POST request")
+        
+    auth_dict = await verify_api_key(api_key_header)
+    mcp_api_key_ctx.set(auth_dict)
+    
+    await sse_transport.handle_post_message(request.scope, request.receive, request._send)
 
 if __name__ == "__main__":
     # pyrefly: ignore [missing-import]
