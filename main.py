@@ -2221,6 +2221,110 @@ async def gst_api_blog_page():
     except Exception as e:
         raise HTTPException(status_code=500, detail="Blog template not found.")
 
+@app.get("/llms.txt", include_in_schema=False)
+async def llms_txt():
+    """
+    llms.txt — machine-readable API description for AI crawlers (LLMs, ChatGPT plugins, etc.)
+    See: https://llmstxt.org
+    """
+    content = """# GST Accelerator API
+
+> India's most accurate GST HSN & SAC rate API. Condition-aware, GST 2.0 compliant, agent-native.
+
+## What this API does
+
+The GST Accelerator API provides structured GST (Goods and Services Tax) rate data for Indian goods (HSN codes) and services (SAC codes). It covers 48,752 HSN codes and 681 SAC codes with CGST, SGST, IGST, and Cess rates as per CBIC Notification 09/2025-CT(Rate), effective 2025-09-22.
+
+## Endpoints
+
+- GET /api/v1/hsn/{code} — Lookup GST rate for an HSN code (goods)
+- GET /api/v1/sac/{code} — Lookup GST rate for a SAC code (services)
+- POST /api/v1/lookup — Full-text search by product/service description
+- GET /api/v1/lookup?q={query} — GET alias for description-based lookup
+- POST /api/v1/bulk — Batch lookup (up to 100 items)
+- GET /api/v1/autocomplete?q={query} — Autocomplete HSN/SAC descriptions
+- GET /api/v1/rates/summary — Coverage statistics and rate slab breakdown
+- GET /health — Liveness check with uptime and DB status
+- GET /meta — API metadata, total code counts, MCP endpoint
+
+## Authentication
+
+All /api/v1/ endpoints require an `X-API-Key` header. Get a free key (1,000 calls/month) at https://gstaccelerator.in/pricing.
+
+## MCP (Model Context Protocol) endpoint
+
+AI agents and LLMs can connect natively via the MCP SSE endpoint:
+- GET /mcp/sse — SSE stream (pass X-API-Key header)
+- POST /mcp/messages — Message handler
+
+Tool: `lookup_gst_rate` — accepts a product description query and optional condition flags (branded, b2b, sale_value_inr, end_use, supply_type).
+
+## Rate limits
+
+- Free: 1,000 calls/month
+- Developer: 50,000 calls/month
+- Pro: 500,000 calls/month
+- Business: 5,000,000 calls/month
+
+Response headers: X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset
+
+## Data source
+
+CBIC (Central Board of Indirect Taxes and Customs), Government of India.
+Notification: 09/2025-Central Tax (Rate), effective 2025-09-22.
+
+## Useful links
+
+- Homepage: https://gstaccelerator.in/
+- Docs: https://gstaccelerator.in/docs
+- Pricing: https://gstaccelerator.in/pricing
+- Developer guide: https://gstaccelerator.in/blog/gst-api-for-developers
+"""
+    from fastapi.responses import PlainTextResponse
+    return PlainTextResponse(content=content, media_type="text/plain; charset=utf-8")
+
+
+@app.get("/sitemap.xml", include_in_schema=False)
+async def sitemap_xml():
+    """Sitemap for SEO crawlers."""
+    from fastapi.responses import Response as FastAPIResponse
+    sitemap = """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://gstaccelerator.in/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <lastmod>2026-07-02</lastmod>
+  </url>
+  <url>
+    <loc>https://gstaccelerator.in/docs</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <lastmod>2026-07-02</lastmod>
+  </url>
+  <url>
+    <loc>https://gstaccelerator.in/pricing</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-07-02</lastmod>
+  </url>
+  <url>
+    <loc>https://gstaccelerator.in/blog/gst-api-for-developers</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-06-30</lastmod>
+  </url>
+  <url>
+    <loc>https://gstaccelerator.in/llms.txt</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    <lastmod>2026-07-02</lastmod>
+  </url>
+</urlset>"""
+    return FastAPIResponse(content=sitemap, media_type="application/xml")
+
+
+
 class KeyCreateRequest(BaseModel):
     name: str = "Default Key"
 

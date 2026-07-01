@@ -4,7 +4,79 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GST Accelerator — GST at the speed of business</title>
-  <meta name="description" content="India's most accurate GST HSN & SAC rate API. Condition-aware. GST 2.0 compliant. Agent-native. 48,752 HSN codes. Free tier available." />
+  <meta name="description" content="India's most accurate GST HSN &amp; SAC rate API. Condition-aware. GST 2.0 compliant. Agent-native. 48,752 HSN codes. Free tier available." />
+  <link rel="canonical" href="https://gstaccelerator.in/" />
+  <meta name="robots" content="index, follow" />
+
+  <!-- ── JSON-LD: SoftwareApplication ── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "GST Accelerator API",
+    "alternateName": "gstaccelerator.in",
+    "url": "https://gstaccelerator.in/",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Any",
+    "description": "India's most accurate GST HSN & SAC rate API. Condition-aware, GST 2.0 compliant, agent-native. Covers 48,752 HSN codes and 681 SAC codes with CGST/SGST/IGST splits.",
+    "offers": [
+      { "@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "INR", "description": "1,000 API calls/month" },
+      { "@type": "Offer", "name": "Developer", "price": "999", "priceCurrency": "INR", "description": "50,000 API calls/month" },
+      { "@type": "Offer", "name": "Pro", "price": "2499", "priceCurrency": "INR", "description": "500,000 API calls/month" },
+      { "@type": "Offer", "name": "Business", "price": "5999", "priceCurrency": "INR", "description": "5,000,000 API calls/month" }
+    ],
+    "provider": {
+      "@type": "Organization",
+      "name": "GST Accelerator",
+      "url": "https://gstaccelerator.in/"
+    },
+    "featureList": [
+      "HSN code GST rate lookup",
+      "SAC code GST rate lookup",
+      "CGST/SGST/IGST split",
+      "Condition resolver engine",
+      "MCP endpoint for AI agents",
+      "Bulk lookup API",
+      "Autocomplete",
+      "Free tier available"
+    ],
+    "softwareVersion": "1.0.0",
+    "releaseNotes": "https://gstaccelerator.in/docs",
+    "documentation": "https://gstaccelerator.in/docs",
+    "license": "https://gstaccelerator.in/pricing"
+  }
+  </script>
+
+  <!-- ── JSON-LD: Dataset ── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Dataset",
+    "name": "India GST HSN & SAC Rate Database",
+    "description": "Complete database of 48,752 HSN codes and 681 SAC codes with CGST, SGST, IGST, and Cess rates as per CBIC Notification 09/2025-CT(Rate). Covers all rate slabs: 0%, 0.25%, 1.5%, 3%, 5%, 12%, 18%, 28%. Condition-aware for branded goods, price thresholds, and end-use restrictions.",
+    "url": "https://gstaccelerator.in/",
+    "creator": {
+      "@type": "Organization",
+      "name": "GST Accelerator",
+      "url": "https://gstaccelerator.in/"
+    },
+    "distribution": [
+      {
+        "@type": "DataDownload",
+        "encodingFormat": "application/json",
+        "contentUrl": "https://gstaccelerator.in/api/v1/hsn/{code}"
+      }
+    ],
+    "temporalCoverage": "2025-09-22/..",
+    "spatialCoverage": {
+      "@type": "Place",
+      "name": "India"
+    },
+    "variableMeasured": ["CGST Rate", "SGST Rate", "IGST Rate", "Cess Rate"],
+    "license": "https://gstaccelerator.in/pricing",
+    "keywords": ["GST", "HSN", "SAC", "India tax", "CGST", "SGST", "IGST", "CBIC", "GST rate API"]
+  }
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
