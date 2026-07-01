@@ -1,10 +1,12 @@
 import os
 import re
 import hashlib
+import calendar
+from datetime import datetime, timezone
 from enum import Enum
 from typing import List, Optional, Tuple, Literal
 # pyrefly: ignore [missing-import]
-from fastapi import FastAPI, Header, HTTPException, Depends, Request
+from fastapi import FastAPI, Header, HTTPException, Depends, Request, Response
 # pyrefly: ignore [missing-import]
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -66,6 +68,9 @@ rate_limit_timestamps = {}
 demo_rate_limit_db = {}
 demo_rate_limit_timestamps = {}
 
+# ContextVar so verify_api_key can pass monthly quota info to the middleware
+_monthly_ratelimit_ctx: contextvars.ContextVar[dict | None] = contextvars.ContextVar("_monthly_ratelimit_ctx", default=None)
+
 class IPRateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         if not request.url.path.startswith("/api/v1/"):
@@ -98,6 +103,12 @@ class IPRateLimitMiddleware(BaseHTTPMiddleware):
         response.headers["X-RateLimit-Remaining"] = str(remaining)
         response.headers["Content-Type"] = "application/json"
         response.headers["X-Robots-Tag"] = "noindex"
+        # Overlay monthly tier headers if verify_api_key populated them
+        monthly = _monthly_ratelimit_ctx.get()
+        if monthly:
+            response.headers["X-RateLimit-Limit"]     = str(monthly["limit"])
+            response.headers["X-RateLimit-Remaining"] = str(monthly["remaining"])
+            response.headers["X-RateLimit-Reset"]     = str(monthly["reset"])
         return response
 
 app.add_middleware(IPRateLimitMiddleware)
@@ -168,7 +179,65 @@ async def verify_api_key(x_api_key: str = Header(..., description="Your API key"
         {"calls_this_month": record["calls_this_month"] + 1}
     ).eq("id", record["id"]).execute()
 
-    return record
+    # Compute X-RateLimit reset: first day of next month at UTC midnight
+    now_utc = datetime.now(timezone.utc)
+    if now_utc.month == 12:
+        reset_dt = datetime(now_utc.year + 1, 1, 1, tzinfo=timezone.utc)
+    else:
+        reset_dt = datetime(now_utc.year, now_utc.month + 1, 1, tzinfo=timezone.utc)
+    reset_ts = int(reset_dt.timestamp())
+
+    calls_used = record["calls_this_month"] + 1
+    monthly_limit = record["monthly_limit"]
+
+    # Publish monthly quota so IPRateLimitMiddleware can write the headers
+    _monthly_ratelimit_ctx.set({
+        "limit":     monthly_limit,
+        "remaining": max(0, monthly_limit - calls_used),
+        "reset":     reset_ts,
+    })
+
+    return {
+        **record,
+        "_ratelimit_limit": monthly_limit,
+        "_ratelimit_remaining": max(0, monthly_limit - calls_used),
+        "_ratelimit_reset": reset_ts,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Health & Meta routes
+# ---------------------------------------------------------------------------
+
+@app.get("/health", tags=["Meta"])
+async def health():
+    """Liveness check — returns API status, version, and uptime."""
+    db_status = "connected"
+    try:
+        supabase.table("hsn_rates").select("id", count="exact").limit(1).execute()
+    except Exception:
+        db_status = "degraded"
+    return {
+        "status": "ok",
+        "version": "1.0.0",
+        "uptime_seconds": round(time.time() - START_TIME),
+        "database": db_status,
+        "last_updated": "2025-09-22",
+        "source": "CBIC 09/2025-CT(Rate)"
+    }
+
+@app.get("/meta", tags=["Meta"])
+async def meta():
+    """API metadata: code counts, rate slabs, data source, and MCP endpoint."""
+    return {
+        "total_hsn_codes": 48752,
+        "total_sac_codes": 681,
+        "rate_slabs": [0, 0.25, 1.5, 3, 5, 18, 28, 40],
+        "data_source": "CBIC Notification 09/2025-CT(Rate)",
+        "effective_from": "2025-09-22",
+        "api_version": "v1",
+        "mcp_endpoint": "https://gst-hsn-api.vercel.app/mcp/sse"
+    }
 
 
 # ---------------------------------------------------------------------------
