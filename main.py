@@ -920,6 +920,90 @@ async def root():
   <link rel="canonical" href="https://gstaccelerator.in/" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebAPI",
+        "@id": "https://gstaccelerator.in/#api",
+        "name": "GST Accelerator API",
+        "description": "India's most accurate GST HSN and SAC code lookup API. Covers 48,752 HSN codes and 681 SAC codes with CGST, SGST, IGST, and Cess rates as per CBIC Notification 09/2025-CT(Rate).",
+        "url": "https://gstaccelerator.in/",
+        "documentation": "https://gstaccelerator.in/docs",
+        "termsOfService": "https://gstaccelerator.in/terms",
+        "provider": {
+          "@type": "Organization",
+          "@id": "https://gstaccelerator.in/#org",
+          "name": "GST Accelerator",
+          "url": "https://gstaccelerator.in",
+          "email": "hello@gstaccelerator.in",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://gstaccelerator.in/favicon.ico"
+          },
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Pune",
+            "addressRegion": "Maharashtra",
+            "addressCountry": "IN"
+          }
+        }
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://gstaccelerator.in/#website",
+        "name": "GST Accelerator",
+        "url": "https://gstaccelerator.in",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://gstaccelerator.in/api/v2/lookup?q={search_term_string}"
+          },
+          "query-input": "required name=search_term_string"
+        }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://gstaccelerator.in/#app",
+        "name": "GST Accelerator API",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Any",
+        "offers": [
+          {
+            "@type": "Offer",
+            "name": "Free",
+            "price": "0",
+            "priceCurrency": "INR",
+            "description": "100 API calls per month, free forever"
+          },
+          {
+            "@type": "Offer",
+            "name": "Developer",
+            "price": "399",
+            "priceCurrency": "INR",
+            "description": "5,000 API calls for 30 days access"
+          },
+          {
+            "@type": "Offer",
+            "name": "Pro",
+            "price": "1499",
+            "priceCurrency": "INR",
+            "description": "50,000 API calls for 30 days access"
+          },
+          {
+            "@type": "Offer",
+            "name": "Business",
+            "price": "5999",
+            "priceCurrency": "INR",
+            "description": "Unlimited API calls for 30 days access"
+          }
+        ]
+      }
+    ]
+  }
+  </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -2339,6 +2423,18 @@ async def sitemap_xml():
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
     <lastmod>2026-07-02</lastmod>
+  </url>
+  <url>
+    <loc>https://gstaccelerator.in/terms</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+    <lastmod>2026-07-03</lastmod>
+  </url>
+  <url>
+    <loc>https://gstaccelerator.in/privacy</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+    <lastmod>2026-07-03</lastmod>
   </url>
 </urlset>"""
     return FastAPIResponse(content=sitemap, media_type="application/xml")
