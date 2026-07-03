@@ -2160,6 +2160,26 @@ async def verify_jwt(credentials: HTTPAuthorizationCredentials = Depends(securit
     except Exception as e:
         raise HTTPException(status_code=401, detail=f"Invalid or expired JWT: {str(e)}")
 
+@app.get("/privacy", include_in_schema=False, response_class=HTMLResponse)
+async def privacy_page():
+    try:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(base_dir, "privacy.html"), "r", encoding="utf-8") as f:
+            content = f.read()
+        return HTMLResponse(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Privacy template not found.")
+
+@app.get("/terms", include_in_schema=False, response_class=HTMLResponse)
+async def terms_page():
+    try:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(base_dir, "terms.html"), "r", encoding="utf-8") as f:
+            content = f.read()
+        return HTMLResponse(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Terms template not found.")
+
 @app.get("/pricing", include_in_schema=False, response_class=HTMLResponse)
 async def pricing_page():
     """Razorpay payment page — served as a standalone HTML file with injected keys."""
