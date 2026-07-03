@@ -1496,6 +1496,7 @@ async def root():
   <div class="nav-links">
     <a href="#features">Features</a>
     <a href="#pricing">Pricing</a>
+    <a href="/blog">Blog</a>
     <a href="/docs">Docs</a>
     <a class="nav-cta" href="/login">Get API Key</a>
   </div>
@@ -1807,6 +1808,7 @@ console.log(applicable_rate);  <span class="cc">// "CGST 9% + SGST 9% = 18%"</sp
     <a href="/docs">API Docs</a>
     <a href="mailto:hello@gstaccelerator.in">hello@gstaccelerator.in</a>
     <a href="#pricing">Pricing</a>
+    <a href="/blog">Blog</a>
     <a href="/terms">Terms</a>
     <a href="/privacy">Privacy</a>
   </div>
@@ -2251,6 +2253,16 @@ async def privacy_page():
         return HTMLResponse(content)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Privacy template not found.")
+
+@app.get("/blog", include_in_schema=False, response_class=HTMLResponse)
+async def blog_index_page():
+    try:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(base_dir, "blog.html"), "r", encoding="utf-8") as f:
+            content = f.read()
+        return HTMLResponse(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Blog template not found.")
 
 @app.get("/terms", include_in_schema=False, response_class=HTMLResponse)
 async def terms_page():
