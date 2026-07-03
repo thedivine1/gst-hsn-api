@@ -1497,7 +1497,7 @@ async def root():
     <a href="#features">Features</a>
     <a href="#pricing">Pricing</a>
     <a href="/docs">Docs</a>
-    <a class="nav-cta" href="/dashboard">Get API Key</a>
+    <a class="nav-cta" href="/login">Get API Key</a>
   </div>
 </nav>
 
@@ -1629,7 +1629,7 @@ async def root():
       <div class="pf off">Condition resolver</div>
       <div class="pf off">MCP endpoint</div>
       <div class="pf off">Rate-change alerts</div>
-      <a class="plan-action pa-outline" href="/dashboard">Get free key</a>
+      <a class="plan-action pa-outline" href="/login">Get free key</a>
     </div>
 
     <div class="plan featured">
@@ -2278,6 +2278,19 @@ async def pricing_page():
         return HTMLResponse(content)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Pricing page template not found.")
+
+@app.get("/login", include_in_schema=False, response_class=HTMLResponse)
+async def login_page():
+    try:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(base_dir, "login.html"), "r", encoding="utf-8") as f:
+            content = f.read()
+        content = content.replace("{{ SUPABASE_URL }}", SUPABASE_URL or "")
+        content = content.replace("{{ SUPABASE_ANON_KEY }}", SUPABASE_ANON_KEY or "")
+        content = content.replace("{{ NEXT_PUBLIC_SITE_URL }}", NEXT_PUBLIC_SITE_URL)
+        return HTMLResponse(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Login template not found.")
 
 @app.get("/dashboard", include_in_schema=False, response_class=HTMLResponse)
 async def dashboard_page():
