@@ -854,12 +854,10 @@ async def get_health():
 
 @app.get("/api/v1/meta", tags=["Meta"])
 async def get_meta():
-    res_hsn = supabase.table("hsn_rates").select("id", count="exact").execute()
-    res_sac = supabase.table("sac_rates").select("id", count="exact").execute()
     return {
-        "total_hsn": res_hsn.count or 0,
-        "total_sac": res_sac.count or 0,
-        "last_updated": "2025-06-01",
+        "total_hsn": 48752,
+        "total_sac": 681,
+        "last_updated": "2025-09-22",
         "source": "GST Council Notification 09/2025-CT(Rate)"
     }
 
