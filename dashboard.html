@@ -462,6 +462,49 @@
     }
     #toast.show { transform: translateY(0); }
 
+    
+    /* ─── MODAL ───────────────────────────────── */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9999; opacity: 0; pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .modal-overlay.active { opacity: 1; pointer-events: all; }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; width: 100%; max-width: 420px;
+      padding: 1.5rem; transform: scale(0.95);
+      transition: transform 0.2s cubic-bezier(0.16,1,0.3,1);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    }
+    .modal-overlay.active .modal { transform: scale(1); }
+    .modal h3 { margin-bottom: 0.5rem; font-size: 1.1rem; }
+    .modal p { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem; }
+    .modal input {
+      width: 100%; padding: 0.75rem 1rem; border-radius: 8px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      color: var(--text); font-family: inherit; font-size: 0.9rem;
+      margin-bottom: 1.25rem;
+    }
+    .modal input:focus { outline: none; border-color: var(--amber); }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 0.75rem; }
+    .btn-secondary {
+      background: transparent; color: var(--text-2); border: 1px solid var(--border);
+      padding: 0.55rem 1rem; border-radius: 8px; cursor: pointer; font-size: 0.83rem;
+      transition: all 0.2s;
+    }
+    .btn-secondary:hover { background: var(--surface-2); color: var(--text); }
+    .action-group { display: flex; gap: 0.5rem; }
+    .btn-icon {
+      background: transparent; border: 1px solid var(--border); color: var(--text-2);
+      border-radius: 6px; padding: 0.35rem 0.5rem; cursor: pointer;
+      font-size: 0.75rem; transition: all 0.15s;
+    }
+    .btn-icon:hover { background: var(--surface-2); color: var(--text); border-color: var(--border-2); }
+
     /* ─── ANIMATIONS ──────────────────────────── */
     @keyframes slideDown {
       from { opacity: 0; transform: translateY(-8px); }
@@ -767,6 +810,20 @@
 
 </div><!-- /#app -->
 
+<!-- ─── MODAL ─────────────────────────────────── -->
+<div class="modal-overlay" id="action-modal">
+  <div class="modal">
+    <h3 id="modal-title">Action</h3>
+    <p id="modal-desc">Description</p>
+    <input type="text" id="modal-input" placeholder="e.g. Production Env" />
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" id="modal-submit" onclick="submitModal()">Submit</button>
+    </div>
+  </div>
+</div>
+
+
 <div id="toast">✓ <span id="toast-msg"></span></div>
 
 <script>
@@ -897,7 +954,13 @@
         <td><span class="key-mono">${k.key_prefix}<span style="color:var(--text-muted);">••••••••</span></span></td>
         <td><span class="pill active">Active</span></td>
         <td style="color:var(--text-muted);font-size:0.78rem;">${new Date(k.created_at || Date.now()).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</td>
-        <td style="text-align:right;"><button class="btn-revoke" onclick="revokeKey('${k.id}')">Revoke</button></td>
+        <td style="text-align:right;">
+          <div class="action-group" style="justify-content: flex-end;">
+            <button class="btn-icon" onclick="openModal('rename', '${k.id}', '${(k.name || '').replace(/'/g, "\\'")}')">Rename</button>
+            <button class="btn-icon" onclick="openModal('rotate', '${k.id}')">Rotate</button>
+            <button class="btn-revoke" style="margin-left:0.5rem;" onclick="revokeKey('${k.id}')">Revoke</button>
+          </div>
+        </td>
       </tr>
     `).join('');
   }
@@ -925,36 +988,123 @@
   }
 
   // ── Generate Key ───────────────────────────────
-  async function generateKey() {
-    const btns = ['gen-btn-home','gen-btn-keys'];
-    btns.forEach(id => { const b=document.getElementById(id); if(b){b.disabled=true;b.textContent='Generating…';} });
+
+  // ── Modal Actions ──────────────────────────────
+  let currentAction = null;
+  let currentKeyId = null;
+
+  function openModal(action, keyId = null, currentName = '') {
+    currentAction = action;
+    currentKeyId = keyId;
+    const input = document.getElementById('modal-input');
+    const title = document.getElementById('modal-title');
+    const desc = document.getElementById('modal-desc');
+    const submit = document.getElementById('modal-submit');
+    const ov = document.getElementById('action-modal');
+    
+    input.style.display = 'block';
+    if (action === 'create') {
+      title.textContent = 'Create New API Key';
+      desc.textContent = 'Give your new key a descriptive name.';
+      input.value = '';
+      input.placeholder = 'e.g. Mobile App Prod';
+      submit.textContent = 'Create Key';
+    } else if (action === 'rename') {
+      title.textContent = 'Rename API Key';
+      desc.textContent = 'Update the name of your API key.';
+      input.value = currentName;
+      input.placeholder = 'e.g. Mobile App Prod';
+      submit.textContent = 'Save';
+    } else if (action === 'rotate') {
+      title.textContent = 'Rotate API Key';
+      desc.textContent = 'Are you sure? The old key will immediately stop working and cannot be recovered. A new key will be generated.';
+      input.style.display = 'none';
+      submit.textContent = 'Rotate Key';
+    }
+    
+    ov.classList.add('active');
+    if(input.style.display !== 'none') input.focus();
+  }
+
+  function closeModal() {
+    document.getElementById('action-modal').classList.remove('active');
+  }
+
+  async function submitModal() {
+    const btn = document.getElementById('modal-submit');
+    const val = document.getElementById('modal-input').value.trim();
+    
+    if ((currentAction === 'create' || currentAction === 'rename') && !val) {
+      toast('Please enter a name');
+      return;
+    }
+    
+    btn.disabled = true;
+    btn.textContent = 'Processing...';
+    
     try {
-      const res = await fetch('/api/v1/dashboard/keys', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${sessionToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'Production Key' })
-      });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      ['raw-key','raw-key-2'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = data.raw_key;
-      });
-      ['key-reveal-home','key-reveal-keys'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = 'block';
-      });
+      if (currentAction === 'create') {
+        await executeCreateKey(val);
+      } else if (currentAction === 'rename') {
+        await executeRenameKey(currentKeyId, val);
+      } else if (currentAction === 'rotate') {
+        await executeRotateKey(currentKeyId);
+      }
+      closeModal();
       fetchKeys();
-      fetchUsage();
-    } catch {
-      toast('Failed to generate key.');
+    } catch (e) {
+      toast('Action failed: ' + e.message);
     } finally {
-      btns.forEach(id => {
-        const b = document.getElementById(id);
-        if (b) { b.disabled=false; b.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> New Key'; }
-      });
+      btn.disabled = false;
     }
   }
+
+  async function executeCreateKey(name) {
+    const res = await fetch('/api/v1/dashboard/keys', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${sessionToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name })
+    });
+    if (!res.ok) throw new Error('Create failed');
+    const data = await res.json();
+    showKeyReveal(data.raw_key);
+  }
+
+  async function executeRenameKey(id, name) {
+    const res = await fetch(`/api/v1/dashboard/keys/${id}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${sessionToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name })
+    });
+    if (!res.ok) throw new Error('Rename failed');
+    toast('Key renamed successfully');
+  }
+
+  async function executeRotateKey(id) {
+    const res = await fetch(`/api/v1/dashboard/keys/${id}/rotate`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${sessionToken}` }
+    });
+    if (!res.ok) throw new Error('Rotate failed');
+    const data = await res.json();
+    showKeyReveal(data.raw_key);
+  }
+
+  function showKeyReveal(raw_key) {
+    ['raw-key','raw-key-2'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = raw_key;
+    });
+    ['key-reveal-home','key-reveal-keys'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'block';
+    });
+  }
+
+  function generateKey() {
+    openModal('create');
+  }
+
 
   async function revokeKey(id) {
     if (!confirm('Revoke this key? Any application using it will immediately lose access.')) return;

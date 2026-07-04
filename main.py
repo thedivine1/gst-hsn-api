@@ -2844,6 +2844,9 @@ async def sitemap_xml():
 class KeyCreateRequest(BaseModel):
     name: str = "Default Key"
 
+class KeyRenameRequest(BaseModel):
+    name: str
+
 @app.get("/api/v1/dashboard/keys", tags=["Dashboard"])
 async def get_dashboard_keys(user=Depends(verify_jwt)):
     res = (
@@ -2880,6 +2883,48 @@ async def create_dashboard_key(req: KeyCreateRequest, user=Depends(verify_jwt)):
         raise HTTPException(status_code=500, detail="Failed to generate key")
         
     return {"raw_key": raw_key, "key_id": res.data[0]["id"]}
+
+@app.patch("/api/v1/dashboard/keys/{key_id}", tags=["Dashboard"])
+async def rename_dashboard_key(key_id: str, req: KeyRenameRequest, user=Depends(verify_jwt)):
+    res = (
+        supabase.table("api_keys")
+        .update({"name": req.name})
+        .eq("id", key_id)
+        .eq("user_id", user.id)
+        .execute()
+    )
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Key not found or not owned by user.")
+    return {"status": "renamed"}
+
+@app.post("/api/v1/dashboard/keys/{key_id}/rotate", tags=["Dashboard"])
+async def rotate_dashboard_key(key_id: str, user=Depends(verify_jwt)):
+    # Fetch old key details
+    old_res = supabase.table("api_keys").select("*").eq("id", key_id).eq("user_id", user.id).execute()
+    if not old_res.data:
+        raise HTTPException(status_code=404, detail="Key not found")
+    old_key = old_res.data[0]
+
+    # Deactivate old key
+    supabase.table("api_keys").update({"is_active": False}).eq("id", key_id).execute()
+
+    # Create new key
+    raw_key = f"gsta_live_{secrets.token_urlsafe(24)}"
+    new_res = (
+        supabase.table("api_keys")
+        .insert({
+            "user_id": user.id,
+            "key_prefix": raw_key[:15],
+            "key_hash": _hash_key(raw_key),
+            "name": old_key["name"],
+            "is_active": True,
+            "tier": old_key.get("tier", "free"),
+            "monthly_limit": old_key.get("monthly_limit", 1000),
+            "calls_this_month": 0
+        })
+        .execute()
+    )
+    return {"raw_key": raw_key, "key_id": new_res.data[0]["id"]}
 
 @app.delete("/api/v1/dashboard/keys/{key_id}", tags=["Dashboard"])
 async def revoke_dashboard_key(key_id: str, user=Depends(verify_jwt)):
