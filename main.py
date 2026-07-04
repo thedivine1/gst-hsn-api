@@ -60,9 +60,10 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "http://localhost",
+        "http://localhost:8000",
         "https://gstaccelerator.in",
         "https://www.gstaccelerator.in",
-        "https://gst-hsn-api.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS", "DELETE"],
@@ -243,8 +244,8 @@ async def meta():
         "rate_slabs": [0, 0.25, 1.5, 3, 5, 18, 28, 40],
         "data_source": "CBIC Notification 09/2025-CT(Rate)",
         "effective_from": "2025-09-22",
-        "api_version": "v1",
-        "mcp_endpoint": "https://gst-hsn-api.vercel.app/mcp/sse"
+        "swagger_ui": "https://gstaccelerator.in/docs",
+        "mcp_endpoint": "https://gstaccelerator.in/mcp/sse"
     }
 
 
@@ -2096,6 +2097,15 @@ async def lookup_rate(req: LookupRequest, _: dict = Depends(verify_api_key)):
             .execute()
         )
 
+    if not res.data and len(terms) > 0:
+        # Final fallback to ILIKE if text_search entirely fails
+        res = (
+            supabase.table("hsn_rates")
+            .select("*")
+            .ilike("hsn_description", f"%{terms[0]}%")
+            .execute()
+        )
+
     if not res.data:
         return []
 
@@ -2148,7 +2158,18 @@ async def bulk_lookup(requests: List[LookupRequest], _: dict = Depends(verify_ap
                 .execute()
             )
             
-        all_results.append(_build_lookup_results(res.data or [], req))
+        if not res.data and len(terms) > 0:
+            res = (
+                supabase.table("hsn_rates")
+                .select("*")
+                .ilike("hsn_description", f"%{terms[0]}%")
+                .execute()
+            )
+
+        if not res.data:
+            all_results.append([])
+        else:
+            all_results.append(_build_lookup_results(res.data, req))
 
     return all_results
 
