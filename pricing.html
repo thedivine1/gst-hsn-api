@@ -235,6 +235,17 @@
     .pf::before { content: "✓"; color: var(--green-lit); flex-shrink: 0; margin-top: 1px; }
     .pf.off { opacity: 0.32; }
     .pf.off::before { content: "·"; color: var(--muted); }
+    .pf.soon { opacity: 0.65; }
+    .pf.soon::before { content: "○"; color: var(--muted); }
+    .soon-badge {
+      display: inline-block;
+      font-size: 0.55rem; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      background: rgba(107,122,153,0.18); color: var(--muted);
+      border: 1px solid rgba(107,122,153,0.25);
+      padding: 1px 6px; border-radius: 100px;
+      margin-left: 5px; vertical-align: middle;
+    }
 
     /* ── RAZORPAY BUTTON CONTAINER ── */
     .rzp-wrap {
@@ -413,7 +424,7 @@
       <div class="pf">MCP endpoint</div>
       <div class="pf">99.5% uptime SLA</div>
       <div class="pf">Rate-change email alerts</div>
-      <div class="pf off">Webhooks</div>
+      <div class="pf soon">Webhooks <span class="soon-badge">coming soon</span></div>
       <div class="rzp-wrap rzp-featured" id="rzp-developer">
         <!-- Razorpay button injected here -->
         <form>
@@ -435,10 +446,10 @@
       <div class="plan-quota">50,000 calls + ₹0.08/extra</div>
       <div class="pf">Everything in Developer</div>
       <div class="pf">Bulk CSV classification</div>
-      <div class="pf">Rate-change webhooks</div>
+      <div class="pf soon">Rate-change webhooks <span class="soon-badge">coming soon</span></div>
       <div class="pf">99.9% uptime SLA</div>
       <div class="pf">Priority support</div>
-      <div class="pf">Superseded rates feed</div>
+      <div class="pf soon">Superseded rates feed <span class="soon-badge">coming soon</span></div>
       <div class="rzp-wrap rzp-outline" id="rzp-pro">
         <form>
           <script
