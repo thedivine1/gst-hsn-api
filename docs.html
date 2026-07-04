@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>API Docs â€” GST Accelerator</title>
+  <title>API Docs — GST Accelerator</title>
   <meta name="description" content="Complete API documentation for GST Accelerator. Integrate India's most accurate GST rate engine into your ERP, checkout flow, or AI agent.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -380,7 +380,7 @@
     <div class="doc-row hero-row" id="introduction">
       <div class="doc-left">
         <h1>GST Tax Rates API</h1>
-        <p>The <strong>GST Accelerator API</strong> is a condition-aware compliance engine that returns the exact applicable GST rate for any Indian good or service â€” including CGST, SGST, IGST, and Compensation Cess breakdowns â€” with a full CBIC notification audit trail.</p>
+        <p>The <strong>GST Accelerator API</strong> is a condition-aware compliance engine that returns the exact applicable GST rate for any Indian good or service — including CGST, SGST, IGST, and Compensation Cess breakdowns — with a full CBIC notification audit trail.</p>
         <p>Unlike legacy APIs that require you to call separate endpoints for HSN search, SAC search, and rate lookup, our engine does it all in a <strong>single POST request</strong>.</p>
         <div class="feat-pills">
           <span class="feat-pill green">âœ“ CBIC-sourced data</span>
@@ -417,16 +417,16 @@
         <h2>Quickstart</h2>
         <p>Get your first GST rate in under 60 seconds.</p>
         <ol class="step-list">
-          <li><div class="step-text"><strong>Create an account</strong> â€” Sign up with Google, GitHub, or email magic link on the <a href="/dashboard" style="color:var(--amber)">Developer Dashboard</a>.</div></li>
-          <li><div class="step-text"><strong>Generate an API key</strong> â€” From your dashboard, click "Generate New Key". Copy it immediately â€” it will not be shown again.</div></li>
-          <li><div class="step-text"><strong>Make your first request</strong> â€” Pass your key in the <code>X-API-Key</code> header. Try the cURL example on the right.</div></li>
-          <li><div class="step-text"><strong>Parse the response</strong> â€” Use <code>tax_rates.cgst</code>, <code>tax_rates.sgst</code>, and <code>applicable_rate</code> in your invoice logic.</div></li>
+          <li><div class="step-text"><strong>Create an account</strong> — Sign up with Google, GitHub, or email magic link on the <a href="/dashboard" style="color:var(--amber)">Developer Dashboard</a>.</div></li>
+          <li><div class="step-text"><strong>Generate an API key</strong> — From your dashboard, click "Generate New Key". Copy it immediately — it will not be shown again.</div></li>
+          <li><div class="step-text"><strong>Make your first request</strong> — Pass your key in the <code>X-API-Key</code> header. Try the cURL example on the right.</div></li>
+          <li><div class="step-text"><strong>Parse the response</strong> — Use <code>tax_rates.cgst</code>, <code>tax_rates.sgst</code>, and <code>applicable_rate</code> in your invoice logic.</div></li>
         </ol>
       </div>
       <div class="doc-right">
         <div class="code-block">
           <div class="code-block-header">
-            <span class="code-block-lang">cURL â€” First Request</span>
+            <span class="code-block-lang">cURL — First Request</span>
             <button class="copy-btn" onclick="copyCode(this)">Copy</button>
           </div>
           <pre><code>curl -X POST <span class="s-url">https://gstaccelerator.in/api/v1/lookup</span> \
@@ -467,7 +467,7 @@
         <h2>Authentication</h2>
         <p>All API requests require an API key passed in the <code>X-API-Key</code> HTTP request header. There are no session cookies or OAuth flows required for API access.</p>
         <h3>Generating a Key</h3>
-        <p>Visit the <a href="/dashboard" style="color:var(--amber)">Developer Dashboard</a>, sign in with your preferred method, and click <strong>"Generate New Key"</strong>. The full key is only shown once â€” store it in your environment variables immediately.</p>
+        <p>Visit the <a href="/dashboard" style="color:var(--amber)">Developer Dashboard</a>, sign in with your preferred method, and click <strong>"Generate New Key"</strong>. The full key is only shown once — store it in your environment variables immediately.</p>
         <div class="callout amber">
           <div class="callout-title">Keep your key secret</div>
           Never expose your API key in client-side JavaScript, public repos, or build logs. If compromised, immediately revoke it from the dashboard and generate a new one.
@@ -482,7 +482,7 @@
         </div>
         <div class="code-block">
           <div class="code-block-header">
-            <span class="code-block-lang">401 â€” Unauthorized</span>
+            <span class="code-block-lang">401 — Unauthorized</span>
           </div>
           <pre><code>{
   <span class="s-key">"detail"</span>: <span class="s-str">"Invalid or revoked API key."</span>
@@ -860,7 +860,7 @@ console.<span class="s-fn">log</span>(result.tax_rates.igst); <span class="s-com
       </div>
       <div class="doc-right">
         <div class="code-block">
-          <div class="code-block-header"><span class="code-block-lang">With condition â€” garment â‚¹1,500</span></div>
+          <div class="code-block-header"><span class="code-block-lang">With condition — garment â‚¹1,500</span></div>
           <pre><code><span class="s-comment">// Request</span>
 {
   <span class="s-key">"description"</span>: <span class="s-str">"cotton shirt"</span>,
@@ -871,17 +871,17 @@ console.<span class="s-fn">log</span>(result.tax_rates.igst); <span class="s-com
 <span class="s-comment">// Condition resolved â†’ 12%</span>
 {
   <span class="s-key">"tax_rates"</span>: { <span class="s-key">"igst"</span>: <span class="s-num">12.0</span>, <span class="s-key">"cgst"</span>: <span class="s-num">6.0</span>, <span class="s-key">"sgst"</span>: <span class="s-num">6.0</span> },
-  <span class="s-key">"condition_applied"</span>: <span class="s-str">"Price â‰¥ â‚¹1,000 threshold: PASSED â€” â‚¹1,500 &gt; â‚¹1,000"</span>,
+  <span class="s-key">"condition_applied"</span>: <span class="s-str">"Price â‰¥ â‚¹1,000 threshold: PASSED — â‚¹1,500 &gt; â‚¹1,000"</span>,
   <span class="s-key">"condition_warning"</span>: <span class="s-null">null</span>,
   <span class="s-key">"needs_review"</span>: <span class="s-bool">false</span>
 }</code></pre>
         </div>
         <div class="code-block">
-          <div class="code-block-header"><span class="code-block-lang">Without value â€” warning issued</span></div>
-          <pre><code><span class="s-comment">// Request â€” no sale_value_inr</span>
+          <div class="code-block-header"><span class="code-block-lang">Without value — warning issued</span></div>
+          <pre><code><span class="s-comment">// Request — no sale_value_inr</span>
 { <span class="s-key">"description"</span>: <span class="s-str">"cotton shirt"</span> }
 
-<span class="s-comment">// Cannot resolve â€” warning added</span>
+<span class="s-comment">// Cannot resolve — warning added</span>
 {
   <span class="s-key">"condition_applied"</span>: <span class="s-null">null</span>,
   <span class="s-key">"condition_warning"</span>: <span class="s-str">"Price threshold condition exists. Provide sale_value_inr to resolve."</span>,
@@ -895,7 +895,7 @@ console.<span class="s-fn">log</span>(result.tax_rates.igst); <span class="s-com
     <div class="doc-row" id="supply-types">
       <div class="doc-left">
         <h2>Supply Types</h2>
-        <p>Pass <code>supply_type</code> to get the correct rate formatted for your transaction type. This does not change the underlying IGST/CGST/SGST values â€” it only formats the <code>applicable_rate</code> string in the response.</p>
+        <p>Pass <code>supply_type</code> to get the correct rate formatted for your transaction type. This does not change the underlying IGST/CGST/SGST values — it only formats the <code>applicable_rate</code> string in the response.</p>
         <table class="params-table">
           <thead><tr><th>Value</th><th>Meaning</th></tr></thead>
           <tbody>
@@ -919,12 +919,12 @@ console.<span class="s-fn">log</span>(result.tax_rates.igst); <span class="s-com
   <span class="s-key">"interstate"</span>: <span class="s-str">"IGST 18.0%"</span>
 }
 
-<span class="s-comment">// Invoice GST calculation â€” intrastate</span>
+<span class="s-comment">// Invoice GST calculation — intrastate</span>
 invoice_value = <span class="s-num">25000</span>
 cgst = (invoice_value Ã— <span class="s-num">9</span>) / <span class="s-num">100</span>  <span class="s-comment"># â‚¹2,250</span>
 sgst = (invoice_value Ã— <span class="s-num">9</span>) / <span class="s-num">100</span>  <span class="s-comment"># â‚¹2,250</span>
 
-<span class="s-comment">// Invoice GST calculation â€” interstate</span>
+<span class="s-comment">// Invoice GST calculation — interstate</span>
 igst = (invoice_value Ã— <span class="s-num">18</span>) / <span class="s-num">100</span> <span class="s-comment"># â‚¹4,500</span></code></pre>
         </div>
       </div>
@@ -970,7 +970,7 @@ igst = (invoice_value Ã— <span class="s-num">18</span>) / <span class="s-num"
     <span class="s-key">"interstate"</span>: <span class="s-str">"IGST 12.0%"</span>,
     <span class="s-key">"recommended"</span>: <span class="s-null">null</span>
   },
-  <span class="s-key">"condition_applied"</span>: <span class="s-str">"Price â‰¥ â‚¹1,000: PASSED â€” â‚¹1,500 > â‚¹1,000"</span>,
+  <span class="s-key">"condition_applied"</span>: <span class="s-str">"Price â‰¥ â‚¹1,000: PASSED — â‚¹1,500 > â‚¹1,000"</span>,
   <span class="s-key">"condition_warning"</span>: <span class="s-null">null</span>,
   <span class="s-key">"confidence"</span>: <span class="s-num">0.9</span>,
   <span class="s-key">"notification_ref"</span>: <span class="s-str">"09/2025-CT(Rate)"</span>,
@@ -986,11 +986,11 @@ igst = (invoice_value Ã— <span class="s-num">18</span>) / <span class="s-num"
         <h2>Error Codes</h2>
         <p>The API uses standard HTTP status codes. All error responses include a <code>detail</code> field with a human-readable message.</p>
         <div style="margin-top: 1rem;">
-          <div class="error-row"><span class="e-code e4xx">400</span><span class="e-desc"><strong>Bad Request</strong> â€” A required field is missing or a value is invalid. Check the <code>detail</code> field for specifics.</span></div>
-          <div class="error-row"><span class="e-code e4xx">401</span><span class="e-desc"><strong>Unauthorized</strong> â€” The <code>X-API-Key</code> header is missing, the key is invalid, or it has been revoked.</span></div>
-          <div class="error-row"><span class="e-code e4xx">422</span><span class="e-desc"><strong>Unprocessable Entity</strong> â€” The request body is malformed JSON or a field has the wrong type.</span></div>
-          <div class="error-row"><span class="e-code e4xx">429</span><span class="e-desc"><strong>Too Many Requests</strong> â€” Your plan's monthly call limit has been reached. Upgrade on the dashboard.</span></div>
-          <div class="error-row"><span class="e-code e5xx">500</span><span class="e-desc"><strong>Internal Server Error</strong> â€” Something went wrong on our end. Please retry, and contact support if the issue persists.</span></div>
+          <div class="error-row"><span class="e-code e4xx">400</span><span class="e-desc"><strong>Bad Request</strong> — A required field is missing or a value is invalid. Check the <code>detail</code> field for specifics.</span></div>
+          <div class="error-row"><span class="e-code e4xx">401</span><span class="e-desc"><strong>Unauthorized</strong> — The <code>X-API-Key</code> header is missing, the key is invalid, or it has been revoked.</span></div>
+          <div class="error-row"><span class="e-code e4xx">422</span><span class="e-desc"><strong>Unprocessable Entity</strong> — The request body is malformed JSON or a field has the wrong type.</span></div>
+          <div class="error-row"><span class="e-code e4xx">429</span><span class="e-desc"><strong>Too Many Requests</strong> — Your plan's monthly call limit has been reached. Upgrade on the dashboard.</span></div>
+          <div class="error-row"><span class="e-code e5xx">500</span><span class="e-desc"><strong>Internal Server Error</strong> — Something went wrong on our end. Please retry, and contact support if the issue persists.</span></div>
         </div>
       </div>
       <div class="doc-right">
@@ -1026,7 +1026,7 @@ igst = (invoice_value Ã— <span class="s-num">18</span>) / <span class="s-num"
             <tr><td><span class="p-name">Free</span></td><td class="p-desc">100 calls</td><td class="p-desc">Blocked</td></tr>
             <tr><td><span class="p-name">Developer</span></td><td class="p-desc">5,000 calls</td><td class="p-desc">â‚¹0.10 / call</td></tr>
             <tr><td><span class="p-name">Pro</span></td><td class="p-desc">50,000 calls</td><td class="p-desc">â‚¹0.08 / call</td></tr>
-            <tr><td><span class="p-name">Business</span></td><td class="p-desc">Unlimited</td><td class="p-desc">â€”</td></tr>
+            <tr><td><span class="p-name">Business</span></td><td class="p-desc">Unlimited</td><td class="p-desc">—</td></tr>
           </tbody>
         </table>
       </div>
@@ -1051,7 +1051,7 @@ igst = (invoice_value Ã— <span class="s-num">18</span>) / <span class="s-num"
       'sidebar-width', 'nav-width', 'sidebarWidth', 'navWidth',
       'sidebar_width', 'nav_width', 'leftPanelWidth', 'left-panel-width'
     ];
-    const MIN_SAFE = 100; // px â€” reset anything below this
+    const MIN_SAFE = 100; // px — reset anything below this
     const DEFAULT  = 220; // px
     SIDEBAR_KEYS.forEach(key => {
       try {

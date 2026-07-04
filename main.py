@@ -920,7 +920,8 @@ async def root():
   <meta property="og:title" content="GST Accelerator API — India’s fastest HSN &amp; SAC lookup API" />
   <meta property="og:description" content="Free REST API for Indian GST HSN/SAC code lookup. 48,000+ codes, GST rates, CGST/SGST/IGST splits. CBIC-sourced and condition-aware." />
   <meta property="og:site_name" content="GST Accelerator" />
-  <meta name="twitter:card" content="summary" />
+    <meta property="og:image" content="https://gstaccelerator.in/banner.png" />
+  <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="GST Accelerator API — India’s fastest HSN &amp; SAC lookup API" />
   <meta name="twitter:description" content="Free REST API for Indian GST HSN/SAC code lookup. 48,000+ HSN/SAC codes, rates, and CBIC notification audit trail." />
   <link rel="canonical" href="https://gstaccelerator.in/" />
