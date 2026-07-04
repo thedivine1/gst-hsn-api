@@ -2848,7 +2848,7 @@ class KeyCreateRequest(BaseModel):
 async def get_dashboard_keys(user=Depends(verify_jwt)):
     res = (
         supabase.table("api_keys")
-        .select("id, name, key_prefix, is_active")
+        .select("id, name, key_prefix, is_active, created_at, tier, monthly_limit, calls_this_month")
         .eq("user_id", user.id)
         .eq("is_active", True)
         .execute()
@@ -2894,6 +2894,27 @@ async def revoke_dashboard_key(key_id: str, user=Depends(verify_jwt)):
     if not res.data:
         raise HTTPException(status_code=404, detail="Key not found or not owned by user.")
     return {"status": "revoked"}
+
+
+@app.get("/api/v1/dashboard/usage", tags=["Dashboard"])
+async def get_dashboard_usage(user=Depends(verify_jwt)):
+    """Return aggregated API call usage for the authenticated user this month."""
+    res = (
+        supabase.table("api_keys")
+        .select("tier, monthly_limit, calls_this_month")
+        .eq("user_id", user.id)
+        .eq("is_active", True)
+        .execute()
+    )
+    keys = res.data or []
+    calls_used  = sum(k.get("calls_this_month", 0) or 0 for k in keys)
+    calls_limit = max((k.get("monthly_limit", 1000) or 1000 for k in keys), default=1000)
+    tier        = keys[0].get("tier", "free") if keys else "free"
+    return {
+        "calls_used":  calls_used,
+        "calls_limit": calls_limit,
+        "tier":        tier,
+    }
 
 
 # ---------------------------------------------------------------------------
