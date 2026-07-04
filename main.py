@@ -2095,6 +2095,56 @@ async def get_gst_rate_hsn(hsn: str, _: dict = Depends(verify_api_key)):
     return await get_hsn(hsn, None, _)
 
 
+def _sync_lookup(req: LookupRequest) -> List[LookupResult]:
+    cache_key = _cache_key(
+        req.description,
+        req.supply_type or "intrastate",
+        req.branded or False,
+        req.b2b or False,
+        req.sale_value_inr,
+    )
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
+
+    clean_desc = re.sub(r"[^\w\s]", " ", req.description)
+    terms = [t.strip() for t in clean_desc.split() if t.strip()]
+    if not terms:
+        return []
+    
+    tsquery_and = " & ".join(terms)
+    res = (
+        supabase.table("hsn_rates")
+        .select("*")
+        .text_search("hsn_description", tsquery_and)
+        .execute()
+    )
+
+    if not res.data:
+        tsquery_or = " | ".join(terms)
+        res = (
+            supabase.table("hsn_rates")
+            .select("*")
+            .text_search("hsn_description", tsquery_or)
+            .execute()
+        )
+
+    if not res.data and len(terms) > 0:
+        res = (
+            supabase.table("hsn_rates")
+            .select("*")
+            .ilike("hsn_description", f"%{terms[0]}%")
+            .execute()
+        )
+
+    if not res.data:
+        return []
+
+    result = _build_lookup_results(res.data, req)
+    _cache_set(cache_key, result)
+    return result
+
+
 @app.post(
     "/api/v1/lookup",
     response_model=List[LookupResult],
@@ -2121,60 +2171,9 @@ async def lookup_rate(req: LookupRequest, _: dict = Depends(verify_api_key)):
     """
     if not req.description.strip():
         raise HTTPException(status_code=400, detail="description cannot be empty.")
-
-    # Check in-process LRU cache first
-    cache_key = _cache_key(
-        req.description,
-        req.supply_type or "intrastate",
-        req.branded or False,
-        req.b2b or False,
-        req.sale_value_inr,
-    )
-    cached = _cache_get(cache_key)
-    if cached is not None:
-        return cached
-
-    # Build a tsquery: tokenise and AND-join terms
-    # Sanitize to prevent tsquery syntax errors
-    clean_desc = re.sub(r"[^\w\s]", " ", req.description)
-    terms = [t.strip() for t in clean_desc.split() if t.strip()]
-    if not terms:
-        return []
-    tsquery_and = " & ".join(terms)
-
-    res = (
-        supabase.table("hsn_rates")
-        .select("*")
-        .text_search("hsn_description", tsquery_and)
-        .execute()
-    )
-
-    if not res.data:
-        # Fallback to OR search if strict AND yields nothing
-        tsquery_or = " | ".join(terms)
-        res = (
-            supabase.table("hsn_rates")
-            .select("*")
-            .text_search("hsn_description", tsquery_or)
-            .execute()
-        )
-
-    if not res.data and len(terms) > 0:
-        # Final fallback to ILIKE if text_search entirely fails
-        res = (
-            supabase.table("hsn_rates")
-            .select("*")
-            .ilike("hsn_description", f"%{terms[0]}%")
-            .execute()
-        )
-
-    if not res.data:
-        return []
-
-    result = _build_lookup_results(res.data, req)
-    # Store in cache for future identical queries
-    _cache_set(cache_key, result)
-    return result
+        
+    import asyncio
+    return await asyncio.to_thread(_sync_lookup, req)
 
 
 @app.post(
@@ -2194,49 +2193,15 @@ async def bulk_lookup(requests: List[LookupRequest], _: dict = Depends(verify_ap
     if len(requests) == 0:
         raise HTTPException(status_code=400, detail="Request list cannot be empty.")
 
-    all_results = []
-    for req in requests:
+    import asyncio
+    
+    async def process_one(req):
         if not req.description.strip():
-            all_results.append([])
-            continue
-            
-        clean_desc = re.sub(r"[^\w\s]", " ", req.description)
-        terms = [t.strip() for t in clean_desc.split() if t.strip()]
-        if not terms:
-            all_results.append([])
-            continue
-            
-        tsquery_and = " & ".join(terms)
-        res = (
-            supabase.table("hsn_rates")
-            .select("*")
-            .text_search("hsn_description", tsquery_and)
-            .execute()
-        )
+            return []
+        return await asyncio.to_thread(_sync_lookup, req)
         
-        if not res.data:
-            tsquery_or = " | ".join(terms)
-            res = (
-                supabase.table("hsn_rates")
-                .select("*")
-                .text_search("hsn_description", tsquery_or)
-                .execute()
-            )
-            
-        if not res.data and len(terms) > 0:
-            res = (
-                supabase.table("hsn_rates")
-                .select("*")
-                .ilike("hsn_description", f"%{terms[0]}%")
-                .execute()
-            )
-
-        if not res.data:
-            all_results.append([])
-        else:
-            all_results.append(_build_lookup_results(res.data, req))
-
-    return all_results
+    results = await asyncio.gather(*[process_one(req) for req in requests])
+    return list(results)
 
 
 @app.get(
