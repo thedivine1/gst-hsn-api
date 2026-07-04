@@ -352,7 +352,33 @@
   }
 
   // ── Auth State ──
-  sb.auth.onAuthStateChange((event, session) => {
+  // When GitHub OAuth completes, the server writes tokens into 'sb-session'.
+  // We must call setSession() to hydrate the Supabase JS client BEFORE
+  // onAuthStateChange fires — otherwise it sees no session and redirects to /login.
+  async function initAuth() {
+    const raw = localStorage.getItem('sb-session');
+    if (raw) {
+      try {
+        const saved = JSON.parse(raw);
+        if (saved.access_token && saved.refresh_token) {
+          // Hydrate the Supabase client with our stored tokens
+          const { data, error } = await sb.auth.setSession({
+            access_token:  saved.access_token,
+            refresh_token: saved.refresh_token,
+          });
+          if (!error && data.session) {
+            localStorage.removeItem('sb-session');   // clean up
+            sessionToken = data.session.access_token;
+            showDashboard(data.session.user);
+            fetchKeys();
+            return;
+          }
+        }
+      } catch (_) { /* fall through to normal check */ }
+    }
+
+    // Normal flow: check active Supabase session
+    const { data: { session } } = await sb.auth.getSession();
     if (session) {
       sessionToken = session.access_token;
       showDashboard(session.user);
@@ -360,7 +386,17 @@
     } else {
       window.location.href = '/login';
     }
+  }
+
+  sb.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_OUT') {
+      window.location.href = '/login';
+    }
+    // SIGNED_IN / TOKEN_REFRESHED are handled by initAuth & setSession above
   });
+
+  initAuth();
+
 
   function showAuth() {
     document.getElementById('auth-view').style.display = 'block';
