@@ -363,8 +363,9 @@
   function githubLogin() {
     const params = new URLSearchParams({
       client_id:    GITHUB_CLIENT_ID,
-      redirect_uri: SITE_URL + '/auth/callback',
-      scope:        'read:user user:email',
+      scope:        'user:email',
+      state:        'github_login',
+      allow_signup: 'true'
     });
     window.location.href = 'https://github.com/login/oauth/authorize?' + params.toString();
   }
