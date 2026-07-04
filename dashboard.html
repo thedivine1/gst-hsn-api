@@ -4,456 +4,866 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Developer Dashboard — GST Accelerator</title>
-  <meta name="description" content="GST Accelerator Developer Dashboard — Manage API keys and access the GST rate lookup API.">
+  <meta name="description" content="GST Accelerator Developer Dashboard — Manage API keys, monitor usage and integrate the GST rate lookup API.">
+  <meta name="robots" content="noindex">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
-      --bg: #0B0E14;
-      --surface: #111520;
-      --surface-2: #161B27;
-      --border: #1E2A3A;
-      --border-2: #263344;
-      --amber: #E8650A;
-      --amber-dim: rgba(232, 101, 10, 0.12);
-      --amber-glow: rgba(232, 101, 10, 0.25);
-      --text: #F0F2F5;
-      --text-2: #B4BFCC;
-      --text-muted: #6B7B8D;
-      --success: #10B981;
-      --danger: #F04545;
+      --bg:          #080B11;
+      --sidebar-bg:  #0C1018;
+      --surface:     #111621;
+      --surface-2:   #171D2B;
+      --surface-3:   #1E2638;
+      --border:      #1E2A3A;
+      --border-2:    #263344;
+      --amber:       #E8650A;
+      --amber-soft:  #F97316;
+      --amber-dim:   rgba(232,101,10,0.10);
+      --amber-glow:  rgba(232,101,10,0.22);
+      --blue:        #3B82F6;
+      --blue-dim:    rgba(59,130,246,0.10);
+      --green:       #10B981;
+      --green-dim:   rgba(16,185,129,0.10);
+      --text:        #EEF0F4;
+      --text-2:      #A8B4C4;
+      --text-muted:  #5C6E82;
+      --danger:      #EF4444;
+      --danger-dim:  rgba(239,68,68,0.10);
+      --sidebar-w:   230px;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
     body {
       font-family: 'Inter', sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
       display: flex;
-      flex-direction: column;
-      background-image:
-        radial-gradient(ellipse at 10% 50%, rgba(232,101,10,0.07), transparent 35%),
-        radial-gradient(ellipse at 90% 10%, rgba(96,165,250,0.04), transparent 30%);
+      overflow-x: hidden;
     }
 
-    /* ── NAV ── */
-    nav {
-      padding: 0 2rem; height: 64px;
+    /* ─── SIDEBAR ─────────────────────────────── */
+    #sidebar {
+      width: var(--sidebar-w);
+      min-height: 100vh;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0;
+      z-index: 200;
+      transition: transform 0.3s ease;
+    }
+    .sidebar-logo {
+      display: flex; align-items: center; gap: 0.65rem;
+      padding: 1.35rem 1.25rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      text-decoration: none; color: var(--text);
+      font-weight: 700; font-size: 0.95rem;
+    }
+    .logo-icon {
+      width: 30px; height: 30px;
+      background: var(--amber);
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px; color: #fff; font-weight: 700;
+      flex-shrink: 0;
+      box-shadow: 0 0 12px rgba(232,101,10,0.35);
+    }
+
+    .sidebar-section {
+      padding: 1rem 0.75rem 0.25rem;
+    }
+    .sidebar-label {
+      font-size: 0.65rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--text-muted);
+      padding: 0 0.5rem;
+      margin-bottom: 0.35rem;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 0.65rem;
+      padding: 0.55rem 0.65rem;
+      border-radius: 7px;
+      font-size: 0.83rem; font-weight: 500;
+      color: var(--text-2);
+      cursor: pointer;
+      transition: all 0.15s;
+      text-decoration: none;
+      margin-bottom: 1px;
+    }
+    .nav-item:hover { background: var(--surface); color: var(--text); }
+    .nav-item.active {
+      background: var(--amber-dim);
+      color: var(--amber-soft);
+      border: 1px solid var(--amber-glow);
+    }
+    .nav-item svg { width: 15px; height: 15px; flex-shrink: 0; opacity: 0.8; }
+    .nav-item.active svg { opacity: 1; }
+
+    .sidebar-footer {
+      margin-top: auto;
+      border-top: 1px solid var(--border);
+      padding: 1rem 0.75rem;
+    }
+    .user-chip {
+      display: flex; align-items: center; gap: 0.65rem;
+      padding: 0.6rem 0.65rem;
+      border-radius: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+    }
+    .user-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--amber-dim);
+      border: 1.5px solid var(--amber-glow);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: var(--amber-soft);
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .user-info { flex: 1; min-width: 0; }
+    .user-email { font-size: 0.72rem; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .btn-signout {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-muted); padding: 2px;
+      transition: color 0.2s; line-height: 0;
+    }
+    .btn-signout:hover { color: var(--danger); }
+
+    /* ─── MAIN CONTENT ────────────────────────── */
+    #app {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ─── TOP BAR ─────────────────────────────── */
+    .topbar {
+      height: 60px;
       border-bottom: 1px solid var(--border);
       display: flex; align-items: center; justify-content: space-between;
-      background: rgba(11,14,20,0.9);
+      padding: 0 2rem;
+      background: rgba(8,11,17,0.85);
       backdrop-filter: blur(16px);
       position: sticky; top: 0; z-index: 100;
     }
-    .brand {
-      display: flex; align-items: center; gap: 0.6rem;
-      text-decoration: none; color: var(--text);
-      font-weight: 700; font-size: 1.05rem;
+    .topbar-title {
+      font-size: 0.9rem; font-weight: 600;
+      color: var(--text);
     }
-    .brand-icon {
-      width: 28px; height: 28px; background: var(--amber);
-      border-radius: 7px; display: flex; align-items: center; justify-content: center;
-      font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #fff; font-weight: 700;
+    .topbar-right { display: flex; align-items: center; gap: 0.75rem; }
+    .badge-plan {
+      font-size: 0.7rem; font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 100px;
+      background: var(--amber-dim);
+      color: var(--amber-soft);
+      border: 1px solid var(--amber-glow);
+      letter-spacing: 0.04em;
     }
-    .nav-right { display: flex; align-items: center; gap: 1rem; }
-    .nav-right a { color: var(--text-muted); text-decoration: none; font-size: 0.875rem; transition: color 0.2s; }
-    .nav-right a:hover { color: var(--text); }
-    #nav-user { font-size: 0.8rem; color: var(--text-muted); display: block; }
-    #logout-btn {
-      background: transparent; border: 1px solid var(--border);
-      color: var(--text-muted); padding: 0.4rem 0.9rem;
-      border-radius: 6px; cursor: pointer; font-family: inherit;
-      font-size: 0.8rem; transition: all 0.2s; display: none;
+    .topbar-link {
+      font-size: 0.8rem; color: var(--text-muted);
+      text-decoration: none; transition: color 0.2s;
     }
-    #logout-btn:hover { color: var(--text); border-color: var(--border-2); }
+    .topbar-link:hover { color: var(--text); }
 
-    /* ── MAIN ── */
-    main {
-      flex: 1; display: flex;
-      align-items: center; justify-content: center;
+    /* ─── PAGE BODY ───────────────────────────── */
+    .page {
+      flex: 1;
       padding: 2rem;
+      max-width: 1100px;
     }
 
-    /* ── AUTH CARD ── */
-    #auth-view {
-      width: 100%; max-width: 400px;
+    .page-header {
+      margin-bottom: 1.75rem;
+    }
+    .page-header h1 {
+      font-size: 1.5rem; font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.25rem;
+    }
+    .page-header p {
+      font-size: 0.83rem; color: var(--text-muted);
+    }
+
+    /* ─── STAT CARDS ──────────────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.75rem;
+    }
+    .stat-card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 2.5rem;
-      box-shadow: 0 30px 60px rgba(0,0,0,0.5);
-      animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 12px;
+      padding: 1.25rem 1.35rem;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s, transform 0.2s;
     }
-    .auth-logo {
-      width: 40px; height: 40px; background: var(--amber);
-      border-radius: 10px; display: flex; align-items: center; justify-content: center;
-      font-family: 'JetBrains Mono', monospace; font-size: 18px; color: #fff; font-weight: 700;
-      margin-bottom: 1.5rem;
+    .stat-card:hover { border-color: var(--border-2); transform: translateY(-1px); }
+    .stat-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--amber), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
     }
-    #auth-view h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 0.4rem; letter-spacing: -0.02em; }
-    #auth-view .auth-sub { color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.75rem; }
+    .stat-card:hover::before { opacity: 1; }
+    .stat-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 0.85rem;
+      font-size: 15px;
+    }
+    .stat-label { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.3rem; font-weight: 500; }
+    .stat-value { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.04em; line-height: 1; }
+    .stat-sub { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.35rem; }
+    .stat-badge {
+      font-size: 0.65rem; font-weight: 700;
+      padding: 2px 7px; border-radius: 100px;
+      display: inline-flex; margin-top: 0.35rem;
+    }
+    .stat-badge.green { background: var(--green-dim); color: var(--green); }
+    .stat-badge.amber { background: var(--amber-dim); color: var(--amber-soft); }
 
-    /* OAuth Buttons */
-    .oauth-grid { display: flex; flex-direction: column; gap: 0.65rem; }
-    .oauth-btn {
-      width: 100%; display: flex; align-items: center; gap: 0.75rem;
-      padding: 0.75rem 1rem;
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: 9px; cursor: pointer;
-      font-family: inherit; font-size: 0.88rem; font-weight: 500;
-      color: var(--text); text-align: left;
-      transition: all 0.2s;
-    }
-    .oauth-btn:hover {
-      background: var(--bg); border-color: var(--border-2);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    }
-    .oauth-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
-    .oauth-btn .btn-label { flex: 1; }
-    .oauth-btn .btn-arrow { color: var(--text-muted); font-size: 0.8rem; }
-
-    /* Divider */
-    .divider {
-      display: flex; align-items: center; gap: 0.75rem;
-      margin: 1.25rem 0; color: var(--text-muted); font-size: 0.8rem;
-    }
-    .divider::before, .divider::after {
-      content: ''; flex: 1; height: 1px; background: var(--border);
-    }
-
-    /* Email form */
-    .input-group { margin-bottom: 0.75rem; }
-    .input-group label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.4rem; }
-    input[type="email"] {
-      width: 100%;
-      background: var(--bg); border: 1px solid var(--border);
-      color: var(--text); padding: 0.75rem 1rem;
-      border-radius: 8px; font-family: inherit; font-size: 0.9rem;
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    input[type="email"]:focus { outline: none; border-color: var(--amber); box-shadow: 0 0 0 3px var(--amber-dim); }
-    .btn-primary {
-      width: 100%; background: var(--amber); color: #fff;
-      border: none; padding: 0.75rem; border-radius: 8px;
-      font-size: 0.9rem; font-weight: 600; cursor: pointer;
-      font-family: inherit; transition: all 0.2s; margin-top: 0.5rem;
-    }
-    .btn-primary:hover { background: #f0741c; transform: translateY(-1px); box-shadow: 0 4px 12px var(--amber-glow); }
-    .btn-primary:disabled { opacity: 0.65; cursor: not-allowed; transform: none; box-shadow: none; }
-    #auth-message { margin-top: 0.75rem; font-size: 0.82rem; display: none; }
-
-    /* ── DASHBOARD ── */
-    #dashboard-view {
-      display: none; width: 100%; max-width: 780px;
-      animation: fadeIn 0.4s ease;
-    }
-    .dash-header {
-      display: flex; justify-content: space-between; align-items: flex-start;
-      margin-bottom: 2rem;
-    }
-    .dash-header h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.25rem; }
-    .dash-header p { color: var(--text-muted); font-size: 0.875rem; }
-
+    /* ─── SECTION CARD ────────────────────────── */
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 12px; padding: 1.75rem;
-      margin-bottom: 1.25rem;
+      border-radius: 14px;
+      margin-bottom: 1.5rem;
+      overflow: hidden;
     }
     .card-header {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 1.5rem; padding-bottom: 1rem;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.1rem 1.5rem;
       border-bottom: 1px solid var(--border);
     }
-    .card-header h2 { font-size: 1rem; font-weight: 600; }
+    .card-header-left h2 { font-size: 0.92rem; font-weight: 700; }
+    .card-header-left p { font-size: 0.75rem; color: var(--text-muted); margin-top: 1px; }
+    .card-body { padding: 1.5rem; }
 
-    .btn-generate {
-      background: var(--amber); color: #fff; border: none;
-      padding: 0.5rem 1.1rem; border-radius: 7px;
-      font-size: 0.8rem; font-weight: 600; cursor: pointer;
-      font-family: inherit; transition: all 0.2s;
-      display: flex; align-items: center; gap: 0.4rem;
-    }
-    .btn-generate:hover { background: #f0741c; }
-    .btn-generate:disabled { opacity: 0.6; cursor: not-allowed; }
-
-    /* Key reveal */
+    /* ─── API KEY REVEAL ──────────────────────── */
     .key-reveal {
-      background: rgba(16,185,129,0.05);
-      border: 1px dashed var(--success);
-      border-radius: 8px; padding: 1.25rem;
-      margin-bottom: 1.25rem; display: none;
+      display: none;
+      margin: 0 1.5rem 1rem;
+      background: rgba(16,185,129,0.06);
+      border: 1px solid rgba(16,185,129,0.2);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
       animation: slideDown 0.3s ease;
     }
-    .key-reveal p { font-size: 0.8rem; color: var(--success); margin-bottom: 0.35rem; }
-    .key-reveal .warn { color: var(--amber); margin-bottom: 0.75rem; }
+    .key-reveal p { font-size: 0.82rem; margin-bottom: 0.3rem; }
+    .key-reveal .warn { color: #F59E0B; font-size: 0.78rem; }
     .key-display {
-      display: flex; background: var(--bg);
-      border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+      display: flex; align-items: center;
+      border: 1px solid var(--border-2);
+      border-radius: 7px; overflow: hidden;
+      margin-top: 0.75rem;
+      background: var(--surface-3);
     }
     .key-display code {
-      flex: 1; padding: 0.75rem 1rem;
-      font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text);
+      flex: 1; padding: 0.65rem 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--green);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .btn-copy {
       background: var(--surface-2); border: none;
-      border-left: 1px solid var(--border); color: var(--text);
-      padding: 0 1.1rem; cursor: pointer; font-size: 0.78rem; font-weight: 600;
-      font-family: inherit; transition: background 0.2s; white-space: nowrap;
+      border-left: 1px solid var(--border);
+      color: var(--text); padding: 0 1rem;
+      cursor: pointer; font-size: 0.78rem; font-weight: 600;
+      font-family: inherit; transition: background 0.15s;
+      white-space: nowrap; height: 100%; min-height: 36px;
     }
     .btn-copy:hover { background: var(--border); }
 
-    /* Key list */
-    .key-row {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0.9rem 0; border-bottom: 1px solid var(--border);
+    /* ─── KEY ROWS ────────────────────────────── */
+    .keys-table { width: 100%; border-collapse: collapse; }
+    .keys-table thead th {
+      font-size: 0.68rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--text-muted);
+      padding: 0.65rem 1.5rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      background: var(--sidebar-bg);
     }
-    .key-row:last-child { border-bottom: none; }
-    .key-meta { display: flex; flex-direction: column; gap: 0.2rem; }
-    .key-name { font-size: 0.875rem; font-weight: 500; }
-    .key-prefix { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--text-muted); }
-    .key-status {
-      font-size: 0.68rem; font-weight: 700; padding: 2px 8px;
-      border-radius: 100px; background: rgba(16,185,129,0.1);
-      color: var(--success); border: 1px solid rgba(16,185,129,0.2);
+    .keys-table tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
     }
+    .keys-table tbody tr:last-child { border-bottom: none; }
+    .keys-table tbody tr:hover { background: var(--surface-2); }
+    .keys-table td {
+      padding: 0.85rem 1.5rem;
+      font-size: 0.82rem;
+      vertical-align: middle;
+    }
+    .key-mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--text-2);
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 0.65rem; font-weight: 700;
+      padding: 2px 9px; border-radius: 100px;
+    }
+    .pill.active { background: var(--green-dim); color: var(--green); border: 1px solid rgba(16,185,129,0.2); }
+    .pill.active::before { content: '●'; font-size: 7px; }
     .btn-revoke {
-      background: transparent; border: 1px solid rgba(240,69,69,0.25);
-      color: var(--danger); padding: 0.35rem 0.75rem;
-      border-radius: 6px; font-size: 0.78rem; cursor: pointer;
-      font-family: inherit; transition: all 0.2s;
+      background: transparent;
+      border: 1px solid rgba(239,68,68,0.2);
+      color: var(--danger);
+      padding: 0.3rem 0.75rem;
+      border-radius: 6px; font-size: 0.75rem;
+      cursor: pointer; font-family: inherit;
+      transition: all 0.15s;
     }
-    .btn-revoke:hover { background: rgba(240,69,69,0.08); border-color: var(--danger); }
-
-    /* Stats cards */
-    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
-    .stat-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 10px; padding: 1.25rem;
+    .btn-revoke:hover { background: var(--danger-dim); border-color: var(--danger); }
+    .empty-state {
+      text-align: center; padding: 3.5rem 1rem;
+      color: var(--text-muted);
     }
-    .stat-label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.4rem; }
-    .stat-value { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; }
-    .stat-sub { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.2rem; }
+    .empty-state .empty-icon { font-size: 2rem; margin-bottom: 0.75rem; }
+    .empty-state p { font-size: 0.82rem; }
 
-    /* Empty */
-    .empty { text-align: center; padding: 3rem 1rem; color: var(--text-muted); font-size: 0.875rem; }
+    /* ─── QUICK START ─────────────────────────── */
+    .qs-tabs { display: flex; gap: 0.35rem; margin-bottom: 1rem; }
+    .qs-tab {
+      padding: 0.4rem 0.85rem;
+      border-radius: 6px; font-size: 0.78rem; font-weight: 500;
+      border: 1px solid var(--border);
+      background: transparent; color: var(--text-muted);
+      cursor: pointer; transition: all 0.15s; font-family: inherit;
+    }
+    .qs-tab.active {
+      background: var(--amber-dim); color: var(--amber-soft);
+      border-color: var(--amber-glow);
+    }
+    .code-block {
+      background: var(--sidebar-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+    .code-block pre {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      line-height: 1.7;
+      color: #CBD5E1;
+      padding: 1.25rem 1.5rem;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .code-comment { color: #4A5568; }
+    .code-key { color: #F97316; }
+    .code-str { color: #68D391; }
+    .code-kw { color: #76E4F7; }
+    .code-fn { color: #A78BFA; }
+    .code-block .copy-code {
+      position: absolute; top: 0.75rem; right: 0.75rem;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.72rem; font-weight: 600;
+      padding: 0.3rem 0.75rem; border-radius: 5px;
+      cursor: pointer; font-family: inherit;
+      transition: all 0.15s;
+    }
+    .code-block .copy-code:hover { color: var(--text); border-color: var(--border-2); }
 
-    /* Toast */
+    /* ─── ENDPOINTS ───────────────────────────── */
+    .endpoint-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .endpoint-item {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: var(--surface-2);
+      text-decoration: none;
+      transition: all 0.15s;
+    }
+    .endpoint-item:hover { border-color: var(--border-2); background: var(--surface-3); }
+    .method {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem; font-weight: 700;
+      padding: 2px 8px; border-radius: 5px;
+      min-width: 42px; text-align: center;
+      flex-shrink: 0;
+    }
+    .method.get { background: var(--blue-dim); color: var(--blue); }
+    .method.post { background: var(--green-dim); color: var(--green); }
+    .endpoint-path {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem; color: var(--text-2);
+      flex: 1;
+    }
+    .endpoint-desc { font-size: 0.75rem; color: var(--text-muted); }
+
+    /* ─── USAGE BAR ───────────────────────────── */
+    .usage-bar-wrap {
+      background: var(--surface-3); border-radius: 100px;
+      height: 6px; overflow: hidden; margin-top: 0.6rem;
+    }
+    .usage-bar {
+      height: 100%; border-radius: 100px;
+      background: linear-gradient(90deg, var(--amber), var(--amber-soft));
+      transition: width 0.6s cubic-bezier(0.16,1,0.3,1);
+    }
+
+    /* ─── BUTTONS ─────────────────────────────── */
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: var(--amber); color: #fff;
+      border: none; border-radius: 8px;
+      padding: 0.55rem 1.2rem;
+      font-size: 0.83rem; font-weight: 600;
+      font-family: inherit; cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 0 0 0 rgba(232,101,10,0);
+    }
+    .btn-primary:hover {
+      background: var(--amber-soft);
+      box-shadow: 0 4px 16px rgba(232,101,10,0.35);
+      transform: translateY(-1px);
+    }
+    .btn-primary:disabled { opacity: 0.6; transform: none; cursor: not-allowed; }
+
+    /* ─── TOAST ───────────────────────────────── */
     #toast {
       position: fixed; bottom: 2rem; right: 2rem;
-      background: var(--surface); border: 1px solid var(--border);
-      padding: 0.85rem 1.25rem; border-radius: 8px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 0.85rem 1.25rem;
+      border-radius: 10px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
       transform: translateY(200%);
       transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
-      z-index: 1000; font-size: 0.875rem;
+      z-index: 1000; font-size: 0.83rem;
+      display: flex; align-items: center; gap: 0.5rem;
     }
     #toast.show { transform: translateY(0); }
 
-    @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    /* ─── ANIMATIONS ──────────────────────────── */
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; } to { opacity: 1; }
+    }
+    #app { animation: fadeIn 0.4s ease; }
   </style>
 </head>
 <body>
 
-<nav>
-  <a href="/" class="brand">
-    <div class="brand-icon">₹</div>
+<!-- ─── SIDEBAR ─────────────────────────────────── -->
+<aside id="sidebar">
+  <a href="/" class="sidebar-logo">
+    <div class="logo-icon">₹</div>
     GST Accelerator
   </a>
-  <div class="nav-right">
-    <a href="/docs">API Docs</a>
-    <span id="nav-user"></span>
-    <button id="logout-btn" onclick="signOut()">Sign out</button>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Main</div>
+    <a class="nav-item active" onclick="showSection('home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Overview
+    </a>
+    <a class="nav-item" onclick="showSection('keys')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+      API Keys
+    </a>
+    <a class="nav-item" onclick="showSection('quickstart')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      Quick Start
+    </a>
+    <a class="nav-item" href="/docs" target="_blank">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      API Docs
+    </a>
+    <a class="nav-item" href="/pricing" target="_blank">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Upgrade Plan
+    </a>
   </div>
-</nav>
 
-<main>
+  <div class="sidebar-footer">
+    <div class="user-chip">
+      <div class="user-avatar" id="sb-avatar">?</div>
+      <div class="user-info">
+        <div class="user-email" id="sb-email">Loading…</div>
+      </div>
+      <button class="btn-signout" onclick="signOut()" title="Sign out">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </div>
+</aside>
 
-  <!-- DASHBOARD VIEW -->
-  <div id="dashboard-view">
+<!-- ─── MAIN APP ──────────────────────────────────── -->
+<div id="app">
+
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">Overview</div>
+    <div class="topbar-right">
+      <span class="badge-plan" id="plan-badge">FREE</span>
+      <a class="topbar-link" href="/docs">API Docs</a>
+    </div>
+  </div>
+
+  <!-- ── OVERVIEW SECTION ── -->
+  <div class="page" id="section-home">
+    <div class="page-header">
+      <h1>Welcome back 👋</h1>
+      <p>Here's what's happening with your GST Accelerator API.</p>
+    </div>
+
     <!-- Stats -->
     <div class="stats-grid">
       <div class="stat-card">
+        <div class="stat-icon" style="background:var(--amber-dim);">🔑</div>
         <div class="stat-label">Active API Keys</div>
         <div class="stat-value" id="stat-keys">—</div>
         <div class="stat-sub">across all environments</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Plan</div>
-        <div class="stat-value" style="font-size:1.1rem;padding-top:0.4rem;" id="stat-plan">Free</div>
-        <div class="stat-sub">100 calls / month</div>
+        <div class="stat-icon" style="background:var(--blue-dim);">📡</div>
+        <div class="stat-label">API Calls Used</div>
+        <div class="stat-value" id="stat-calls">—</div>
+        <div class="stat-sub" id="stat-calls-sub">this month</div>
       </div>
       <div class="stat-card">
+        <div class="stat-icon" style="background:var(--green-dim);">🗄️</div>
+        <div class="stat-label">HSN / SAC Codes</div>
+        <div class="stat-value" style="font-size:1.2rem;padding-top:0.25rem;">48,752+</div>
+        <div class="stat-badge green">Live</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:var(--amber-dim);">📋</div>
         <div class="stat-label">Data Version</div>
-        <div class="stat-value" style="font-size:1rem;padding-top:0.4rem;">Sept 2025</div>
+        <div class="stat-value" style="font-size:1rem;padding-top:0.35rem;">Sept 2025</div>
         <div class="stat-sub">CBIC 09/2025-CT(Rate)</div>
+      </div>
+    </div>
+
+    <!-- Usage meter -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-left">
+          <h2>Monthly Usage</h2>
+          <p>API call consumption against your current plan limit</p>
+        </div>
+        <a href="/pricing" style="font-size:0.78rem;color:var(--amber-soft);text-decoration:none;font-weight:600;">Upgrade →</a>
+      </div>
+      <div class="card-body">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:0.5rem;">
+          <span style="font-size:0.83rem;color:var(--text-2);">
+            <span id="usage-used" style="font-weight:700;color:var(--text);">—</span> / <span id="usage-limit">—</span> calls used
+          </span>
+          <span id="usage-pct" style="font-size:0.78rem;color:var(--text-muted);"></span>
+        </div>
+        <div class="usage-bar-wrap">
+          <div class="usage-bar" id="usage-bar" style="width:0%"></div>
+        </div>
+        <p style="margin-top:0.75rem;font-size:0.75rem;color:var(--text-muted);">
+          Resets on the 1st of every month. Need more? <a href="/pricing" style="color:var(--amber-soft);">View plans →</a>
+        </p>
+      </div>
+    </div>
+
+    <!-- Key list preview -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-left">
+          <h2>API Keys</h2>
+          <p>Your active credentials for API access</p>
+        </div>
+        <button class="btn-primary" id="gen-btn-home" onclick="generateKey()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Key
+        </button>
+      </div>
+
+      <div id="key-reveal-home" class="key-reveal">
+        <p><strong style="color:var(--green);">✓ API key created successfully.</strong></p>
+        <p class="warn">⚠ Save this now — it will never be shown again.</p>
+        <div class="key-display">
+          <code id="raw-key">gsta_live_…</code>
+          <button class="btn-copy" onclick="copyKey()">Copy</button>
+        </div>
+      </div>
+
+      <table class="keys-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Key Prefix</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="keys-tbody">
+          <tr><td colspan="5"><div class="empty-state"><div class="empty-icon">⏳</div><p>Loading your keys…</p></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── KEYS SECTION ── -->
+  <div class="page" id="section-keys" style="display:none;">
+    <div class="page-header">
+      <h1>API Keys</h1>
+      <p>Create and manage your API credentials. Each key can be revoked independently.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-left">
+          <h2>Your Keys</h2>
+          <p>Only the prefix is shown after creation</p>
+        </div>
+        <button class="btn-primary" id="gen-btn-keys" onclick="generateKey()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Generate New Key
+        </button>
+      </div>
+
+      <div id="key-reveal-keys" class="key-reveal">
+        <p><strong style="color:var(--green);">✓ API key created successfully.</strong></p>
+        <p class="warn">⚠ This is the only time you'll see this key. Copy it now.</p>
+        <div class="key-display">
+          <code id="raw-key-2">gsta_live_…</code>
+          <button class="btn-copy" onclick="copyKey2()">Copy</button>
+        </div>
+      </div>
+
+      <table class="keys-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Key Prefix</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="keys-tbody-2">
+          <tr><td colspan="5"><div class="empty-state"><div class="empty-icon">⏳</div><p>Loading…</p></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── QUICK START SECTION ── -->
+  <div class="page" id="section-quickstart" style="display:none;">
+    <div class="page-header">
+      <h1>Quick Start</h1>
+      <p>Integrate the GST Accelerator API into your app in under 5 minutes.</p>
+    </div>
+
+    <div class="card" style="margin-bottom:1.25rem;">
+      <div class="card-header">
+        <div class="card-header-left">
+          <h2>Base URL &amp; Authentication</h2>
+          <p>Include your API key in every request header</p>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="code-block">
+          <button class="copy-code" onclick="copySnippet('base')">Copy</button>
+          <pre id="snip-base"><span class="code-comment"># Base URL</span>
+<span class="code-str">https://gstaccelerator.in</span>
+
+<span class="code-comment"># Required header on all /api/v1/ endpoints</span>
+<span class="code-key">X-API-Key</span>: YOUR_API_KEY</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:1.25rem;">
+      <div class="card-header">
+        <div class="card-header-left"><h2>Code Examples</h2><p>Pick your language</p></div>
+      </div>
+      <div class="card-body">
+        <div class="qs-tabs">
+          <button class="qs-tab active" onclick="setLang('curl')">cURL</button>
+          <button class="qs-tab" onclick="setLang('python')">Python</button>
+          <button class="qs-tab" onclick="setLang('js')">JavaScript</button>
+          <button class="qs-tab" onclick="setLang('php')">PHP</button>
+        </div>
+
+        <div class="code-block">
+          <button class="copy-code" onclick="copySnippet('lang')">Copy</button>
+          <pre id="snip-lang"><span class="code-comment"># HSN lookup</span>
+<span class="code-fn">curl</span> -X GET <span class="code-str">"https://gstaccelerator.in/api/v1/hsn/1001"</span> \
+  -H <span class="code-str">"X-API-Key: YOUR_API_KEY"</span>
+
+<span class="code-comment"># Description search</span>
+<span class="code-fn">curl</span> -X POST <span class="code-str">"https://gstaccelerator.in/api/v1/lookup"</span> \
+  -H <span class="code-str">"X-API-Key: YOUR_API_KEY"</span> \
+  -H <span class="code-str">"Content-Type: application/json"</span> \
+  -d <span class="code-str">'{"description":"wheat flour","top_k":3}'</span></pre>
+        </div>
       </div>
     </div>
 
     <div class="card">
       <div class="card-header">
-        <div>
-          <h2>API Keys</h2>
+        <div class="card-header-left"><h2>Available Endpoints</h2></div>
+        <a href="/docs" target="_blank" style="font-size:0.78rem;color:var(--amber-soft);text-decoration:none;font-weight:600;">Full Docs →</a>
+      </div>
+      <div class="card-body">
+        <div class="endpoint-list">
+          <a class="endpoint-item" href="/docs#hsn" target="_blank">
+            <span class="method get">GET</span>
+            <span class="endpoint-path">/api/v1/hsn/{code}</span>
+            <span class="endpoint-desc">Lookup GST rate by HSN code</span>
+          </a>
+          <a class="endpoint-item" href="/docs#sac" target="_blank">
+            <span class="method get">GET</span>
+            <span class="endpoint-path">/api/v1/sac/{code}</span>
+            <span class="endpoint-desc">Lookup GST rate by SAC code</span>
+          </a>
+          <a class="endpoint-item" href="/docs#lookup" target="_blank">
+            <span class="method post">POST</span>
+            <span class="endpoint-path">/api/v1/lookup</span>
+            <span class="endpoint-desc">Full-text description search</span>
+          </a>
+          <a class="endpoint-item" href="/docs#bulk" target="_blank">
+            <span class="method post">POST</span>
+            <span class="endpoint-path">/api/v1/bulk</span>
+            <span class="endpoint-desc">Batch lookup (up to 100 items)</span>
+          </a>
+          <a class="endpoint-item" href="/docs#autocomplete" target="_blank">
+            <span class="method get">GET</span>
+            <span class="endpoint-path">/api/v1/autocomplete?q={query}</span>
+            <span class="endpoint-desc">Autocomplete HSN/SAC descriptions</span>
+          </a>
         </div>
-        <button class="btn-generate" id="generate-btn" onclick="generateKey()">
-          <span>+</span> Generate New Key
-        </button>
-      </div>
-
-      <!-- New key reveal -->
-      <div id="key-reveal" class="key-reveal">
-        <p><strong>✓ New API key generated successfully.</strong></p>
-        <p class="warn">⚠ Copy it now — this key will never be shown again.</p>
-        <div class="key-display">
-          <code id="raw-key">gsta_live_...</code>
-          <button class="btn-copy" onclick="copyKey()">Copy</button>
-        </div>
-      </div>
-
-      <!-- Keys list -->
-      <div id="keys-list">
-        <div class="empty">Loading your keys...</div>
-      </div>
-    </div>
-
-    <div class="card" style="background:var(--amber-dim);border-color:var(--amber-glow);">
-      <div style="font-size:0.875rem;color:var(--text-2);line-height:1.7;">
-        <strong style="color:var(--amber);">Compliance. Accelerated.</strong> &nbsp;·&nbsp;
-        Questions? Email <a href="mailto:hello@gstaccelerator.in" style="color:var(--amber);">hello@gstaccelerator.in</a>
-        &nbsp;·&nbsp; <a href="/docs" style="color:var(--amber);">View API Docs →</a>
       </div>
     </div>
   </div>
 
-</main>
+</div><!-- /#app -->
 
-<div id="toast"></div>
+<div id="toast">✓ <span id="toast-msg"></span></div>
 
 <script>
-  const SUPABASE_URL = "{{ SUPABASE_URL }}";
+  const SUPABASE_URL      = "{{ SUPABASE_URL }}";
   const SUPABASE_ANON_KEY = "{{ SUPABASE_ANON_KEY }}";
-  const SITE_URL = "{{ NEXT_PUBLIC_SITE_URL }}" || window.location.origin;
+  const SITE_URL          = "{{ NEXT_PUBLIC_SITE_URL }}" || window.location.origin;
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let sessionToken = null;
+  let currentUser  = null;
 
-  // ── Toast ──
-  function toast(msg, duration = 3000) {
+  // ── Toast ──────────────────────────────────────
+  function toast(msg, duration = 3200) {
+    document.getElementById('toast-msg').textContent = msg;
     const t = document.getElementById('toast');
-    t.textContent = msg;
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), duration);
   }
 
-  // ── Auth State ──
-  // When GitHub OAuth completes, the server writes tokens into 'sb-session'.
-  // We must call setSession() to hydrate the Supabase JS client BEFORE
-  // onAuthStateChange fires — otherwise it sees no session and redirects to /login.
+  // ── Auth Init ──────────────────────────────────
   async function initAuth() {
     const raw = localStorage.getItem('sb-session');
     if (raw) {
       try {
         const saved = JSON.parse(raw);
         if (saved.access_token && saved.refresh_token) {
-          // Hydrate the Supabase client with our stored tokens
           const { data, error } = await sb.auth.setSession({
             access_token:  saved.access_token,
             refresh_token: saved.refresh_token,
           });
           if (!error && data.session) {
-            localStorage.removeItem('sb-session');   // clean up
+            localStorage.removeItem('sb-session');
             sessionToken = data.session.access_token;
-            showDashboard(data.session.user);
-            fetchKeys();
+            currentUser  = data.session.user;
+            onSignedIn(data.session.user);
             return;
           }
         }
-      } catch (_) { /* fall through to normal check */ }
+      } catch (_) {}
     }
-
-    // Normal flow: check active Supabase session
     const { data: { session } } = await sb.auth.getSession();
     if (session) {
       sessionToken = session.access_token;
-      showDashboard(session.user);
-      fetchKeys();
+      currentUser  = session.user;
+      onSignedIn(session.user);
     } else {
       window.location.href = '/login';
     }
   }
 
   sb.auth.onAuthStateChange((event, session) => {
-    if (event === 'SIGNED_OUT') {
-      window.location.href = '/login';
-    }
-    // SIGNED_IN / TOKEN_REFRESHED are handled by initAuth & setSession above
+    if (event === 'SIGNED_OUT') window.location.href = '/login';
   });
 
-  initAuth();
+  function onSignedIn(user) {
+    // Populate user chip
+    const email = user.email || '';
+    const meta  = user.user_metadata || {};
+    const name  = meta.full_name || meta.username || email.split('@')[0] || 'You';
+    document.getElementById('sb-email').textContent = email;
 
-
-  function showAuth() {
-    document.getElementById('auth-view').style.display = 'block';
-    document.getElementById('dashboard-view').style.display = 'none';
-    document.getElementById('logout-btn').style.display = 'none';
-    document.getElementById('nav-user').style.display = 'none';
-  }
-
-  function showDashboard(user) {
-    document.getElementById('auth-view').style.display = 'none';
-    document.getElementById('dashboard-view').style.display = 'block';
-    document.getElementById('logout-btn').style.display = 'block';
-    const navUser = document.getElementById('nav-user');
-    navUser.textContent = user.email || user.user_metadata?.full_name || '';
-    navUser.style.display = 'block';
-  }
-
-  // ── OAuth ──
-  async function oauthLogin(provider) {
-    const { error } = await sb.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo: SITE_URL + '/auth/callback' }
-    });
-    if (error) toast('Error: ' + error.message);
-  }
-
-  // ── Magic Link ──
-  async function handleMagicLink(e) {
-    e.preventDefault();
-    const email = document.getElementById('email').value;
-    const btn = document.getElementById('login-btn');
-    const msg = document.getElementById('auth-message');
-    btn.disabled = true;
-    btn.textContent = 'Sending...';
-
-    const { error } = await sb.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: SITE_URL + '/auth/callback' }
-    });
-
-    if (error) {
-      msg.textContent = error.message;
-      msg.style.color = 'var(--danger)';
-      btn.disabled = false;
-      btn.textContent = 'Send Magic Link →';
+    // Avatar
+    const avatarEl = document.getElementById('sb-avatar');
+    if (meta.avatar_url) {
+      avatarEl.innerHTML = `<img src="${meta.avatar_url}" alt="${name}">`;
     } else {
-      msg.textContent = '✓ Check your email for the magic link!';
-      msg.style.color = 'var(--success)';
+      avatarEl.textContent = name.charAt(0).toUpperCase();
     }
-    msg.style.display = 'block';
+
+    // Welcome message
+    document.querySelector('#section-home .page-header h1').textContent =
+      `Welcome back, ${name.split(' ')[0]} 👋`;
+
+    fetchKeys();
+    fetchUsage();
   }
 
   async function signOut() {
     await sb.auth.signOut();
+    window.location.href = '/login';
   }
 
-  // ── Keys ──
+  // ── Section Nav ────────────────────────────────
+  const sections = ['home', 'keys', 'quickstart'];
+  const titles   = { home: 'Overview', keys: 'API Keys', quickstart: 'Quick Start' };
+
+  function showSection(id) {
+    sections.forEach(s => {
+      document.getElementById(`section-${s}`).style.display = s === id ? '' : 'none';
+    });
+    document.querySelectorAll('.nav-item').forEach((el, i) => {
+      el.classList.toggle('active', i === sections.indexOf(id));
+    });
+    document.getElementById('page-title').textContent = titles[id] || '';
+  }
+
+  // ── Fetch Keys ─────────────────────────────────
   async function fetchKeys() {
     try {
       const res = await fetch('/api/v1/dashboard/keys', {
@@ -462,36 +872,62 @@
       if (!res.ok) throw new Error();
       const keys = await res.json();
       document.getElementById('stat-keys').textContent = keys.length;
-      renderKeys(keys);
+      renderKeys(keys, 'keys-tbody');
+      renderKeys(keys, 'keys-tbody-2');
     } catch {
-      toast('Failed to load keys.');
+      ['keys-tbody','keys-tbody-2'].forEach(id => {
+        document.getElementById(id).innerHTML =
+          `<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">⚠️</div><p>Could not load keys.</p></div></td></tr>`;
+      });
     }
   }
 
-  function renderKeys(keys) {
-    const list = document.getElementById('keys-list');
+  function renderKeys(keys, tbodyId) {
+    const tbody = document.getElementById(tbodyId);
     if (!keys.length) {
-      list.innerHTML = '<div class="empty">No API keys yet. Generate your first key above.</div>';
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state">
+        <div class="empty-icon">🔑</div>
+        <p>No API keys yet — generate your first key above.</p>
+      </div></td></tr>`;
       return;
     }
-    list.innerHTML = keys.map(k => `
-      <div class="key-row">
-        <div class="key-meta">
-          <div style="display:flex;align-items:center;gap:0.5rem;">
-            <span class="key-name">${k.name || 'Production Key'}</span>
-            <span class="key-status">Active</span>
-          </div>
-          <span class="key-prefix">${k.key_prefix}••••••••••</span>
-        </div>
-        <button class="btn-revoke" onclick="revokeKey('${k.id}')">Revoke</button>
-      </div>
+    tbody.innerHTML = keys.map(k => `
+      <tr>
+        <td style="font-weight:500;">${k.name || 'Production Key'}</td>
+        <td><span class="key-mono">${k.key_prefix}<span style="color:var(--text-muted);">••••••••</span></span></td>
+        <td><span class="pill active">Active</span></td>
+        <td style="color:var(--text-muted);font-size:0.78rem;">${new Date(k.created_at || Date.now()).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</td>
+        <td style="text-align:right;"><button class="btn-revoke" onclick="revokeKey('${k.id}')">Revoke</button></td>
+      </tr>
     `).join('');
   }
 
+  // ── Fetch Usage ────────────────────────────────
+  async function fetchUsage() {
+    try {
+      const res = await fetch('/api/v1/dashboard/usage', {
+        headers: { Authorization: `Bearer ${sessionToken}` }
+      });
+      if (!res.ok) return;
+      const d = await res.json();
+      const used  = d.calls_used  ?? 0;
+      const limit = d.calls_limit ?? 100;
+      const pct   = Math.min(Math.round((used / limit) * 100), 100);
+
+      document.getElementById('stat-calls').textContent     = used.toLocaleString();
+      document.getElementById('stat-calls-sub').textContent = `of ${limit.toLocaleString()} / month`;
+      document.getElementById('usage-used').textContent     = used.toLocaleString();
+      document.getElementById('usage-limit').textContent    = limit.toLocaleString();
+      document.getElementById('usage-pct').textContent      = `${pct}%`;
+      document.getElementById('usage-bar').style.width      = `${pct}%`;
+      if (pct >= 90) document.getElementById('usage-bar').style.background = '#EF4444';
+    } catch { /* silently ignore */ }
+  }
+
+  // ── Generate Key ───────────────────────────────
   async function generateKey() {
-    const btn = document.getElementById('generate-btn');
-    btn.disabled = true;
-    btn.innerHTML = '<span>⟳</span> Generating...';
+    const btns = ['gen-btn-home','gen-btn-keys'];
+    btns.forEach(id => { const b=document.getElementById(id); if(b){b.disabled=true;b.textContent='Generating…';} });
     try {
       const res = await fetch('/api/v1/dashboard/keys', {
         method: 'POST',
@@ -500,36 +936,128 @@
       });
       if (!res.ok) throw new Error();
       const data = await res.json();
-      document.getElementById('raw-key').textContent = data.raw_key;
-      document.getElementById('key-reveal').style.display = 'block';
+      ['raw-key','raw-key-2'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = data.raw_key;
+      });
+      ['key-reveal-home','key-reveal-keys'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'block';
+      });
       fetchKeys();
+      fetchUsage();
     } catch {
       toast('Failed to generate key.');
     } finally {
-      btn.disabled = false;
-      btn.innerHTML = '<span>+</span> Generate New Key';
+      btns.forEach(id => {
+        const b = document.getElementById(id);
+        if (b) { b.disabled=false; b.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> New Key'; }
+      });
     }
   }
 
   async function revokeKey(id) {
-    if (!confirm('Revoke this key? All applications using it will stop working immediately.')) return;
+    if (!confirm('Revoke this key? Any application using it will immediately lose access.')) return;
     try {
       const res = await fetch(`/api/v1/dashboard/keys/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${sessionToken}` }
       });
       if (!res.ok) throw new Error();
-      toast('Key revoked.');
+      toast('Key revoked successfully.');
       fetchKeys();
-    } catch {
-      toast('Failed to revoke key.');
-    }
+      fetchUsage();
+    } catch { toast('Failed to revoke key.'); }
   }
 
   function copyKey() {
     const text = document.getElementById('raw-key').textContent;
+    navigator.clipboard.writeText(text).then(() => toast('API key copied!'));
+  }
+  function copyKey2() {
+    const text = document.getElementById('raw-key-2').textContent;
+    navigator.clipboard.writeText(text).then(() => toast('API key copied!'));
+  }
+
+  // ── Quick Start Code Snippets ──────────────────
+  const snippets = {
+    curl: `<span class="code-comment"># HSN code lookup</span>
+<span class="code-fn">curl</span> -X GET <span class="code-str">"https://gstaccelerator.in/api/v1/hsn/1001"</span> \\
+  -H <span class="code-str">"X-API-Key: YOUR_API_KEY"</span>
+
+<span class="code-comment"># Description-based search</span>
+<span class="code-fn">curl</span> -X POST <span class="code-str">"https://gstaccelerator.in/api/v1/lookup"</span> \\
+  -H <span class="code-str">"X-API-Key: YOUR_API_KEY"</span> \\
+  -H <span class="code-str">"Content-Type: application/json"</span> \\
+  -d <span class="code-str">'{"description":"wheat flour","top_k":3}'</span>`,
+
+    python: `<span class="code-kw">import</span> requests
+
+<span class="code-key">API_KEY</span> = <span class="code-str">"YOUR_API_KEY"</span>
+<span class="code-key">BASE</span>    = <span class="code-str">"https://gstaccelerator.in/api/v1"</span>
+<span class="code-key">HEADERS</span> = {<span class="code-str">"X-API-Key"</span>: API_KEY}
+
+<span class="code-comment"># HSN lookup</span>
+r = requests.<span class="code-fn">get</span>(<span class="code-str">f"{BASE}/hsn/1001"</span>, headers=HEADERS)
+<span class="code-fn">print</span>(r.json())
+
+<span class="code-comment"># Description search</span>
+r = requests.<span class="code-fn">post</span>(<span class="code-str">f"{BASE}/lookup"</span>,
+    headers=HEADERS,
+    json={<span class="code-str">"description"</span>: <span class="code-str">"wheat flour"</span>, <span class="code-str">"top_k"</span>: 3})
+<span class="code-fn">print</span>(r.json())`,
+
+    js: `<span class="code-kw">const</span> <span class="code-key">API_KEY</span> = <span class="code-str">"YOUR_API_KEY"</span>;
+<span class="code-kw">const</span> <span class="code-key">BASE</span>    = <span class="code-str">"https://gstaccelerator.in/api/v1"</span>;
+
+<span class="code-comment">// HSN lookup</span>
+<span class="code-kw">const</span> hsn = <span class="code-kw">await</span> <span class="code-fn">fetch</span>(<span class="code-str">\`\${BASE}/hsn/1001\`</span>, {
+  headers: { <span class="code-str">"X-API-Key"</span>: API_KEY }
+}).then(r => r.<span class="code-fn">json</span>());
+console.<span class="code-fn">log</span>(hsn);
+
+<span class="code-comment">// Description search</span>
+<span class="code-kw">const</span> result = <span class="code-kw">await</span> <span class="code-fn">fetch</span>(<span class="code-str">\`\${BASE}/lookup\`</span>, {
+  method: <span class="code-str">"POST"</span>,
+  headers: { <span class="code-str">"X-API-Key"</span>: API_KEY, <span class="code-str">"Content-Type"</span>: <span class="code-str">"application/json"</span> },
+  body: <span class="code-fn">JSON.stringify</span>({ description: <span class="code-str">"wheat flour"</span>, top_k: 3 })
+}).then(r => r.<span class="code-fn">json</span>());
+console.<span class="code-fn">log</span>(result);`,
+
+    php: `<span class="code-kw">&lt;?php</span>
+<span class="code-key">$api_key</span> = <span class="code-str">'YOUR_API_KEY'</span>;
+<span class="code-key">$base</span>    = <span class="code-str">'https://gstaccelerator.in/api/v1'</span>;
+
+<span class="code-comment">// HSN lookup</span>
+<span class="code-key">$ch</span> = <span class="code-fn">curl_init</span>();
+<span class="code-fn">curl_setopt_array</span>(<span class="code-key">$ch</span>, [
+  CURLOPT_URL            => <span class="code-str">"{$base}/hsn/1001"</span>,
+  CURLOPT_HTTPHEADER     => [<span class="code-str">"X-API-Key: {$api_key}"</span>],
+  CURLOPT_RETURNTRANSFER => <span class="code-kw">true</span>,
+]);
+<span class="code-key">$response</span> = <span class="code-fn">json_decode</span>(<span class="code-fn">curl_exec</span>(<span class="code-key">$ch</span>), <span class="code-kw">true</span>);
+<span class="code-fn">print_r</span>(<span class="code-key">$response</span>);
+<span class="code-kw">?&gt;</span>`
+  };
+
+  function setLang(lang) {
+    document.querySelectorAll('.qs-tab').forEach((t, i) => {
+      const langs = ['curl','python','js','php'];
+      t.classList.toggle('active', langs[i] === lang);
+    });
+    document.getElementById('snip-lang').innerHTML = snippets[lang];
+  }
+
+  function copySnippet(id) {
+    const el = id === 'base'
+      ? document.getElementById('snip-base')
+      : document.getElementById('snip-lang');
+    const text = el.innerText || el.textContent;
     navigator.clipboard.writeText(text).then(() => toast('Copied to clipboard!'));
   }
+
+  // ── Boot ───────────────────────────────────────
+  initAuth();
 </script>
 </body>
 </html>
