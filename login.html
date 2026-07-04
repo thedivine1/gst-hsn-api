@@ -257,6 +257,7 @@
     @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -283,7 +284,7 @@
 
     <!-- OAuth buttons -->
     <div class="oauth-grid">
-      <button class="oauth-btn" onclick="oauthLogin('google')">
+      <button class="oauth-btn" id="google-login-btn" onclick="oauthLogin('google')">
         <!-- Google icon -->
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -295,7 +296,7 @@
         <span class="btn-arrow">→</span>
       </button>
 
-      <button class="oauth-btn" onclick="githubLogin()">
+      <button class="oauth-btn" id="github-login-btn" onclick="githubLogin()">
         <!-- GitHub icon -->
         <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
           <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.164 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.907-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.268 2.75 1.026A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.026 2.747-1.026.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.137 20.16 22 16.42 22 12c0-5.523-4.477-10-10-10z"/>
@@ -350,17 +351,39 @@
     }
   });
 
+  const spinnerSVG = `
+    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;">
+      <line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line>
+      <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+      <line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line>
+      <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="4.93" x2="19.07" y2="7.76"></line>
+    </svg>
+  `;
+
   // Google — via Supabase OAuth
   async function oauthLogin(provider) {
+    const btn = document.getElementById('google-login-btn');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = `${spinnerSVG} <span class="btn-label" style="margin-left:8px;">Logging in...</span>`;
+    }
     const { error } = await sb.auth.signInWithOAuth({
       provider,
       options: { redirectTo: SITE_URL + '/auth/callback' }
     });
-    if (error) alert('Error: ' + error.message);
+    if (error) {
+      alert('Error: ' + error.message);
+      if (btn) btn.disabled = false;
+    }
   }
 
   // GitHub — custom OAuth flow (our backend handles the code exchange)
   function githubLogin() {
+    const btn = document.getElementById('github-login-btn');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = `${spinnerSVG} <span class="btn-label" style="margin-left:8px;">Connecting...</span>`;
+    }
     const params = new URLSearchParams({
       client_id:    GITHUB_CLIENT_ID,
       scope:        'user:email',
