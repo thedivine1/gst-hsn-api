@@ -167,7 +167,7 @@
       display: grid;
       grid-template-columns: 1fr 1.1fr 1fr 1fr;
       gap: 14px;
-      align-items: start;
+      align-items: stretch;
     }
     @media (max-width: 900px) {
       .price-grid { grid-template-columns: 1fr 1fr; }
@@ -183,6 +183,8 @@
       padding: 1.6rem 1.4rem;
       position: relative;
       transition: border-color 0.2s, box-shadow 0.2s;
+      display: flex;
+      flex-direction: column;
     }
     .plan:hover { border-color: var(--border-md); }
     .plan.featured {
@@ -236,7 +238,7 @@
 
     /* ── RAZORPAY BUTTON CONTAINER ── */
     .rzp-wrap {
-      margin-top: 1.4rem;
+      margin-top: auto;
       border-top: 1px solid var(--border);
       padding-top: 1.25rem;
     }
@@ -244,7 +246,7 @@
     .rzp-wrap form { width: 100%; }
     .rzp-wrap .razorpay-payment-button {
       width: 100% !important;
-      padding: 0.65rem 1rem !important;
+      padding: 0.65rem 0.2rem !important;
       border-radius: 8px !important;
       font-family: var(--font-body) !important;
       font-size: 0.9rem !important;
@@ -253,6 +255,7 @@
       border: none !important;
       transition: all 0.2s !important;
       letter-spacing: 0 !important;
+      white-space: nowrap !important;
     }
     /* Featured plan → solid amber */
     .rzp-featured .razorpay-payment-button {
@@ -283,7 +286,7 @@
     /* Free plan CTA */
     .btn-free {
       display: block; width: 100%;
-      margin-top: 1.4rem; padding: 0.65rem;
+      margin-top: auto; padding: 0.65rem;
       border-radius: 8px; text-align: center;
       font-family: var(--font-body); font-size: 0.9rem; font-weight: 600;
       text-decoration: none; cursor: pointer;
