@@ -898,7 +898,8 @@ async def robots_txt():
     from fastapi.responses import Response
     content = """User-agent: *
 Allow: /
-Disallow: /api/
+Disallow: /api/internal/
+Disallow: /admin/
 Sitemap: https://gstaccelerator.in/sitemap.xml
 """
     return Response(content=content.strip(), media_type="text/plain")
@@ -2806,46 +2807,35 @@ async def sitemap_xml():
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://gstaccelerator.in/</loc>
+    <lastmod>2025-01-10</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
-    <lastmod>2026-07-02</lastmod>
   </url>
   <url>
     <loc>https://gstaccelerator.in/docs</loc>
+    <lastmod>2025-01-10</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
-    <lastmod>2026-07-02</lastmod>
   </url>
   <url>
-    <loc>https://gstaccelerator.in/pricing</loc>
+    <loc>https://gstaccelerator.in/api/hsn</loc>
+    <lastmod>2025-01-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
-    <lastmod>2026-07-02</lastmod>
   </url>
   <url>
-    <loc>https://gstaccelerator.in/blog/gst-api-for-developers</loc>
+    <loc>https://gstaccelerator.in/api/sac</loc>
+    <lastmod>2025-01-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
-    <lastmod>2026-06-30</lastmod>
   </url>
   <url>
-    <loc>https://gstaccelerator.in/llms.txt</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-    <lastmod>2026-07-02</lastmod>
+    <loc>https://gstaccelerator.in/blog</loc>
+    <lastmod>2025-01-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
-  <url>
-    <loc>https://gstaccelerator.in/terms</loc>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-    <lastmod>2026-07-03</lastmod>
-  </url>
-  <url>
-    <loc>https://gstaccelerator.in/privacy</loc>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-    <lastmod>2026-07-03</lastmod>
-  </url>
+  <!-- Add blog post URLs as you publish them -->
 </urlset>"""
     return FastAPIResponse(content=sitemap, media_type="application/xml")
 
