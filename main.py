@@ -23,6 +23,9 @@ import mcp.types as types
 from mcp.server import Server
 from mcp.server.sse import SseServerTransport
 import json
+from functools import lru_cache
+from collections import OrderedDict
+import threading
 
 load_dotenv()
 
@@ -76,6 +79,43 @@ rate_limit_db = {}
 rate_limit_timestamps = {}
 demo_rate_limit_db = {}
 demo_rate_limit_timestamps = {}
+
+# ---------------------------------------------------------------------------
+# In-process LRU cache for lookup queries (description search)
+# Keyed on (description, supply_type, branded, b2b, sale_value_inr)
+# Holds up to 1000 unique queries; entries expire after CACHE_TTL_SECONDS
+# ---------------------------------------------------------------------------
+CACHE_TTL_SECONDS = 3600  # 1 hour — GST rates change monthly at most
+_lookup_cache: OrderedDict = OrderedDict()  # {key: (timestamp, result)}
+_lookup_cache_lock = threading.Lock()
+LOOKUP_CACHE_MAXSIZE = 1000
+
+def _cache_key(description: str, supply_type: str, branded: bool, b2b: bool, sale_value_inr: Optional[float]) -> str:
+    import hashlib, json
+    payload = {"d": description.lower().strip(), "s": supply_type, "br": branded, "b2b": b2b, "val": sale_value_inr}
+    return hashlib.md5(json.dumps(payload, sort_keys=True).encode()).hexdigest()
+
+def _cache_get(key: str):
+    with _lookup_cache_lock:
+        entry = _lookup_cache.get(key)
+        if entry is None:
+            return None
+        ts, result = entry
+        if time.time() - ts > CACHE_TTL_SECONDS:
+            del _lookup_cache[key]
+            return None
+        # Move to end (LRU order)
+        _lookup_cache.move_to_end(key)
+        return result
+
+def _cache_set(key: str, result):
+    with _lookup_cache_lock:
+        if key in _lookup_cache:
+            _lookup_cache.move_to_end(key)
+        _lookup_cache[key] = (time.time(), result)
+        # Evict oldest if over max size
+        while len(_lookup_cache) > LOOKUP_CACHE_MAXSIZE:
+            _lookup_cache.popitem(last=False)
 
 # ContextVar so verify_api_key can pass monthly quota info to the middleware
 _monthly_ratelimit_ctx: contextvars.ContextVar[dict | None] = contextvars.ContextVar("_monthly_ratelimit_ctx", default=None)
@@ -232,7 +272,9 @@ async def health():
         "uptime_seconds": round(time.time() - START_TIME),
         "database": db_status,
         "last_updated": "2025-09-22",
-        "source": "CBIC 09/2025-CT(Rate)"
+        "source": "CBIC 09/2025-CT(Rate)",
+        "cache_entries": len(_lookup_cache),
+        "cache_capacity": LOOKUP_CACHE_MAXSIZE,
     }
 
 @app.get("/meta", tags=["Meta"])
@@ -1897,12 +1939,17 @@ async def get_hsn(
     code: str,
     supply_type: Optional[Literal["intrastate", "interstate"]] = None,
     _: dict = Depends(verify_api_key),
+    response: Response = None,
 ):
     """
     Returns full rate object for a given HSN code.
     Pass `supply_type` to resolve the `applicable_rate.recommended` string for intrastate vs interstate routing.
     Falls back from 8-digit → 6-digit heading → 4-digit chapter if no exact match.
     """
+    # HSN codes are static data — cache aggressively at CDN + browser level
+    if response:
+        response.headers["Cache-Control"] = "public, max-age=86400, s-maxage=86400, stale-while-revalidate=3600"
+
     code = code.strip()
 
     # Exact match
@@ -1950,11 +1997,16 @@ async def get_sac(
     code: str,
     supply_type: Optional[Literal["intrastate", "interstate"]] = None,
     _: dict = Depends(verify_api_key),
+    response: Response = None,
 ):
     """
     Returns full rate object for a given SAC code (services).
     Pass `supply_type` to resolve the `applicable_rate.recommended` string for intrastate vs interstate routing.
     """
+    # SAC codes are static — cache at CDN level
+    if response:
+        response.headers["Cache-Control"] = "public, max-age=86400, s-maxage=86400, stale-while-revalidate=3600"
+
     code = code.strip()
 
     res = supabase.table("sac_rates").select("*").eq("sac_code", code).execute()
@@ -2063,14 +2115,26 @@ async def lookup_rate(req: LookupRequest, _: dict = Depends(verify_api_key)):
       text and compares it against this value, returning PASSED/FAILED with the direction.
     - `end_use` — free-text intended end-use (e.g. "agriculture", "defence export");
       matched against notification condition keywords. Returns a warning if no keyword overlap.
-    - `supply_type` — one of `domestic` (default), `export`, `sez`, `works_contract`,
-      `with_installation`. Export/SEZ automatically adds a zero-rated IGST note.
+    - `supply_type` — one of `intrastate` (default), `interstate`.
+      Export/SEZ automatically adds a zero-rated IGST note.
 
     Returns top 3 FTS matches with confidence score, `condition_applied` note,
     and `condition_warning` (non-null when manual review is needed).
     """
     if not req.description.strip():
         raise HTTPException(status_code=400, detail="description cannot be empty.")
+
+    # Check in-process LRU cache first
+    cache_key = _cache_key(
+        req.description,
+        req.supply_type or "intrastate",
+        req.branded or False,
+        req.b2b or False,
+        req.sale_value_inr,
+    )
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
 
     # Build a tsquery: tokenise and AND-join terms
     # Sanitize to prevent tsquery syntax errors
@@ -2109,7 +2173,10 @@ async def lookup_rate(req: LookupRequest, _: dict = Depends(verify_api_key)):
     if not res.data:
         return []
 
-    return _build_lookup_results(res.data, req)
+    result = _build_lookup_results(res.data, req)
+    # Store in cache for future identical queries
+    _cache_set(cache_key, result)
+    return result
 
 
 @app.post(
