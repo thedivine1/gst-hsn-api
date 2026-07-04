@@ -2378,15 +2378,11 @@ async def github_oauth_exchange(payload: GithubCodePayload):
             "type":  "magiclink",
             "email": email,
         })
-        # Extract the one-time token from the action link
-        action_link = link_res.properties.action_link
-        # Parse token from the link
-        parsed = urllib.parse.urlparse(action_link)
-        qs     = urllib.parse.parse_qs(parsed.query)
-        token  = qs.get("token", [None])[0]
+        # Use the unhashed email OTP directly
+        token = link_res.properties.email_otp
 
         if not token:
-            raise ValueError("No token in action link")
+            raise ValueError("No token generated")
 
         # Exchange the OTP token for a real session
         session_res = supabase.auth.verify_otp({
