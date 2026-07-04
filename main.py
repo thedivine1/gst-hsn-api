@@ -88,7 +88,7 @@ demo_rate_limit_timestamps = {}
 CACHE_TTL_SECONDS = 3600  # 1 hour — GST rates change monthly at most
 _lookup_cache: OrderedDict = OrderedDict()  # {key: (timestamp, result)}
 _lookup_cache_lock = threading.Lock()
-LOOKUP_CACHE_MAXSIZE = 1000
+LOOKUP_CACHE_MAXSIZE = 2000
 
 def _cache_key(description: str, supply_type: str, branded: bool, b2b: bool, sale_value_inr: Optional[float]) -> str:
     import hashlib, json
@@ -1952,33 +1952,31 @@ async def get_hsn(
 
     code = code.strip()
 
-    # Exact match
+    # Short-circuit invalid chapters to avoid any DB queries (00 is not a valid GST chapter)
+    if code.startswith("00"):
+        raise HTTPException(
+            status_code=404,
+            detail=f"Invalid HSN code '{code}'. HSN chapters cannot start with 00.",
+        )
+
+    # 1. Exact match (Fast path)
     res = supabase.table("hsn_rates").select("*").eq("hsn_code", code).execute()
     if res.data:
         return [_map_db_to_hsn_rate(row, supply_type) for row in res.data]
 
-    # Fallback: heading (first 6 digits)
-    if len(code) >= 6:
-        heading = code[:6]
-        res = (
-            supabase.table("hsn_rates")
-            .select("*")
-            .like("hsn_code", f"{heading}%")
-            .execute()
-        )
-        if res.data:
-            return [_map_db_to_hsn_rate(row, supply_type) for row in res.data]
-
-    # Fallback: chapter (first 4 digits)
+    # 2. Fallback: fetch all chapter rows (1 query instead of 2 sequential queries)
     if len(code) >= 4:
         chapter = code[:4]
-        res = (
-            supabase.table("hsn_rates")
-            .select("*")
-            .like("hsn_code", f"{chapter}%")
-            .execute()
-        )
+        res = supabase.table("hsn_rates").select("*").like("hsn_code", f"{chapter}%").execute()
         if res.data:
+            # Check for 6-digit heading match in-memory
+            if len(code) >= 6:
+                heading = code[:6]
+                heading_matches = [row for row in res.data if row["hsn_code"].startswith(heading)]
+                if heading_matches:
+                    return [_map_db_to_hsn_rate(row, supply_type) for row in heading_matches]
+            
+            # If no heading match, return the whole chapter
             return [_map_db_to_hsn_rate(row, supply_type) for row in res.data]
 
     raise HTTPException(
