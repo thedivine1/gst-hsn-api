@@ -8,7 +8,7 @@ from typing import List, Optional, Tuple, Literal
 # pyrefly: ignore [missing-import]
 from fastapi import FastAPI, Header, HTTPException, Depends, Request, Response
 # pyrefly: ignore [missing-import]
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -35,6 +35,10 @@ NEXT_PUBLIC_SITE_URL = os.environ.get("NEXT_PUBLIC_SITE_URL", "http://localhost:
 RAZORPAY_BTN_DEVELOPER = os.environ.get("RAZORPAY_BTN_DEVELOPER", "pl_T7XX9dBePAqE3A")
 RAZORPAY_BTN_PRO       = os.environ.get("RAZORPAY_BTN_PRO",       "pl_T7XijjsMTRfuBk")
 RAZORPAY_BTN_BUSINESS  = os.environ.get("RAZORPAY_BTN_BUSINESS",  "pl_T7Xpk3fkQwHzrt")
+
+# GitHub OAuth
+GITHUB_CLIENT_ID     = os.environ.get("GITHUB_CLIENT_ID", "")
+GITHUB_CLIENT_SECRET = os.environ.get("GITHUB_CLIENT_SECRET", "")
 
 supabase: Optional[Client] = None
 if SUPABASE_URL and SUPABASE_KEY:
@@ -2248,6 +2252,165 @@ async def verify_jwt(credentials: HTTPAuthorizationCredentials = Depends(securit
     except Exception as e:
         raise HTTPException(status_code=401, detail=f"Invalid or expired JWT: {str(e)}")
 
+# ── GitHub OAuth ──────────────────────────────────────────────────────────────
+class GithubCodePayload(BaseModel):
+    code: str
+
+@app.post("/api/v1/auth/github", tags=["Auth"], include_in_schema=False)
+async def github_oauth_exchange(payload: GithubCodePayload):
+    """
+    Exchange a GitHub OAuth authorization code for a Supabase session.
+    Steps:
+      1. Exchange code → GitHub access token
+      2. Fetch GitHub user profile + email
+      3. Create or update user in Supabase (admin API)
+      4. Generate and return a Supabase session
+    """
+    import urllib.request
+    import urllib.parse
+
+    if not GITHUB_CLIENT_ID or not GITHUB_CLIENT_SECRET:
+        raise HTTPException(status_code=500, detail="GitHub OAuth not configured")
+
+    # Step 1 — Exchange code for GitHub access token
+    token_payload = urllib.parse.urlencode({
+        "client_id":     GITHUB_CLIENT_ID,
+        "client_secret": GITHUB_CLIENT_SECRET,
+        "code":          payload.code,
+    }).encode()
+
+    token_req = urllib.request.Request(
+        "https://github.com/login/oauth/access_token",
+        data=token_payload,
+        headers={"Accept": "application/json", "Content-Type": "application/x-www-form-urlencoded"},
+        method="POST"
+    )
+    try:
+        with urllib.request.urlopen(token_req, timeout=10) as r:
+            token_data = json.loads(r.read())
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"GitHub token exchange failed: {e}")
+
+    github_access_token = token_data.get("access_token")
+    if not github_access_token:
+        raise HTTPException(status_code=400, detail="Invalid authorization code — please try signing in again")
+
+    # Step 2 — Fetch GitHub user profile
+    def gh_get(url: str):
+        req = urllib.request.Request(url, headers={
+            "Authorization": f"Bearer {github_access_token}",
+            "Accept":        "application/vnd.github+json",
+            "User-Agent":    "GST Accelerator",
+        })
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return json.loads(r.read())
+
+    try:
+        gh_user = gh_get("https://api.github.com/user")
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Failed to fetch GitHub profile: {e}")
+
+    # Resolve email (may be null if user keeps it private)
+    email = gh_user.get("email")
+    if not email:
+        try:
+            emails = gh_get("https://api.github.com/user/emails")
+            primary = next((e for e in emails if e.get("primary") and e.get("verified")), None)
+            email = primary["email"] if primary else None
+        except Exception:
+            pass
+
+    if not email:
+        raise HTTPException(
+            status_code=400,
+            detail="Could not retrieve a verified email from your GitHub account. "
+                   "Please ensure your primary email is verified on GitHub."
+        )
+
+    github_id  = str(gh_user.get("id", ""))
+    username   = gh_user.get("login", "")
+    avatar_url = gh_user.get("avatar_url", "")
+    full_name  = gh_user.get("name") or username
+
+    # Step 3 — Create or update Supabase user
+    if not supabase:
+        raise HTTPException(status_code=500, detail="Database not configured")
+
+    try:
+        # Try to get existing user by email
+        existing = supabase.auth.admin.list_users()
+        existing_user = next(
+            (u for u in existing if u.email and u.email.lower() == email.lower()), None
+        )
+
+        if existing_user:
+            # Update metadata
+            updated = supabase.auth.admin.update_user_by_id(
+                existing_user.id,
+                {"user_metadata": {
+                    "github_id":  github_id,
+                    "avatar_url": avatar_url,
+                    "full_name":  full_name,
+                    "username":   username,
+                }}
+            )
+            sb_user_id = existing_user.id
+        else:
+            # Create new user (pre-confirmed via email_confirm=True)
+            new_user = supabase.auth.admin.create_user({
+                "email":         email,
+                "email_confirm": True,
+                "user_metadata": {
+                    "github_id":  github_id,
+                    "avatar_url": avatar_url,
+                    "full_name":  full_name,
+                    "username":   username,
+                }
+            })
+            sb_user_id = new_user.user.id
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"User provisioning failed: {e}")
+
+    # Step 4 — Generate a Supabase magic link to bootstrap a real session
+    try:
+        link_res = supabase.auth.admin.generate_link({
+            "type":  "magiclink",
+            "email": email,
+        })
+        # Extract the one-time token from the action link
+        action_link = link_res.properties.action_link
+        # Parse token from the link
+        parsed = urllib.parse.urlparse(action_link)
+        qs     = urllib.parse.parse_qs(parsed.query)
+        token  = qs.get("token", [None])[0]
+
+        if not token:
+            raise ValueError("No token in action link")
+
+        # Exchange the OTP token for a real session
+        session_res = supabase.auth.verify_otp({
+            "email": email,
+            "token": token,
+            "type":  "magiclink"
+        })
+
+        session = session_res.session
+        return {
+            "access_token":  session.access_token,
+            "refresh_token": session.refresh_token,
+            "expires_at":    session.expires_at,
+            "user": {
+                "id":         sb_user_id,
+                "email":      email,
+                "username":   username,
+                "avatar_url": avatar_url,
+                "full_name":  full_name,
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Session creation failed: {e}")
+
 @app.get("/privacy", include_in_schema=False, response_class=HTMLResponse)
 async def privacy_page():
     try:
@@ -2304,6 +2467,7 @@ async def login_page():
         content = content.replace("{{ SUPABASE_URL }}", SUPABASE_URL or "")
         content = content.replace("{{ SUPABASE_ANON_KEY }}", SUPABASE_ANON_KEY or "")
         content = content.replace("{{ NEXT_PUBLIC_SITE_URL }}", NEXT_PUBLIC_SITE_URL)
+        content = content.replace("{{ GITHUB_CLIENT_ID }}", GITHUB_CLIENT_ID or "")
         return HTMLResponse(content)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Login template not found.")
@@ -2324,10 +2488,75 @@ async def dashboard_page():
 @app.get("/auth/callback", include_in_schema=False)
 async def auth_callback(request: Request):
     """
-    Catches auth redirects (like magic links) from Supabase and redirects them
-    to the dashboard, preserving the URL fragment or query parameters so the
-    client-side Supabase JS can process the auth session.
+    Unified auth callback.
+    - If ?code= is present: GitHub OAuth code exchange page
+    - Otherwise: Supabase magic link / OAuth redirect handler
     """
+    code = request.query_params.get("code")
+    if code:
+        # GitHub OAuth callback — serve the exchange page
+        site_url = NEXT_PUBLIC_SITE_URL
+        github_client_id = GITHUB_CLIENT_ID
+        callback_html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Signing you in — GST Accelerator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    *{{box-sizing:border-box;margin:0;padding:0}}
+    body{{background:#06090F;color:#F2F4F8;font-family:'Inter',sans-serif;
+      display:flex;align-items:center;justify-content:center;min-height:100vh;}}
+    .card{{text-align:center;padding:2.5rem 3rem;background:#0E141E;
+      border:1px solid rgba(107,122,153,0.14);border-radius:16px;max-width:380px;width:100%;}}
+    .spinner{{width:40px;height:40px;border:3px solid rgba(232,101,10,0.2);
+      border-top-color:#E8650A;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 1.5rem;}}
+    @keyframes spin{{to{{transform:rotate(360deg)}}}}
+    h2{{font-size:1.1rem;font-weight:600;margin-bottom:0.5rem;}}
+    p{{color:#6B7A99;font-size:0.875rem;}}
+    .error{{color:#F04545;font-size:0.85rem;margin-top:1rem;display:none;}}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="spinner"></div>
+    <h2>Signing you in…</h2>
+    <p>Please wait while we verify your GitHub account.</p>
+    <div class="error" id="err"></div>
+  </div>
+  <script>
+    (async () => {{
+      const code = new URLSearchParams(window.location.search).get('code');
+      if (!code) {{ window.location.href = '/login'; return; }}
+      try {{
+        const res = await fetch('/api/v1/auth/github', {{
+          method: 'POST',
+          headers: {{'Content-Type': 'application/json'}},
+          body: JSON.stringify({{code}})
+        }});
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Authentication failed');
+        // Store session tokens so Supabase JS can pick them up
+        localStorage.setItem('sb-session', JSON.stringify({{
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+          expires_at: data.expires_at
+        }}));
+        window.location.href = '/dashboard?github_auth=1';
+      }} catch (e) {{
+        document.querySelector('.spinner').style.display='none';
+        const err = document.getElementById('err');
+        err.textContent = e.message;
+        err.style.display = 'block';
+        setTimeout(() => window.location.href = '/login', 3000);
+      }}
+    }})();
+  </script>
+</body>
+</html>"""
+        return HTMLResponse(callback_html)
+
+    # Supabase magic link / OAuth redirect — pass through to dashboard
     query = request.url.query
     redirect_url = f"/dashboard?{query}" if query else "/dashboard"
     return RedirectResponse(url=redirect_url, status_code=302)
