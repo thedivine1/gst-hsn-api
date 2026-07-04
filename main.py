@@ -2531,7 +2531,7 @@ async def auth_callback(request: Request):
           body: JSON.stringify({{code}})
         }});
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Authentication failed');
+        if (!res.ok) throw new Error(data.error || data.detail || JSON.stringify(data) || 'Authentication failed');
         // Store session tokens so Supabase JS can pick them up
         localStorage.setItem('sb-session', JSON.stringify({{
           access_token: data.access_token,
