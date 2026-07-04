@@ -2338,7 +2338,7 @@ async def github_oauth_exchange(payload: GithubCodePayload):
 
     try:
         # Try to get existing user by email
-        existing = supabase.auth.admin.list_users()
+        existing = supabase.auth.admin.list_users(page=1, per_page=1000)
         existing_user = next(
             (u for u in existing if u.email and u.email.lower() == email.lower()), None
         )
@@ -2357,20 +2357,25 @@ async def github_oauth_exchange(payload: GithubCodePayload):
             sb_user_id = existing_user.id
         else:
             # Create new user (pre-confirmed via email_confirm=True)
-            new_user = supabase.auth.admin.create_user({
-                "email":         email,
-                "email_confirm": True,
-                "user_metadata": {
-                    "github_id":  github_id,
-                    "avatar_url": avatar_url,
-                    "full_name":  full_name,
-                    "username":   username,
-                }
-            })
-            sb_user_id = new_user.user.id
+            try:
+                new_user = supabase.auth.admin.create_user({
+                    "email":         email,
+                    "email_confirm": True,
+                    "user_metadata": {
+                        "github_id":  github_id,
+                        "avatar_url": avatar_url,
+                        "full_name":  full_name,
+                        "username":   username,
+                    }
+                })
+                sb_user_id = new_user.user.id
+            except Exception as ce:
+                if "User not allowed" in str(ce) or "not allowed" in str(ce).lower():
+                    raise ValueError(f"Signup disabled: Please enable 'Allow new users to sign up' in Supabase Auth settings. (GitHub email: {email})")
+                raise ce
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"User provisioning failed: {e}")
+        raise HTTPException(status_code=500, detail=f"User provisioning failed: {str(e)}")
 
     # Step 4 — Generate a Supabase magic link to bootstrap a real session
     try:
