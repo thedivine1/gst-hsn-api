@@ -2428,6 +2428,15 @@ async def blog_index_page():
     except Exception as e:
         raise HTTPException(status_code=500, detail="Blog template not found.")
 
+@app.get("/contact", include_in_schema=False, response_class=HTMLResponse)
+async def serve_contact():
+    try:
+        with open("contact.html", "r", encoding="utf-8") as f:
+            content = f.read()
+        return HTMLResponse(content)
+    except FileNotFoundError:
+        raise HTTPException(status_code=500, detail="Contact template not found.")
+
 @app.get("/terms", include_in_schema=False, response_class=HTMLResponse)
 async def terms_page():
     try:
