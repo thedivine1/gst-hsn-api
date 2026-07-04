@@ -2356,26 +2356,22 @@ async def github_oauth_exchange(payload: GithubCodePayload):
             )
             sb_user_id = existing_user.id
         else:
-            # Create new user (pre-confirmed via email_confirm=True)
-            try:
-                new_user = supabase.auth.admin.create_user({
-                    "email":         email,
-                    "email_confirm": True,
-                    "user_metadata": {
-                        "github_id":  github_id,
-                        "avatar_url": avatar_url,
-                        "full_name":  full_name,
-                        "username":   username,
-                    }
-                })
-                sb_user_id = new_user.user.id
-            except Exception as ce:
-                if "User not allowed" in str(ce) or "not allowed" in str(ce).lower():
-                    raise ValueError(f"Signup disabled: Please enable 'Allow new users to sign up' in Supabase Auth settings. (GitHub email: {email})")
-                raise ce
-
+            # Create new user
+            new_user = supabase.auth.admin.create_user({
+                "email":         email,
+                "email_confirm": True,
+                "user_metadata": {
+                    "github_id":  github_id,
+                    "avatar_url": avatar_url,
+                    "full_name":  full_name,
+                    "username":   username,
+                }
+            })
+            sb_user_id = new_user.user.id
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"User provisioning failed: {str(e)}")
+        import traceback
+        tb = traceback.format_exc()
+        raise HTTPException(status_code=500, detail=f"User provisioning failed: {str(e)} | Trace: {tb}")
 
     # Step 4 — Generate a Supabase magic link to bootstrap a real session
     try:
