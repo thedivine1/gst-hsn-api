@@ -884,7 +884,7 @@ async def demo_js():
 async def llms_txt():
     from fastapi.responses import Response
     content = """# GST Accelerator API
-Fast HSN and SAC lookup API for India. 12,000+ codes, GST rates, JSON REST.
+Fast HSN and SAC lookup API for India. 48,000+ codes, GST rates, JSON REST.
 Base URL: https://gstaccelerator.in/api/v1
 Endpoints: /lookup /hsn/{code} /sac/{code} /autocomplete /bulk /health /meta /gst-rate
 Auth: X-API-Key header (free tier available, no key needed for /lookup with demo key)
@@ -912,17 +912,17 @@ async def root():
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GST Accelerator API — India’s fastest HSN &amp; SAC lookup API</title>
-  <meta name="description" content="Free REST API for Indian GST HSN/SAC code lookup. Search 12,000+ codes, get GST rates, CGST/SGST splits, and legal notification references. JSON, fast, CBIC-sourced." />
+  <meta name="description" content="Free REST API for Indian GST HSN/SAC code lookup. Search 48,000+ codes, get GST rates, CGST/SGST splits, and legal notification references. JSON, fast, CBIC-sourced." />
   <meta name="keywords" content="gst api, hsn api, india gst api, hsn lookup api, sac api, gstin api, gst rate api, hsn code api, sac code api, indian gst rest api" />
   <meta name="robots" content="index, follow" />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://gstaccelerator.in/" />
   <meta property="og:title" content="GST Accelerator API — India’s fastest HSN &amp; SAC lookup API" />
-  <meta property="og:description" content="Free REST API for Indian GST HSN/SAC code lookup. 12,000+ codes, GST rates, CGST/SGST/IGST splits. CBIC-sourced and condition-aware." />
+  <meta property="og:description" content="Free REST API for Indian GST HSN/SAC code lookup. 48,000+ codes, GST rates, CGST/SGST/IGST splits. CBIC-sourced and condition-aware." />
   <meta property="og:site_name" content="GST Accelerator" />
   <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="GST Accelerator API — India’s fastest HSN &amp; SAC lookup API" />
-  <meta name="twitter:description" content="Free REST API for Indian GST HSN/SAC code lookup. 12,000+ HSN/SAC codes, rates, and CBIC notification audit trail." />
+  <meta name="twitter:description" content="Free REST API for Indian GST HSN/SAC code lookup. 48,000+ HSN/SAC codes, rates, and CBIC notification audit trail." />
   <link rel="canonical" href="https://gstaccelerator.in/" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -1460,7 +1460,7 @@ async def root():
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
       "name": "GST Accelerator API",
-      "description": "India's fastest HSN and SAC code lookup API. 12,000+ HSN codes, SAC search, GST rates, JSON REST API.",
+      "description": "India's fastest HSN and SAC code lookup API. 48,000+ HSN codes, SAC search, GST rates, JSON REST API.",
       "applicationCategory": "DeveloperTool",
       "operatingSystem": "Any",
       "url": "https://gstaccelerator.in",
