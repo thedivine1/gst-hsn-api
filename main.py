@@ -55,10 +55,14 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://gstaccelerator.in",
+        "https://www.gstaccelerator.in",
+        "https://gst-hsn-api.vercel.app",
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "OPTIONS", "DELETE"],
+    allow_headers=["X-API-Key", "Content-Type", "Authorization"],
 )
 
 import time
