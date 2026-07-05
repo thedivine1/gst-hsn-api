@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>API Docs — GST Accelerator</title>
+  <title>API Docs - GST Accelerator</title>
   <meta name="description" content="Complete API documentation for GST Accelerator. Integrate India's most accurate GST rate engine into your ERP, checkout flow, or AI agent.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -319,7 +319,7 @@
 <nav>
   <div style="display:flex;align-items:center;gap:0.5rem;">
     <a href="/" class="brand">
-      <div class="brand-icon">â‚¹</div>
+      <div class="brand-icon">₹</div>
       GST Accelerator
     </a>
     <span class="brand-sub">API Docs</span>
@@ -328,7 +328,7 @@
     <a href="/#features">Features</a>
     <a href="/#pricing">Pricing</a>
     <a href="/dashboard">Dashboard</a>
-    <a href="/dashboard" class="nav-cta">Get API Key â†’</a>
+    <a href="/dashboard" class="nav-cta">Get API Key →</a>
   </div>
 </nav>
 
@@ -390,7 +390,7 @@
         </div>
         <div class="callout">
           <div class="callout-title">What makes us different</div>
-          Products like footwear below â‚¹1,000 and garments below â‚¹1,000 have conditional GST rates. Every other API returns all possible rates and leaves it to you. We evaluate the condition against your transaction and return exactly one correct rate.
+          Products like footwear below ₹1,000 and garments below ₹1,000 have conditional GST rates. Every other API returns all possible rates and leaves it to you. We evaluate the condition against your transaction and return exactly one correct rate.
         </div>
       </div>
       <div class="doc-right">
@@ -561,7 +561,7 @@
             <tr>
               <td><span class="p-name">sale_value_inr</span></td>
               <td><span class="p-type">float</span></td>
-              <td class="p-desc">Transaction value in INR. Required to resolve price-threshold conditions (e.g. footwear &lt; â‚¹1,000 = 5%, â‰¥ â‚¹1,000 = 12%).</td>
+              <td class="p-desc">Transaction value in INR. Required to resolve price-threshold conditions (e.g. footwear &lt; ₹1,000 = 5%, â‰¥ ₹1,000 = 12%).</td>
             </tr>
             <tr>
               <td><span class="p-name">branded</span></td>
@@ -625,8 +625,8 @@ r = session.post(
     }
 )
 result = r.json()[<span class="s-num">0</span>]
-<span class="s-fn">print</span>(result[<span class="s-str">"tax_rates"</span>][<span class="s-str">"igst"</span>])  <span class="s-comment"># â†’ 18.0</span>
-<span class="s-fn">print</span>(result[<span class="s-str">"applicable_rate"</span>][<span class="s-str">"intrastate"</span>])  <span class="s-comment"># â†’ "CGST 9.0% + SGST 9.0%"</span></code></pre>
+<span class="s-fn">print</span>(result[<span class="s-str">"tax_rates"</span>][<span class="s-str">"igst"</span>])  <span class="s-comment"># → 18.0</span>
+<span class="s-fn">print</span>(result[<span class="s-str">"applicable_rate"</span>][<span class="s-str">"intrastate"</span>])  <span class="s-comment"># → "CGST 9.0% + SGST 9.0%"</span></code></pre>
           </div>
         </div>
 
@@ -846,10 +846,10 @@ console.<span class="s-fn">log</span>(result.tax_rates.igst); <span class="s-com
         <p>This is the defining feature of GST Accelerator. The CBIC notification database contains hundreds of <strong>conditional rate rules</strong> that most APIs ignore entirely.</p>
         <p>Our engine parses these rules and evaluates them against the context you provide in your request. Examples of conditions we resolve:</p>
         <ul style="margin: 0.75rem 0 1rem 1.25rem; font-size: 0.875rem; color: var(--text-2); line-height: 2;">
-          <li>Footwear below â‚¹1,000 â†’ 5%, at or above â†’ 12%</li>
-          <li>Garments below â‚¹1,000 â†’ 5%, at or above â†’ 12%</li>
-          <li>Cereals/flour pre-packaged &amp; labelled â†’ 5%, loose â†’ 0%</li>
-          <li>Construction services (B2C affordable housing) â†’ 1%</li>
+          <li>Footwear below ₹1,000 → 5%, at or above → 12%</li>
+          <li>Garments below ₹1,000 → 5%, at or above → 12%</li>
+          <li>Cereals/flour pre-packaged &amp; labelled → 5%, loose → 0%</li>
+          <li>Construction services (B2C affordable housing) → 1%</li>
         </ul>
         <div class="callout green">
           <div class="callout-title">Reading the response fields</div>
@@ -860,7 +860,7 @@ console.<span class="s-fn">log</span>(result.tax_rates.igst); <span class="s-com
       </div>
       <div class="doc-right">
         <div class="code-block">
-          <div class="code-block-header"><span class="code-block-lang">With condition — garment â‚¹1,500</span></div>
+          <div class="code-block-header"><span class="code-block-lang">With condition — garment ₹1,500</span></div>
           <pre><code><span class="s-comment">// Request</span>
 {
   <span class="s-key">"description"</span>: <span class="s-str">"cotton shirt"</span>,
@@ -868,10 +868,10 @@ console.<span class="s-fn">log</span>(result.tax_rates.igst); <span class="s-com
   <span class="s-key">"supply_type"</span>: <span class="s-str">"intrastate"</span>
 }
 
-<span class="s-comment">// Condition resolved â†’ 12%</span>
+<span class="s-comment">// Condition resolved → 12%</span>
 {
   <span class="s-key">"tax_rates"</span>: { <span class="s-key">"igst"</span>: <span class="s-num">12.0</span>, <span class="s-key">"cgst"</span>: <span class="s-num">6.0</span>, <span class="s-key">"sgst"</span>: <span class="s-num">6.0</span> },
-  <span class="s-key">"condition_applied"</span>: <span class="s-str">"Price â‰¥ â‚¹1,000 threshold: PASSED — â‚¹1,500 &gt; â‚¹1,000"</span>,
+  <span class="s-key">"condition_applied"</span>: <span class="s-str">"Price â‰¥ ₹1,000 threshold: PASSED — ₹1,500 &gt; ₹1,000"</span>,
   <span class="s-key">"condition_warning"</span>: <span class="s-null">null</span>,
   <span class="s-key">"needs_review"</span>: <span class="s-bool">false</span>
 }</code></pre>
@@ -921,11 +921,11 @@ console.<span class="s-fn">log</span>(result.tax_rates.igst); <span class="s-com
 
 <span class="s-comment">// Invoice GST calculation — intrastate</span>
 invoice_value = <span class="s-num">25000</span>
-cgst = (invoice_value Ã— <span class="s-num">9</span>) / <span class="s-num">100</span>  <span class="s-comment"># â‚¹2,250</span>
-sgst = (invoice_value Ã— <span class="s-num">9</span>) / <span class="s-num">100</span>  <span class="s-comment"># â‚¹2,250</span>
+cgst = (invoice_value Ã— <span class="s-num">9</span>) / <span class="s-num">100</span>  <span class="s-comment"># ₹2,250</span>
+sgst = (invoice_value Ã— <span class="s-num">9</span>) / <span class="s-num">100</span>  <span class="s-comment"># ₹2,250</span>
 
 <span class="s-comment">// Invoice GST calculation — interstate</span>
-igst = (invoice_value Ã— <span class="s-num">18</span>) / <span class="s-num">100</span> <span class="s-comment"># â‚¹4,500</span></code></pre>
+igst = (invoice_value Ã— <span class="s-num">18</span>) / <span class="s-num">100</span> <span class="s-comment"># ₹4,500</span></code></pre>
         </div>
       </div>
     </div>
@@ -970,7 +970,7 @@ igst = (invoice_value Ã— <span class="s-num">18</span>) / <span class="s-num"
     <span class="s-key">"interstate"</span>: <span class="s-str">"IGST 12.0%"</span>,
     <span class="s-key">"recommended"</span>: <span class="s-null">null</span>
   },
-  <span class="s-key">"condition_applied"</span>: <span class="s-str">"Price â‰¥ â‚¹1,000: PASSED — â‚¹1,500 > â‚¹1,000"</span>,
+  <span class="s-key">"condition_applied"</span>: <span class="s-str">"Price â‰¥ ₹1,000: PASSED — ₹1,500 > ₹1,000"</span>,
   <span class="s-key">"condition_warning"</span>: <span class="s-null">null</span>,
   <span class="s-key">"confidence"</span>: <span class="s-num">0.9</span>,
   <span class="s-key">"notification_ref"</span>: <span class="s-str">"09/2025-CT(Rate)"</span>,
@@ -1024,8 +1024,8 @@ igst = (invoice_value Ã— <span class="s-num">18</span>) / <span class="s-num"
           <thead><tr><th>Plan</th><th>Monthly Quota</th><th>Overage</th></tr></thead>
           <tbody>
             <tr><td><span class="p-name">Free</span></td><td class="p-desc">100 calls</td><td class="p-desc">Blocked</td></tr>
-            <tr><td><span class="p-name">Developer</span></td><td class="p-desc">5,000 calls</td><td class="p-desc">â‚¹0.10 / call</td></tr>
-            <tr><td><span class="p-name">Pro</span></td><td class="p-desc">50,000 calls</td><td class="p-desc">â‚¹0.08 / call</td></tr>
+            <tr><td><span class="p-name">Developer</span></td><td class="p-desc">5,000 calls</td><td class="p-desc">₹0.10 / call</td></tr>
+            <tr><td><span class="p-name">Pro</span></td><td class="p-desc">50,000 calls</td><td class="p-desc">₹0.08 / call</td></tr>
             <tr><td><span class="p-name">Business</span></td><td class="p-desc">Unlimited</td><td class="p-desc">—</td></tr>
           </tbody>
         </table>
