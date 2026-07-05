@@ -1,0 +1,134 @@
+<!-- save as clickjack-test.html and open in browser -->
+<!-- This tests if your site can be framed -->
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Clickjacking Test - GST Accelerator</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #667eea;
+            font-family: Arial, sans-serif;
+        }
+
+        .decoy-container {
+            position: relative;
+            width: 400px;
+            height: 400px;
+        }
+
+        .decoy-button {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 20px;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .hidden-frame {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.0;
+            /* Completely invisible */
+            z-index: 5;
+            border: none;
+        }
+
+        .result {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 20px 40px;
+            border-radius: 10px;
+            font-size: 18px;
+            display: none;
+        }
+
+        .vulnerable {
+            background: #ff4757;
+            color: white;
+        }
+
+        .safe {
+            background: #2ed573;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="decoy-container">
+        <button class="decoy-button" onclick="showResult()">
+            🎁 Click to Claim Your Free Gift!
+        </button>
+        <!-- CHANGE THIS URL TO YOUR LOGIN/ACTION PAGE -->
+        <iframe src="https://gstaccelerator.in/login" class="hidden-frame" id="targetFrame"
+            onload="checkFrame()"></iframe>
+    </div>
+
+    <div class="result" id="result"></div>
+
+    <script>
+        function checkFrame() {
+            try {
+                // Try to access iframe content
+                var frameContent = document.getElementById('targetFrame').contentWindow.document;
+                document.getElementById('result').className = 'result vulnerable';
+                document.getElementById('result').style.display = 'block';
+                document.getElementById('result').innerHTML = '🔴 VULNERABLE: Page can be framed! Clickjacking possible!';
+            } catch (e) {
+                // Cannot access - might be protected
+                // But this doesn't guarantee protection
+                console.log('Cross-origin restriction detected, but frame may still load');
+            }
+        }
+
+        function showResult() {
+            // Check if iframe actually loaded content
+            var frame = document.getElementById('targetFrame');
+            frame.style.opacity = 0.5;  // Make it slightly visible to prove it loaded
+
+            if (frame.contentDocument || frame.contentWindow.document) {
+                document.getElementById('result').className = 'result vulnerable';
+                document.getElementById('result').style.display = 'block';
+                document.getElementById('result').innerHTML = '🔴 VULNERABLE: Iframe loaded your page! Clickjacking attack would work!';
+            }
+        }
+
+        // Also check after 3 seconds
+        setTimeout(function () {
+            var frame = document.getElementById('targetFrame');
+            try {
+                // Various methods to detect if content loaded
+                var doc = frame.contentDocument || frame.contentWindow.document;
+                if (doc.body && doc.body.innerHTML.length > 0) {
+                    document.getElementById('result').className = 'result vulnerable';
+                    document.getElementById('result').style.display = 'block';
+                    document.getElementById('result').innerHTML = '🔴 VULNERABLE: Content loaded in iframe!';
+                }
+            } catch (e) {
+                // Cross-origin - check if frame is blocked entirely
+            }
+        }, 3000);
+    </script>
+</body>
+
+</html>
