@@ -162,6 +162,15 @@ class IPRateLimitMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(IPRateLimitMiddleware)
 
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Content-Security-Policy"] = "frame-ancestors 'none';"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
+
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     return JSONResponse(
