@@ -942,8 +942,12 @@ Endpoints: /lookup /hsn/{code} /sac/{code} /autocomplete /bulk /health /meta /gs
 Auth: X-API-Key header (free tier available, no key needed for /lookup with demo key)
 OpenAPI: https://gstaccelerator.in/openapi.json
 Docs: https://gstaccelerator.in/docs
+Developer guide: https://gstaccelerator.in/blog/gst-api-for-developers
+Compliance warning guide: https://gstaccelerator.in/blog/gst-api-vs-manual-lookup
+CGST/SGST/IGST tax split guide: https://gstaccelerator.in/blog/cgst-sgst-igst-explained
 """
     return Response(content=content.strip(), media_type="text/plain")
+
 
 @app.get("/robots.txt", include_in_schema=False)
 async def robots_txt():
@@ -2796,6 +2800,26 @@ async def gst_api_blog_page():
     except Exception as e:
         raise HTTPException(status_code=500, detail="Blog template not found.")
 
+@app.get("/blog/gst-api-vs-manual-lookup", include_in_schema=False, response_class=HTMLResponse)
+async def gst_api_vs_manual_lookup_page():
+    try:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(base_dir, "gst-api-vs-manual-lookup.html"), "r", encoding="utf-8") as f:
+            content = f.read()
+        return HTMLResponse(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Blog template not found.")
+
+@app.get("/blog/cgst-sgst-igst-explained", include_in_schema=False, response_class=HTMLResponse)
+async def cgst_sgst_igst_explained_page():
+    try:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(base_dir, "cgst-sgst-igst-explained.html"), "r", encoding="utf-8") as f:
+            content = f.read()
+        return HTMLResponse(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Blog template not found.")
+
 @app.get("/llms.txt", include_in_schema=False)
 async def llms_txt():
     """
@@ -2854,6 +2878,8 @@ Notification: 09/2025-Central Tax (Rate), effective 2025-09-22.
 - Docs: https://gstaccelerator.in/docs
 - Pricing: https://gstaccelerator.in/pricing
 - Developer guide: https://gstaccelerator.in/blog/gst-api-for-developers
+- Compliance warning guide: https://gstaccelerator.in/blog/gst-api-vs-manual-lookup
+- CGST/SGST/IGST tax split guide: https://gstaccelerator.in/blog/cgst-sgst-igst-explained
 """
     from fastapi.responses import PlainTextResponse
     return PlainTextResponse(content=content, media_type="text/plain; charset=utf-8")
@@ -2895,7 +2921,24 @@ async def sitemap_xml():
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
-  <!-- Add blog post URLs as you publish them -->
+  <url>
+    <loc>https://gstaccelerator.in/blog/gst-api-for-developers</loc>
+    <lastmod>2026-06-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://gstaccelerator.in/blog/gst-api-vs-manual-lookup</loc>
+    <lastmod>2026-07-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://gstaccelerator.in/blog/cgst-sgst-igst-explained</loc>
+    <lastmod>2026-07-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
 </urlset>"""
     return FastAPIResponse(content=sitemap, media_type="application/xml")
 

@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CGST, SGST and IGST Explained — How to Split GST Correctly for Every Indian Transaction</title>
+  <meta name="description"
+    content="CGST, SGST, and IGST are three different taxes. Which one applies depends entirely on where your buyer is. Get it wrong and your GSTR-1 misfires. Here is the definitive explainer with worked examples in rupees." />
+  <meta name="keywords"
+    content="cgst and sgst, cgst sgst igst, sgst and cgst, 18 percent gst in rupees, 18 gst in rupees, cgst sgst difference, igst full form, gst split calculator india" />
+  <meta name="author" content="GST Accelerator" />
+  <link rel="canonical" href="https://gstaccelerator.in/blog/cgst-sgst-igst-explained" />
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="CGST, SGST and IGST Explained — How to Split GST Correctly" />
+  <meta property="og:description"
+    content="Which tax applies — CGST+SGST or IGST? Depends on where your buyer is. Get it wrong and your GSTR-1 misfires. Definitive explainer with rupee examples." />
+  <meta property="og:url" content="https://gstaccelerator.in/blog/cgst-sgst-igst-explained" />
+  <meta property="og:site_name" content="GST Accelerator" />
+  <meta property="article:published_time" content="2026-07-06" />
+  <meta property="article:tag" content="CGST SGST IGST" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="CGST, SGST and IGST Explained — India 2026" />
+  <meta name="twitter:description"
+    content="Which tax applies — CGST+SGST or IGST? Definitive explainer with worked rupee examples for Indian developers and accountants." />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "CGST, SGST and IGST Explained — How to Split GST Correctly for Every Indian Transaction",
+    "datePublished": "2026-07-06",
+    "dateModified": "2026-07-06",
+    "author": { "@type": "Organization", "name": "GST Accelerator", "url": "https://gstaccelerator.in" },
+    "publisher": { "@type": "Organization", "name": "GST Accelerator", "url": "https://gstaccelerator.in" },
+    "mainEntityOfPage": { "@type": "WebPage", "@id": "https://gstaccelerator.in/blog/cgst-sgst-igst-explained" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is the difference between CGST, SGST and IGST?",
+        "acceptedAnswer": { "@type": "Answer", "text": "CGST (Central GST) and SGST (State GST) apply together on intrastate supplies — when buyer and seller are in the same state. IGST (Integrated GST) applies on interstate supplies — when buyer and seller are in different states. The total tax rate is identical in both cases. CGST always equals SGST. IGST always equals CGST plus SGST combined." }
+      },
+      {
+        "@type": "Question",
+        "name": "How do you calculate 18% GST in rupees?",
+        "acceptedAnswer": { "@type": "Answer", "text": "For intrastate supply: multiply invoice value by 9% for CGST and 9% for SGST. For a ₹10,000 invoice: CGST = ₹900, SGST = ₹900, total GST = ₹1,800. For interstate supply: multiply invoice value by 18% for IGST. Same ₹10,000 invoice: IGST = ₹1,800. Total tax collected is the same — the receiving government differs." }
+      },
+      {
+        "@type": "Question",
+        "name": "Who receives CGST, SGST and IGST?",
+        "acceptedAnswer": { "@type": "Answer", "text": "CGST goes to the Central Government. SGST goes to the seller's State Government. IGST goes to the Central Government, which then settles the state's share with the destination state. This is why IGST applies on interstate transactions — it allows the destination state to claim its share regardless of where the seller is located." }
+      },
+      {
+        "@type": "Question",
+        "name": "What is UTGST and when does it apply?",
+        "acceptedAnswer": { "@type": "Answer", "text": "UTGST (Union Territory GST) replaces SGST for supplies within Union Territories — Delhi, Chandigarh, Puducherry, Dadra and Nagar Haveli, Daman and Diu, Ladakh, and Lakshadweep. If you are supplying within a Union Territory, you collect CGST plus UTGST, not CGST plus SGST. The rate is identical — only the receiving government changes." }
+      }
+    ]
+  }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --ink: #06090F;
+      --ink-2: #0D1220;
+      --ink-4: #1C2A3E;
+      --amber: #E8650A;
+      --amber-dim: rgba(232, 101, 10, 0.10);
+      --amber-mid: rgba(232, 101, 10, 0.25);
+      --navy-lit: #4A8FD4;
+      --navy-dim: rgba(26, 95, 168, 0.10);
+      --green-lit: #2DC994;
+      --green-dim: rgba(26, 158, 114, 0.10);
+      --green-mid: rgba(26, 158, 114, 0.25);
+      --white: #F2F4F8;
+      --muted: #6B7A99;
+      --border: rgba(107, 122, 153, 0.16);
+      --border-md: rgba(107, 122, 153, 0.30);
+      --font-serif: 'DM Serif Display', Georgia, serif;
+      --font-body: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: var(--ink);
+      color: var(--white);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.875rem 2rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(6, 9, 15, 0.9);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(12px);
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      color: var(--white);
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .nav-rupee {
+      width: 28px;
+      height: 28px;
+      background: var(--amber);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: #fff;
+    }
+
+    .nav-cta {
+      background: var(--amber);
+      color: #fff;
+      text-decoration: none;
+      padding: 0.4rem 1rem;
+      border-radius: 7px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .article-wrap {
+      max-width: 740px;
+      margin: 0 auto;
+      padding: 3.5rem 1.5rem 5rem;
+    }
+
+    .breadcrumb {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+
+    .breadcrumb a {
+      color: var(--muted);
+      text-decoration: none;
+    }
+
+    .article-meta {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 1.75rem;
+    }
+
+    .tag {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 100px;
+    }
+
+    .tag-cat {
+      background: var(--amber-dim);
+      border: 1px solid var(--amber-mid);
+      color: var(--amber);
+    }
+
+    .tag-date {
+      background: var(--navy-dim);
+      border: 1px solid rgba(26, 95, 168, 0.25);
+      color: var(--navy-lit);
+    }
+
+    .tag-read {
+      background: rgba(107, 122, 153, 0.1);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(2rem, 4.5vw, 3rem);
+      font-weight: 400;
+      line-height: 1.15;
+      letter-spacing: -0.01em;
+      margin-bottom: 1.25rem;
+    }
+
+    .article-deck {
+      font-size: 1.1rem;
+      color: var(--muted);
+      line-height: 1.65;
+      margin-bottom: 2.5rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    h2 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.4rem, 3vw, 1.8rem);
+      font-weight: 400;
+      line-height: 1.2;
+      margin: 2.75rem 0 0.75rem;
+    }
+
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 1.75rem 0 0.5rem;
+    }
+
+    p {
+      margin-bottom: 1.25rem;
+    }
+
+    a {
+      color: var(--amber);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .callout {
+      background: var(--amber-dim);
+      border: 1px solid var(--amber-mid);
+      border-left: 3px solid var(--amber);
+      border-radius: 0 10px 10px 0;
+      padding: 1rem 1.25rem;
+      margin: 1.75rem 0;
+      font-size: 0.95rem;
+      line-height: 1.65;
+    }
+
+    .callout strong {
+      color: var(--amber);
+    }
+
+    .callout-blue {
+      background: var(--navy-dim);
+      border: 1px solid rgba(26, 95, 168, 0.25);
+      border-left: 3px solid var(--navy-lit);
+      border-radius: 0 10px 10px 0;
+      padding: 1rem 1.25rem;
+      margin: 1.75rem 0;
+      font-size: 0.95rem;
+    }
+
+    .callout-blue strong {
+      color: var(--navy-lit);
+    }
+
+    .callout-green {
+      background: var(--green-dim);
+      border: 1px solid var(--green-mid);
+      border-left: 3px solid var(--green-lit);
+      border-radius: 0 10px 10px 0;
+      padding: 1rem 1.25rem;
+      margin: 1.75rem 0;
+      font-size: 0.95rem;
+    }
+
+    .callout-green strong {
+      color: var(--green-lit);
+    }
+
+    pre {
+      background: var(--ink-4);
+      border: 1px solid var(--border-md);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      overflow-x: auto;
+      margin: 1.5rem 0;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      line-height: 1.75;
+    }
+
+    p code,
+    li code {
+      background: rgba(107, 122, 153, 0.15);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 0.85em;
+      color: var(--navy-lit);
+      font-family: var(--font-mono);
+    }
+
+    .ck {
+      color: #4A8FD4;
+    }
+
+    .cs {
+      color: #2DC994;
+    }
+
+    .cn {
+      color: #F97583;
+    }
+
+    .cm {
+      color: #4A5E82;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin: 1.75rem 0;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    th {
+      background: var(--ink-2);
+      text-align: left;
+      padding: 10px 14px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:nth-child(even) td {
+      background: rgba(107, 122, 153, 0.04);
+    }
+
+    .check {
+      color: var(--green-lit);
+      font-weight: 600;
+    }
+
+    ul,
+    ol {
+      padding-left: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    li {
+      margin-bottom: 0.5rem;
+    }
+
+    .faq {
+      margin-top: 3rem;
+      border-top: 1px solid var(--border);
+      padding-top: 2rem;
+    }
+
+    .faq h2 {
+      margin-top: 0;
+    }
+
+    details {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+
+    summary {
+      padding: 1rem 1.25rem;
+      font-weight: 500;
+      font-size: 0.95rem;
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--ink-2);
+    }
+
+    summary::-webkit-details-marker {
+      display: none;
+    }
+
+    summary::after {
+      content: '+';
+      color: var(--amber);
+      font-size: 1.1rem;
+      flex-shrink: 0;
+      margin-left: 12px;
+    }
+
+    details[open] summary::after {
+      content: '−';
+    }
+
+    .faq-body {
+      padding: 1rem 1.25rem;
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .cta-box {
+      background: linear-gradient(160deg, rgba(232, 101, 10, 0.08), var(--ink-2));
+      border: 1px solid var(--amber-mid);
+      border-radius: 14px;
+      padding: 2rem;
+      margin: 3rem 0;
+      text-align: center;
+    }
+
+    .cta-box h3 {
+      margin: 0 0 0.5rem;
+      font-size: 1.1rem;
+    }
+
+    .cta-box p {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .cta-btn {
+      display: inline-block;
+      background: var(--amber);
+      color: #fff;
+      text-decoration: none;
+      padding: 0.65rem 1.75rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .cta-sub {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 8px;
+      margin-bottom: 0;
+    }
+
+    .related {
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .related-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+      margin-top: 1rem;
+    }
+
+    .related-card {
+      background: var(--ink-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      text-decoration: none;
+      display: block;
+      transition: border-color 0.15s;
+    }
+
+    .related-card:hover {
+      border-color: var(--amber);
+    }
+
+    .rc-label {
+      font-size: 10px;
+      color: var(--amber);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+
+    .rc-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--white);
+      line-height: 1.35;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem 1.5rem;
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    footer a {
+      color: var(--muted);
+    }
+
+    @media (max-width: 640px) {
+      nav {
+        padding: 0.75rem 1rem;
+      }
+
+      .article-wrap {
+        padding: 2.5rem 1rem 4rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <nav>
+    <a class="nav-logo" href="https://gstaccelerator.in">
+      <div class="nav-rupee">₹</div>GST Accelerator
+    </a>
+    <a class="nav-cta" href="https://gstaccelerator.in/dashboard">Get free API key</a>
+  </nav>
+
+  <article class="article-wrap">
+
+    <div class="breadcrumb">
+      <a href="https://gstaccelerator.in">Home</a> &rsaquo;
+      <a href="https://gstaccelerator.in/blog">Blog</a> &rsaquo;
+      CGST, SGST and IGST Explained
+    </div>
+
+    <div class="article-meta">
+      <span class="tag tag-cat">Tax Basics</span>
+      <span class="tag tag-date">July 2026</span>
+      <span class="tag tag-read">~1,000 words · 6 min read</span>
+    </div>
+
+    <h1>CGST, SGST and IGST Explained — How to Split GST Correctly for Every Transaction</h1>
+
+    <p class="article-deck">India's GST is three separate taxes — not one. Which one applies depends entirely on where
+      your buyer is. Get it wrong and your GSTR-1 misfires, your buyer loses ITC, and the wrong government collects the
+      money. Here is the complete, plain-English breakdown with rupee examples.</p>
+
+    <h2>The rule — in one sentence</h2>
+
+    <p><strong>Intrastate supply</strong> (seller and buyer in the same state): CGST + SGST apply. Equal halves of the
+      total rate.</p>
+
+    <p><strong>Interstate supply</strong> (seller and buyer in different states): IGST applies. Full rate to the Centre,
+      which settles with the destination state.</p>
+
+    <p>That is the entire decision tree. Everything else is application.</p>
+
+    <div class="callout">
+      <strong>The identity to memorise:</strong> CGST = SGST always. IGST = CGST + SGST always. If the total GST rate is
+      18%, then intrastate means CGST 9% + SGST 9%. Interstate means IGST 18%. The rupee amount collected from the
+      customer is identical. What changes is which government receives it.
+    </div>
+
+    <h2>Worked examples in rupees</h2>
+
+    <h3>Example 1: Laptop sold intrastate (seller in Maharashtra, buyer in Maharashtra)</h3>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Line item</th>
+            <th>Amount</th>
+            <th>Calculation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Invoice value (ex-GST)</td>
+            <td>₹80,000</td>
+            <td>Base price</td>
+          </tr>
+          <tr>
+            <td>CGST @ 9%</td>
+            <td>₹7,200</td>
+            <td>₹80,000 × 9%</td>
+          </tr>
+          <tr>
+            <td>SGST @ 9%</td>
+            <td>₹7,200</td>
+            <td>₹80,000 × 9%</td>
+          </tr>
+          <tr>
+            <td><strong>Total invoice value</strong></td>
+            <td><strong>₹94,400</strong></td>
+            <td>CGST + SGST = ₹14,400</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>The CGST ₹7,200 goes to the Central Government. The SGST ₹7,200 stays with Maharashtra. Both appear as separate
+      line items on the invoice. Both go into your GSTR-1 as separate entries.</p>
+
+    <h3>Example 2: Same laptop sold interstate (seller in Maharashtra, buyer in Karnataka)</h3>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Line item</th>
+            <th>Amount</th>
+            <th>Calculation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Invoice value (ex-GST)</td>
+            <td>₹80,000</td>
+            <td>Base price</td>
+          </tr>
+          <tr>
+            <td>IGST @ 18%</td>
+            <td>₹14,400</td>
+            <td>₹80,000 × 18%</td>
+          </tr>
+          <tr>
+            <td><strong>Total invoice value</strong></td>
+            <td><strong>₹94,400</strong></td>
+            <td>Single IGST line</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>The buyer in Karnataka pays the same ₹94,400. The Central Government collects the ₹14,400 IGST and then settles
+      Karnataka's share. Karnataka gets its portion — it just comes from the Centre, not directly from the seller in
+      Maharashtra.</p>
+
+    <h3>Example 3: 18% GST in rupees — quick reference table</h3>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Invoice value</th>
+            <th>CGST (9%)</th>
+            <th>SGST (9%)</th>
+            <th>IGST (18%)</th>
+            <th>Total GST</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>₹5,000</td>
+            <td>₹450</td>
+            <td>₹450</td>
+            <td>₹900</td>
+            <td>₹900</td>
+          </tr>
+          <tr>
+            <td>₹10,000</td>
+            <td>₹900</td>
+            <td>₹900</td>
+            <td>₹1,800</td>
+            <td>₹1,800</td>
+          </tr>
+          <tr>
+            <td>₹25,000</td>
+            <td>₹2,250</td>
+            <td>₹2,250</td>
+            <td>₹4,500</td>
+            <td>₹4,500</td>
+          </tr>
+          <tr>
+            <td>₹50,000</td>
+            <td>₹4,500</td>
+            <td>₹4,500</td>
+            <td>₹9,000</td>
+            <td>₹9,000</td>
+          </tr>
+          <tr>
+            <td>₹1,00,000</td>
+            <td>₹9,000</td>
+            <td>₹9,000</td>
+            <td>₹18,000</td>
+            <td>₹18,000</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>The complete supply-type decision tree</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Situation</th>
+            <th>Tax applicable</th>
+            <th>Who receives it</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Seller state = Buyer state</td>
+            <td>CGST + SGST</td>
+            <td>Centre + Seller's state</td>
+          </tr>
+          <tr>
+            <td>Seller state ≠ Buyer state</td>
+            <td>IGST</td>
+            <td>Centre (settles with destination state)</td>
+          </tr>
+          <tr>
+            <td>Supply to a Union Territory</td>
+            <td>CGST + UTGST</td>
+            <td>Centre + Union Territory</td>
+          </tr>
+          <tr>
+            <td>Export or SEZ supply</td>
+            <td>IGST @ 0%</td>
+            <td>Zero-rated — refund available</td>
+          </tr>
+          <tr>
+            <td>Import of goods</td>
+            <td>IGST + Customs</td>
+            <td>Centre</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout-blue">
+      <strong>Union Territory note:</strong> Delhi, Chandigarh, Puducherry, Ladakh, Dadra and Nagar Haveli, Daman and
+      Diu, and Lakshadweep are Union Territories. Supplies within these areas use CGST + UTGST — not CGST + SGST. The
+      rate is identical. The receiving authority is the Union Territory administration, not a state government.
+    </div>
+
+    <h2>The five most common mistakes</h2>
+
+    <p><strong>1. Applying IGST on intrastate sales.</strong> The most common error in e-commerce platforms that don't
+      check the buyer's state before tax calculation. The total tax is the same but the tax filing is wrong — IGST
+      collected on an intrastate sale shows as a mismatch in GSTR-2B reconciliation.</p>
+
+    <p><strong>2. Treating SGST and IGST as alternatives.</strong> They are never alternatives for the same transaction.
+      Either CGST+SGST applies, or IGST applies. Never both, never a choice.</p>
+
+    <p><strong>3. Assuming Union Territory = State.</strong> UT supplies use UTGST, not SGST. Billing software that
+      auto-fills SGST for all domestic intrastate supplies will produce incorrect invoices for buyers in Delhi,
+      Chandigarh, and other UTs.</p>
+
+    <p><strong>4. Hardcoding the supply type.</strong> An e-commerce platform where sellers are spread across states
+      cannot hardcode "intrastate" or "interstate" — it depends on the seller's registered state vs the buyer's delivery
+      state for each individual order. See <a href="https://gstaccelerator.in/blog/gst-api-vs-manual-lookup">why
+        hardcoding GST data creates compliance risk</a>.</p>
+
+    <p><strong>5. Not separating CGST and SGST on the invoice.</strong> The GST invoice format mandated by CBIC requires
+      CGST and SGST to appear as separate line items. A single "GST 18%" line without the split is a non-compliant
+      invoice.</p>
+
+    <h2>How developers handle this automatically</h2>
+
+    <p>Every transaction needs to know the supply type before the tax split can be calculated. The correct approach is
+      to determine supply type at order time — compare the seller's GSTIN state code against the buyer's delivery state
+      — and then pass that to the rate API.</p>
+
+    <p>Here is the complete pattern in Python using the <a href="https://gstaccelerator.in/docs">GST Accelerator
+        API</a>:</p>
+
+    <pre><span class="cm"># pip install gstaccelerator</span>
+<span class="ck">from</span> gstaccelerator <span class="ck">import</span> GSTAccelerator
+
+gst = GSTAccelerator(<span class="cs">"your_api_key"</span>)
+
+<span class="cm"># Determine supply type from GSTIN state codes</span>
+seller_state = <span class="cs">"27"</span>  <span class="cm"># Maharashtra GSTIN prefix</span>
+buyer_state  = <span class="cs">"29"</span>  <span class="cm"># Karnataka GSTIN prefix</span>
+
+supply_type = <span class="cs">"intrastate"</span> <span class="ck">if</span> seller_state == buyer_state <span class="ck">else</span> <span class="cs">"interstate"</span>
+
+<span class="cm"># Get the correct split for this specific transaction</span>
+rate = gst.lookup(
+    <span class="cs">"laptop computer"</span>,
+    supply_type=supply_type,
+    branded=<span class="cn">True</span>
+)
+
+invoice_value = <span class="cn">80000</span>
+r = rate[<span class="cn">0</span>][<span class="cs">"tax_rates"</span>]
+
+<span class="ck">if</span> supply_type == <span class="cs">"intrastate"</span>:
+    cgst = invoice_value * r[<span class="cs">"cgst"</span>] / <span class="cn">100</span>  <span class="cm"># ₹7,200</span>
+    sgst = invoice_value * r[<span class="cs">"sgst"</span>] / <span class="cn">100</span>  <span class="cm"># ₹7,200</span>
+    print(<span class="cs">f"CGST: ₹{cgst:,.0f} | SGST: ₹{sgst:,.0f}"</span>)
+<span class="ck">else</span>:
+    igst = invoice_value * r[<span class="cs">"igst"</span>] / <span class="cn">100</span>   <span class="cm"># ₹14,400</span>
+    print(<span class="cs">f"IGST: ₹{igst:,.0f}"</span>)</pre>
+
+    <p>The API returns all three values — CGST, SGST, and IGST — in every response. Your code picks which to apply based
+      on the supply type you passed. The <code>notification_ref</code> field in the response gives you the exact CBIC
+      notification that authorises the rate — which is your audit trail if a CA ever challenges it.</p>
+
+    <div class="callout-green">
+      <strong>GST 2.0 update (September 2025):</strong> The GST Council simplified the rate structure in September 2025.
+      Most goods now fall under 5% or 18%. The 12% slab was eliminated for the majority of products. If your application
+      references the pre-reform rate tables, the CGST/SGST values you are calculating are based on the wrong base rate.
+      Verify your rates against <a href="https://gstaccelerator.in/blog/gst-api-vs-manual-lookup">a current GST API</a>.
+    </div>
+
+    <div class="faq">
+      <h2>Frequently asked questions</h2>
+
+      <details>
+        <summary>What is the difference between CGST, SGST and IGST?</summary>
+        <div class="faq-body">CGST (Central GST) and SGST (State GST) apply together on intrastate supplies — when buyer
+          and seller are in the same state. IGST (Integrated GST) applies on interstate supplies. The total tax rate is
+          identical in both cases. CGST always equals SGST. IGST always equals CGST plus SGST combined.</div>
+      </details>
+
+      <details>
+        <summary>How do you calculate 18% GST in rupees?</summary>
+        <div class="faq-body">For intrastate supply: multiply invoice value by 9% for CGST and 9% for SGST. For a
+          ₹10,000 invoice: CGST = ₹900, SGST = ₹900, total = ₹1,800. For interstate: multiply by 18% for IGST. Same
+          invoice: IGST = ₹1,800. Total tax is the same — which government receives it differs.</div>
+      </details>
+
+      <details>
+        <summary>Who receives CGST, SGST and IGST?</summary>
+        <div class="faq-body">CGST goes to the Central Government. SGST goes to the seller's State Government. IGST goes
+          to the Central Government, which then settles the state's share with the destination state.</div>
+      </details>
+
+      <details>
+        <summary>What is UTGST and when does it apply?</summary>
+        <div class="faq-body">UTGST (Union Territory GST) replaces SGST for supplies within Union Territories — Delhi,
+          Chandigarh, Puducherry, Dadra and Nagar Haveli, Daman and Diu, Ladakh, and Lakshadweep. The rate equals CGST.
+          Only the receiving administration changes.</div>
+      </details>
+    </div>
+
+    <div class="cta-box">
+      <h3>Get CGST, SGST and IGST in one API call</h3>
+      <p>Pass your supply type and get all three values returned separately — with the notification reference and the
+        condition that triggered the rate.</p>
+      <a class="cta-btn" href="https://gstaccelerator.in/dashboard">Get free API key →</a>
+      <p class="cta-sub">100 calls free · No card needed · <a href="https://gstaccelerator.in/docs">View API docs</a> ·
+        <a href="https://gstaccelerator.in/pricing">See pricing</a></p>
+    </div>
+
+    <div class="related">
+      <h3>Related articles</h3>
+      <div class="related-grid">
+        <a class="related-card" href="https://gstaccelerator.in/blog/gst-api-vs-manual-lookup">
+          <div class="rc-label">Developer guide</div>
+          <div class="rc-title">GST API vs Manual Lookup — Why Hardcoding Destroys Compliance</div>
+        </a>
+        <a class="related-card" href="https://gstaccelerator.in/blog/gst-on-health-insurance">
+          <div class="rc-label">Tax rates</div>
+          <div class="rc-title">GST on Health Insurance — Rate, SAC Code, ITC Eligibility</div>
+        </a>
+        <a class="related-card" href="https://gstaccelerator.in/blog/gst-api-for-developers">
+          <div class="rc-label">Integration</div>
+          <div class="rc-title">GST API for Developers — Complete Integration Guide</div>
+        </a>
+      </div>
+    </div>
+
+  </article>
+
+  <footer>
+    <p><a href="https://gstaccelerator.in">GST Accelerator</a> · Compliance. Accelerated. · Data source: CBIC
+      Notification 09/2025-CT(Rate), effective 22 September 2025.</p>
+    <p style="margin-top: 6px;">Not tax advice. Verify with a CA for filing decisions. &copy; 2026 GST Accelerator.</p>
+  </footer>
+
+</body>
+
+</html>

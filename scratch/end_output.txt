@@ -1,0 +1,34 @@
+ supply type before the tax split can be calculated. The correct approach is to determine supply type at order time — compare the seller's GSTIN state code against the buyer's delivery state — and then pass that to the rate API.</p>
+
+  <p>Here is the complete pattern in Python using the <a href="https://gstaccelerator.in/docs">GST Accelerator API</a>:</p>
+
+<pre><span class="cm"># pip install gstaccelerator</span>
+<span class="ck">from</span> gstaccelerator <span class="ck">import</span> GSTAccelerator
+
+gst = GSTAccelerator(<span class="cs">"your_api_key"</span>)
+
+<span class="cm"># Determine supply type from GSTIN state codes</span>
+seller_state = <span class="cs">"27"</span>  <span class="cm"># Maharashtra GSTIN prefix</span>
+buyer_state  = <span class="cs">"29"</span>  <span class="cm"># Karnataka GSTIN prefix</span>
+
+supply_type = <span class="cs">"intrastate"</span> <span class="ck">if</span> seller_state == buyer_state <span class="ck">else</span> <span class="cs">"interstate"</span>
+
+<span class="cm"># Get the correct split for this specific transaction</span>
+rate = gst.lookup(
+    <span class="cs">"laptop computer"</span>,
+    supply_type=supply_type,
+    branded=<span class="cn">True</span>
+)
+
+invoice_value = <span class="cn">80000</span>
+r = rate[<span class="cn">0</span>][<span class="cs">"tax_rates"</span>]
+
+<span class="ck">if</span> supply_type == <span class="cs">"intrastate"</span>:
+    cgst = invoice_value * r[<span class="cs">"cgst"</span>] / <span class="cn">100</span>  <span class="cm"># ₹7,200</span>
+    sgst = invoice_value * r[<span class="cs">"sgst"</span>] / <span class="cn">100</span>  <span class="cm"># ₹7,200</span>
+    print(<span class="cs">f"CGST: ₹{cgst:,.0f} | SGST: ₹{sgst:,.0f}"</span>)
+<span class="ck">else</span>:
+    igst = invoice_value * r[<span class="cs">"igst"</span>] 
+<truncated 56953 bytes>
+
+NOTE: The output was truncated because it was too long. Use a more targeted query or a smaller range to get the information you need.
