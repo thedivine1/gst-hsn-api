@@ -3279,6 +3279,54 @@ async def handle_list_tools() -> list[types.Tool]:
                 },
                 "required": ["query"]
             }
+        ),
+        types.Tool(
+            name="get_hsn_rate",
+            description="Fetch the precise tax rate object for a specific 4, 6, or 8 digit HSN code.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "hsn_code": {"type": "string", "description": "The HSN code to lookup, e.g., '1006' or '10064000'"}
+                },
+                "required": ["hsn_code"]
+            }
+        ),
+        types.Tool(
+            name="get_sac_rate",
+            description="Fetch the precise tax rate object for a SAC code.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "sac_code": {"type": "string", "description": "The SAC code to lookup, e.g., '9983'"}
+                },
+                "required": ["sac_code"]
+            }
+        ),
+        types.Tool(
+            name="bulk_lookup",
+            description="Query multiple items in a single request.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "queries": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of product descriptions to lookup."
+                    }
+                },
+                "required": ["queries"]
+            }
+        ),
+        types.Tool(
+            name="validate_gstin",
+            description="Validate a GSTIN and extract PAN/State data.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "gstin": {"type": "string", "description": "The 15-character GSTIN to validate."}
+                },
+                "required": ["gstin"]
+            }
         )
     ]
 
@@ -3297,6 +3345,44 @@ async def handle_call_tool(name: str, arguments: dict | None) -> list[types.Text
         results = await lookup_rate(req, api_key_dict)
         text_results = [json.loads(r.model_dump_json()) for r in results]
         return [types.TextContent(type="text", text=json.dumps(text_results, indent=2))]
+        
+    if name == "get_hsn_rate":
+        api_key_dict = mcp_api_key_ctx.get()
+        if not api_key_dict:
+            return [types.TextContent(type="text", text="Error: Unauthorized.")]
+        
+        result = await get_hsn(arguments.get("hsn_code", ""), None, api_key_dict)
+        return [types.TextContent(type="text", text=json.dumps([json.loads(r.model_dump_json()) for r in result], indent=2))]
+
+    if name == "get_sac_rate":
+        api_key_dict = mcp_api_key_ctx.get()
+        if not api_key_dict:
+            return [types.TextContent(type="text", text="Error: Unauthorized.")]
+        
+        result = await get_sac(arguments.get("sac_code", ""), None, api_key_dict)
+        return [types.TextContent(type="text", text=json.dumps([json.loads(r.model_dump_json()) for r in result], indent=2))]
+
+    if name == "bulk_lookup":
+        api_key_dict = mcp_api_key_ctx.get()
+        if not api_key_dict:
+            return [types.TextContent(type="text", text="Error: Unauthorized.")]
+        
+        queries = arguments.get("queries", [])
+        reqs = [LookupRequest(description=q) for q in queries]
+        results = await bulk_lookup(reqs, api_key_dict)
+        text_results = [[json.loads(r.model_dump_json()) for r in row] for row in results]
+        return [types.TextContent(type="text", text=json.dumps(text_results, indent=2))]
+
+    if name == "validate_gstin":
+        api_key_dict = mcp_api_key_ctx.get()
+        if not api_key_dict:
+            return [types.TextContent(type="text", text="Error: Unauthorized.")]
+            
+        try:
+            result = await validate_gstin(arguments.get("gstin", ""), api_key_dict)
+            return [types.TextContent(type="text", text=json.dumps(json.loads(result.model_dump_json()), indent=2))]
+        except Exception as e:
+            return [types.TextContent(type="text", text=json.dumps({"error": str(e)}))]
         
     raise ValueError(f"Unknown tool: {name}")
 
