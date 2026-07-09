@@ -1960,13 +1960,13 @@ console.log(applicable_rate);  <span class="cc">// "CGST 9% + SGST 9% = 18%"</sp
 <section style="padding: 4rem 1rem; max-width: 1000px; margin: 0 auto;">
   <h2 style="font-family: var(--font-serif); font-size: 2rem; margin-bottom: 2rem; text-align: center;">From the blog</h2>
   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+    <a href="/blog/gst-on-health-insurance" style="display: block; padding: 1.5rem; background: var(--ink-2); border: 1px solid var(--border); border-radius: 8px; text-decoration: none; color: var(--white); transition: border-color 0.2s;">
+      <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--amber);">GST on Health Insurance</h3>
+      <p style="font-size: 0.85rem; color: var(--muted); line-height: 1.5;">18% GST, SAC code 997133, ITC eligibility explained. Complete guide for policyholders, employers and insurtech developers.</p>
+    </a>
     <a href="/blog/cgst-sgst-igst-explained" style="display: block; padding: 1.5rem; background: var(--ink-2); border: 1px solid var(--border); border-radius: 8px; text-decoration: none; color: var(--white); transition: border-color 0.2s;">
       <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--amber);">CGST, SGST, IGST Explained</h3>
       <p style="font-size: 0.85rem; color: var(--muted); line-height: 1.5;">Understand the differences between Central, State, and Integrated GST and when each applies.</p>
-    </a>
-    <a href="/blog/gst-api-for-developers" style="display: block; padding: 1.5rem; background: var(--ink-2); border: 1px solid var(--border); border-radius: 8px; text-decoration: none; color: var(--white); transition: border-color 0.2s;">
-      <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--amber);">GST API for Developers</h3>
-      <p style="font-size: 0.85rem; color: var(--muted); line-height: 1.5;">A comprehensive guide on integrating GST validation and HSN/SAC lookups into your software.</p>
     </a>
     <a href="/blog/gst-api-vs-manual-lookup" style="display: block; padding: 1.5rem; background: var(--ink-2); border: 1px solid var(--border); border-radius: 8px; text-decoration: none; color: var(--white); transition: border-color 0.2s;">
       <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--amber);">GST API vs Manual Lookup</h3>
@@ -3011,6 +3011,16 @@ async def cgst_sgst_igst_explained_page():
     except Exception as e:
         raise HTTPException(status_code=500, detail="Blog template not found.")
 
+@app.get("/blog/gst-on-health-insurance", include_in_schema=False, response_class=HTMLResponse)
+async def gst_on_health_insurance_page():
+    try:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(base_dir, "gst-on-health-insurance.html"), "r", encoding="utf-8") as f:
+            content = f.read()
+        return HTMLResponse(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Blog template not found.")
+
 @app.get("/llms.txt", include_in_schema=False)
 async def llms_txt():
     """
@@ -3117,6 +3127,12 @@ async def sitemap_xml():
   </url>
   <url>
     <loc>https://gstaccelerator.in/blog/cgst-sgst-igst-explained</loc>
+    <lastmod>2026-07-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://gstaccelerator.in/blog/gst-on-health-insurance</loc>
     <lastmod>2026-07-06</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
