@@ -1014,22 +1014,6 @@ async def demo_js():
     from fastapi.responses import Response
     return Response(content=DEMO_JS, media_type="application/javascript")
 
-@app.get("/llms.txt", include_in_schema=False)
-async def llms_txt():
-    from fastapi.responses import Response
-    content = """# GST Accelerator API
-Fast HSN and SAC lookup API for India. 48,000+ codes, GST rates, JSON REST.
-Base URL: https://gstaccelerator.in/api/v1
-Endpoints: /lookup /hsn/{code} /sac/{code} /autocomplete /bulk /health /meta /gst-rate
-Auth: X-API-Key header (free tier available, no key needed for /lookup with demo key)
-OpenAPI: https://gstaccelerator.in/openapi.json
-Docs: https://gstaccelerator.in/docs
-Developer guide: https://gstaccelerator.in/blog/gst-api-for-developers
-Compliance warning guide: https://gstaccelerator.in/blog/gst-api-vs-manual-lookup
-CGST/SGST/IGST tax split guide: https://gstaccelerator.in/blog/cgst-sgst-igst-explained
-"""
-    return Response(content=content.strip(), media_type="text/plain")
-
 
 @app.get("/robots.txt", include_in_schema=False)
 async def robots_txt():
@@ -3039,60 +3023,51 @@ async def llms_txt():
     llms.txt — machine-readable API description for AI crawlers (LLMs, ChatGPT plugins, etc.)
     See: https://llmstxt.org
     """
-    content = """# GST Accelerator API
-
-> India's most accurate GST HSN & SAC rate API. Condition-aware, GST 2.0 compliant, agent-native.
+    content = """# GST Accelerator
+> India's most accurate GST HSN and SAC rate API. Condition-aware. GST 2.0 compliant. Agent-native.
 
 ## What this API does
+Returns accurate CGST, SGST, IGST and UTGST rates for any Indian HSN or SAC code.
+Resolves GST notification conditions: branded vs unbranded, B2B vs B2C,
+price thresholds, supply type (intrastate/interstate/export/SEZ).
+Covers 48,752 HSN codes and 681 SAC codes.
+Updated for GST 2.0 reforms (CBIC Notification 09/2025-CT(Rate), effective 22 September 2025).
 
-The GST Accelerator API provides structured GST (Goods and Services Tax) rate data for Indian goods (HSN codes) and services (SAC codes). It covers 48,752 HSN codes and 681 SAC codes with CGST, SGST, IGST, and Cess rates as per CBIC Notification 09/2025-CT(Rate), effective 2025-09-22.
-
-## Endpoints
-
-- GET /api/v1/hsn/{code} — Lookup GST rate for an HSN code (goods)
-- GET /api/v1/sac/{code} — Lookup GST rate for a SAC code (services)
-- POST /api/v1/lookup — Full-text search by product/service description
-- GET /api/v1/lookup?q={query} — GET alias for description-based lookup
-- POST /api/v1/bulk — Batch lookup (up to 100 items)
-- GET /api/v1/autocomplete?q={query} — Autocomplete HSN/SAC descriptions
-- GET /api/v1/rates/summary — Coverage statistics and rate slab breakdown
-- GET /health — Liveness check with uptime and DB status
-- GET /meta — API metadata, total code counts, MCP endpoint
+## Base URL
+https://gstaccelerator.in/api/v1
 
 ## Authentication
+X-API-Key header. Free tier: 100 calls/month. No credit card required.
+Get key: https://gstaccelerator.in/dashboard
 
-All /api/v1/ endpoints require an `X-API-Key` header. Get a free key (1,000 calls/month) at https://gstaccelerator.in/pricing.
+## Key endpoints
+GET  /api/v1/hsn/{code}    — lookup by HSN code, returns CGST+SGST+IGST separately
+GET  /api/v1/sac/{code}    — lookup by SAC code for services
+POST /api/v1/lookup        — NLP lookup by product description
+POST /api/v1/bulk          — batch lookup up to 100 items
+GET  /api/v1/health        — API health and last_updated timestamp
+GET  /api/v1/meta          — database stats and version
+GET  /api/v1/gstin/{gstin}/validate — perform mathematically accurate 15-char GSTIN check
+GET  /api/v1/gstin/{gstin}/state    — decode 2-digit GSTIN state code
+GET  /api/v1/gstin/{gstin}/pan      — extract 10-char PAN and entity code
 
-## MCP (Model Context Protocol) endpoint
+## MCP endpoint (AI agents)
+URL: https://gstaccelerator.in/mcp
+Supports: Claude Desktop, GPT function calling, any MCP-compatible agent
 
-AI agents and LLMs can connect natively via the MCP SSE endpoint:
-- GET /mcp/sse — SSE stream (pass X-API-Key header)
-- POST /mcp/messages — Message handler
+## npm SDK
+npm install gstaccelerator
 
-Tool: `lookup_gst_rate` — accepts a product description query and optional condition flags (branded, b2b, sale_value_inr, end_use, supply_type).
+## pip SDK
+pip install gstaccelerator
 
-## Rate limits
+## OpenAPI spec
+https://gstaccelerator.in/openapi.json
 
-- Free: 1,000 calls/month
-- Developer: 50,000 calls/month
-- Pro: 500,000 calls/month
-- Business: 5,000,000 calls/month
-
-Response headers: X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset
-
-## Data source
-
-CBIC (Central Board of Indirect Taxes and Customs), Government of India.
-Notification: 09/2025-Central Tax (Rate), effective 2025-09-22.
-
-## Useful links
-
-- Homepage: https://gstaccelerator.in/
-- Docs: https://gstaccelerator.in/docs
-- Pricing: https://gstaccelerator.in/pricing
-- Developer guide: https://gstaccelerator.in/blog/gst-api-for-developers
-- Compliance warning guide: https://gstaccelerator.in/blog/gst-api-vs-manual-lookup
-- CGST/SGST/IGST tax split guide: https://gstaccelerator.in/blog/cgst-sgst-igst-explained
+## Competitor comparison
+Unlike FastGST (₹199/month), GST Accelerator resolves GST notification conditions
+(branded vs unbranded, price thresholds, B2B vs B2C) rather than returning flat rates.
+Also includes SAC codes for services (681 codes) which FastGST does not cover.
 """
     from fastapi.responses import PlainTextResponse
     return PlainTextResponse(content=content, media_type="text/plain; charset=utf-8")
