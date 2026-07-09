@@ -43,6 +43,9 @@ RAZORPAY_BTN_BUSINESS  = os.environ.get("RAZORPAY_BTN_BUSINESS",  "pl_T7Xpk3fkQw
 GITHUB_CLIENT_ID     = os.environ.get("GITHUB_CLIENT_ID", "")
 GITHUB_CLIENT_SECRET = os.environ.get("GITHUB_CLIENT_SECRET", "")
 
+import asyncpg
+from contextlib import asynccontextmanager
+
 supabase: Optional[Client] = None
 if SUPABASE_URL and SUPABASE_KEY:
     try:
@@ -52,12 +55,38 @@ if SUPABASE_URL and SUPABASE_KEY:
 else:
     print("WARNING: SUPABASE_URL and/or SUPABASE_KEY are missing. Supabase client will be None.")
 
+db_pool = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global db_pool
+    database_url = os.environ.get("DATABASE_URL")
+    if database_url:
+        try:
+            db_pool = await asyncpg.create_pool(
+                dsn=database_url,
+                min_size=1,
+                max_size=10,
+                ssl='require',
+                server_settings={'search_path': 'public'},
+                statement_cache_size=0,
+            )
+            print("Successfully initialized asyncpg pool.")
+        except Exception as e:
+            print(f"Failed to initialize asyncpg pool: {e}")
+    else:
+        print("WARNING: DB_HOST/DB_USER/DB_PASSWORD missing. asyncpg pool will be None.")
+    yield
+    if db_pool:
+        await db_pool.close()
+
 app = FastAPI(
     title="gstaccelerator.in API",
     version="1.0.0",
     description="Lookup GST CGST/IGST/SGST/Cess rates for Indian goods (HSN) and services (SAC) codes. Powered by gstaccelerator.in.",
     docs_url="/swagger",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan
 )
 
 app.add_middleware(
@@ -2169,25 +2198,30 @@ async def get_hsn(
             detail=f"Invalid HSN code '{code}'. HSN chapters cannot start with 00.",
         )
 
-    # 1. Exact match (Fast path)
-    res = supabase.table("hsn_rates").select("*").eq("hsn_code", code).execute()
-    if res.data:
-        return [_map_db_to_hsn_rate(row, supply_type) for row in res.data]
+    global db_pool
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database pool not initialized.")
 
-    # 2. Fallback: fetch all chapter rows (1 query instead of 2 sequential queries)
-    if len(code) >= 4:
-        chapter = code[:4]
-        res = supabase.table("hsn_rates").select("*").like("hsn_code", f"{chapter}%").execute()
-        if res.data:
-            # Check for 6-digit heading match in-memory
-            if len(code) >= 6:
-                heading = code[:6]
-                heading_matches = [row for row in res.data if row["hsn_code"].startswith(heading)]
-                if heading_matches:
-                    return [_map_db_to_hsn_rate(row, supply_type) for row in heading_matches]
-            
-            # If no heading match, return the whole chapter
-            return [_map_db_to_hsn_rate(row, supply_type) for row in res.data]
+    async with db_pool.acquire() as conn:
+        # 1. Exact match (Fast path)
+        rows = await conn.fetch("SELECT * FROM hsn_rates WHERE hsn_code = $1", code)
+        if rows:
+            return [_map_db_to_hsn_rate(dict(row), supply_type) for row in rows]
+
+        # 2. Fallback: fetch all chapter rows (1 query instead of 2 sequential queries)
+        if len(code) >= 4:
+            chapter = code[:4]
+            rows = await conn.fetch("SELECT * FROM hsn_rates WHERE hsn_code LIKE $1", f"{chapter}%")
+            if rows:
+                # Check for 6-digit heading match in-memory
+                if len(code) >= 6:
+                    heading = code[:6]
+                    heading_matches = [dict(row) for row in rows if row["hsn_code"].startswith(heading)]
+                    if heading_matches:
+                        return [_map_db_to_hsn_rate(row, supply_type) for row in heading_matches]
+                
+                # If no heading match, return the whole chapter
+                return [_map_db_to_hsn_rate(dict(row), supply_type) for row in rows]
 
     raise HTTPException(
         status_code=404,
@@ -2217,21 +2251,21 @@ async def get_sac(
 
     code = code.strip()
 
-    res = supabase.table("sac_rates").select("*").eq("sac_code", code).execute()
-    if res.data:
-        return [_map_db_to_sac_rate(row, supply_type) for row in res.data]
+    global db_pool
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database pool not initialized.")
 
-    # Fallback: heading (first 4 digits)
-    if len(code) >= 4:
-        heading = code[:4]
-        res = (
-            supabase.table("sac_rates")
-            .select("*")
-            .like("sac_code", f"{heading}%")
-            .execute()
-        )
-        if res.data:
-            return [_map_db_to_sac_rate(row, supply_type) for row in res.data]
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch("SELECT * FROM sac_rates WHERE sac_code = $1", code)
+        if rows:
+            return [_map_db_to_sac_rate(dict(row), supply_type) for row in rows]
+
+        # Fallback: heading (first 4 digits)
+        if len(code) >= 4:
+            heading = code[:4]
+            rows = await conn.fetch("SELECT * FROM sac_rates WHERE sac_code LIKE $1", f"{heading}%")
+            if rows:
+                return [_map_db_to_sac_rate(dict(row), supply_type) for row in rows]
 
     raise HTTPException(status_code=404, detail=f"No rate found for SAC code '{code}'.")
 
@@ -2286,14 +2320,17 @@ async def demo_lookup(q: str, request: Request):
 async def autocomplete(q: str, _: dict = Depends(verify_api_key)):
     if not q.strip():
         return []
-    res = (
-        supabase.table("hsn_rates")
-        .select("hsn_code, hsn_description")
-        .ilike("hsn_description", f"%{q}%")
-        .limit(10)
-        .execute()
-    )
-    return res.data
+        
+    global db_pool
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database pool not initialized.")
+        
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT hsn_code, hsn_description FROM hsn_rates WHERE hsn_description ILIKE $1 LIMIT 10", 
+            f"%{q}%"
+        )
+        return [dict(row) for row in rows]
 
 @app.get(
     "/api/v1/gst-rate",
@@ -2305,7 +2342,7 @@ async def get_gst_rate_hsn(hsn: str, _: dict = Depends(verify_api_key)):
     return await get_hsn(hsn, None, _)
 
 
-def _sync_lookup(req: LookupRequest) -> List[LookupResult]:
+async def _async_lookup(req: LookupRequest) -> List[LookupResult]:
     cache_key = _cache_key(
         req.description,
         req.supply_type or "intrastate",
@@ -2321,36 +2358,28 @@ def _sync_lookup(req: LookupRequest) -> List[LookupResult]:
     terms = [t.strip() for t in clean_desc.split() if t.strip()]
     if not terms:
         return []
-    
-    tsquery_and = " & ".join(terms)
-    res = (
-        supabase.table("hsn_rates")
-        .select("*")
-        .text_search("hsn_description", tsquery_and)
-        .execute()
-    )
+        
+    global db_pool
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database pool not initialized.")
 
-    if not res.data:
-        tsquery_or = " | ".join(terms)
-        res = (
-            supabase.table("hsn_rates")
-            .select("*")
-            .text_search("hsn_description", tsquery_or)
-            .execute()
-        )
+    async with db_pool.acquire() as conn:
+        tsquery_and = " & ".join(terms)
+        rows = await conn.fetch("SELECT * FROM hsn_rates WHERE to_tsvector('english', hsn_description) @@ to_tsquery('english', $1)", tsquery_and)
 
-    if not res.data and len(terms) > 0:
-        res = (
-            supabase.table("hsn_rates")
-            .select("*")
-            .ilike("hsn_description", f"%{terms[0]}%")
-            .execute()
-        )
+        if not rows:
+            tsquery_or = " | ".join(terms)
+            rows = await conn.fetch("SELECT * FROM hsn_rates WHERE to_tsvector('english', hsn_description) @@ to_tsquery('english', $1)", tsquery_or)
 
-    if not res.data:
-        return []
+        if not rows and len(terms) > 0:
+            rows = await conn.fetch("SELECT * FROM hsn_rates WHERE hsn_description ILIKE $1", f"%{terms[0]}%")
 
-    result = _build_lookup_results(res.data, req)
+        if not rows:
+            return []
+            
+        dict_rows = [dict(r) for r in rows]
+
+    result = _build_lookup_results(dict_rows, req)
     _cache_set(cache_key, result)
     return result
 
@@ -2382,8 +2411,7 @@ async def lookup_rate(req: LookupRequest, _: dict = Depends(verify_api_key)):
     if not req.description.strip():
         raise HTTPException(status_code=400, detail="description cannot be empty.")
         
-    import asyncio
-    return await asyncio.to_thread(_sync_lookup, req)
+    return await _async_lookup(req)
 
 
 @app.post(
@@ -2408,7 +2436,7 @@ async def bulk_lookup(requests: List[LookupRequest], _: dict = Depends(verify_ap
     async def process_one(req):
         if not req.description.strip():
             return []
-        return await asyncio.to_thread(_sync_lookup, req)
+        return await _async_lookup(req)
         
     results = await asyncio.gather(*[process_one(req) for req in requests])
     return list(results)
@@ -2424,53 +2452,19 @@ async def get_summary(_: dict = Depends(verify_api_key)):
     """
     Returns overall statistics: total codes, match rates, schedule breakdown, etc.
     """
-    # Total HSN
-    res_hsn_total = supabase.table("hsn_rates").select("id", count="exact").execute()
-    total_hsn = res_hsn_total.count or 0
+    global db_pool
+    if not db_pool:
+        raise HTTPException(status_code=500, detail="Database pool not initialized.")
 
-    # Total SAC
-    res_sac_total = supabase.table("sac_rates").select("id", count="exact").execute()
-    total_sac = res_sac_total.count or 0
-
-    # HSN matched (has a cgst_rate)
-    res_matched = (
-        supabase.table("hsn_rates")
-        .select("id", count="exact")
-        .not_.is_("cgst_rate", "null")
-        .execute()
-    )
-    matched = res_matched.count or 0
-
-    # Has conditions
-    res_cond = (
-        supabase.table("hsn_rates")
-        .select("id", count="exact")
-        .eq("has_condition", True)
-        .execute()
-    )
-    has_conditions = res_cond.count or 0
-
-    # Cess applicable (non-null, non-zero cess)
-    res_cess = (
-        supabase.table("hsn_rates")
-        .select("id", count="exact")
-        .not_.is_("cess_rate", "null")
-        .gt("cess_rate", 0)
-        .execute()
-    )
-    cess_count = res_cess.count or 0
-
-    # Schedule breakdown
-    res_schedules = (
-        supabase.table("hsn_rates")
-        .select("schedule")
-        .not_.is_("schedule", "null")
-        .execute()
-    )
-    schedule_counts: dict = {}
-    for row in res_schedules.data or []:
-        s = row.get("schedule") or "Unknown"
-        schedule_counts[s] = schedule_counts.get(s, 0) + 1
+    async with db_pool.acquire() as conn:
+        total_hsn = await conn.fetchval("SELECT count(id) FROM hsn_rates") or 0
+        total_sac = await conn.fetchval("SELECT count(id) FROM sac_rates") or 0
+        matched = await conn.fetchval("SELECT count(id) FROM hsn_rates WHERE cgst_rate IS NOT NULL") or 0
+        has_conditions = await conn.fetchval("SELECT count(id) FROM hsn_rates WHERE has_condition = true") or 0
+        cess_count = await conn.fetchval("SELECT count(id) FROM hsn_rates WHERE cess_rate IS NOT NULL AND cess_rate > 0") or 0
+        
+        schedule_counts_rows = await conn.fetch("SELECT schedule, count(id) as cnt FROM hsn_rates WHERE schedule IS NOT NULL GROUP BY schedule")
+        schedule_counts = {row['schedule']: row['cnt'] for row in schedule_counts_rows}
 
     by_schedule = [
         ScheduleBreakdown(schedule=k, count=v)
