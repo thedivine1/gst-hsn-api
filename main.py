@@ -194,6 +194,66 @@ async def general_exception_handler(request: Request, exc: Exception):
 
 
 # ---------------------------------------------------------------------------
+# GSTIN Validation Helpers
+# ---------------------------------------------------------------------------
+
+GST_STATE_CODES = {
+    "01": "Jammu and Kashmir",
+    "02": "Himachal Pradesh",
+    "03": "Punjab",
+    "04": "Chandigarh",
+    "05": "Uttarakhand",
+    "06": "Haryana",
+    "07": "Delhi",
+    "08": "Rajasthan",
+    "09": "Uttar Pradesh",
+    "10": "Bihar",
+    "11": "Sikkim",
+    "12": "Arunachal Pradesh",
+    "13": "Nagaland",
+    "14": "Manipur",
+    "15": "Mizoram",
+    "16": "Tripura",
+    "17": "Meghalaya",
+    "18": "Assam",
+    "19": "West Bengal",
+    "20": "Jharkhand",
+    "21": "Odisha",
+    "22": "Chhattisgarh",
+    "23": "Madhya Pradesh",
+    "24": "Gujarat",
+    "25": "Daman and Diu",
+    "26": "Dadra and Nagar Haveli and Daman and Diu",
+    "27": "Maharashtra",
+    "28": "Andhra Pradesh (Old)",
+    "29": "Karnataka",
+    "30": "Goa",
+    "31": "Lakshadweep",
+    "32": "Kerala",
+    "33": "Tamil Nadu",
+    "34": "Puducherry",
+    "35": "Andaman and Nicobar Islands",
+    "36": "Telangana",
+    "37": "Andhra Pradesh",
+    "38": "Ladakh",
+    "97": "Other Territory",
+    "99": "Centre Jurisdiction"
+}
+
+def calculate_gstin_checksum(gstin_14: str) -> str:
+    total = 0
+    chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    for i, c in enumerate(gstin_14):
+        val = chars.index(c)
+        factor = 2 if i % 2 != 0 else 1
+        prod = val * factor
+        total += (prod // 36) + (prod % 36)
+    rem = total % 36
+    checksum_val = (36 - rem) % 36
+    return chars[checksum_val]
+
+
+# ---------------------------------------------------------------------------
 # Auth helpers
 # ---------------------------------------------------------------------------
 
@@ -451,6 +511,28 @@ class SummaryResponse(BaseModel):
     by_schedule: List[ScheduleBreakdown]
     rate_slabs: RateSlabs
     last_updated: str
+
+
+class GstinValidationResponse(BaseModel):
+    valid: bool
+    gstin: str
+    state_code: Optional[str] = None
+    state_name: Optional[str] = None
+    pan: Optional[str] = None
+    entity_type_code: Optional[str] = None
+    error_reason: Optional[str] = None
+
+
+class GstinStateResponse(BaseModel):
+    gstin: str
+    state_code: str
+    state_name: str
+
+
+class GstinPanResponse(BaseModel):
+    gstin: str
+    pan: str
+    entity_type_code: str
 
 
 # ---------------------------------------------------------------------------
@@ -1862,6 +1944,24 @@ console.log(applicable_rate);  <span class="cc">// "CGST 9% + SGST 9% = 18%"</sp
 
 </section>
 
+<section style="padding: 4rem 1rem; max-width: 1000px; margin: 0 auto;">
+  <h2 style="font-family: var(--font-serif); font-size: 2rem; margin-bottom: 2rem; text-align: center;">From the blog</h2>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+    <a href="/blog/cgst-sgst-igst-explained" style="display: block; padding: 1.5rem; background: var(--ink-2); border: 1px solid var(--border); border-radius: 8px; text-decoration: none; color: var(--white); transition: border-color 0.2s;">
+      <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--amber);">CGST, SGST, IGST Explained</h3>
+      <p style="font-size: 0.85rem; color: var(--muted); line-height: 1.5;">Understand the differences between Central, State, and Integrated GST and when each applies.</p>
+    </a>
+    <a href="/blog/gst-api-for-developers" style="display: block; padding: 1.5rem; background: var(--ink-2); border: 1px solid var(--border); border-radius: 8px; text-decoration: none; color: var(--white); transition: border-color 0.2s;">
+      <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--amber);">GST API for Developers</h3>
+      <p style="font-size: 0.85rem; color: var(--muted); line-height: 1.5;">A comprehensive guide on integrating GST validation and HSN/SAC lookups into your software.</p>
+    </a>
+    <a href="/blog/gst-api-vs-manual-lookup" style="display: block; padding: 1.5rem; background: var(--ink-2); border: 1px solid var(--border); border-radius: 8px; text-decoration: none; color: var(--white); transition: border-color 0.2s;">
+      <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--amber);">GST API vs Manual Lookup</h3>
+      <p style="font-size: 0.85rem; color: var(--muted); line-height: 1.5;">Compare the costs, accuracy, and speed of using an API versus manual tax rate lookups.</p>
+    </a>
+  </div>
+</section>
+
 <hr />
 
 <footer>
@@ -1939,6 +2039,119 @@ def _map_db_to_sac_rate(row: dict, supply_type: Optional[str]) -> SacRate:
         cgst=row.get("cgst_rate"),
         sgst=row.get("cgst_rate"),
         igst=row.get("igst_rate"),
+    )
+
+
+# ---------------------------------------------------------------------------
+# GSTIN Validation Routes
+# ---------------------------------------------------------------------------
+
+@app.get(
+    "/api/v1/gstin/{gstin}/validate",
+    response_model=GstinValidationResponse,
+    summary="Validate GSTIN",
+    tags=["GSTIN"],
+)
+async def validate_gstin(
+    gstin: str,
+    _: dict = Depends(verify_api_key)
+):
+    """
+    Validates a GSTIN mathematically and extracts its components.
+    Performs length check, state code check, PAN format check, and Mod-36 checksum verification.
+    """
+    gstin = gstin.upper().strip()
+    
+    if len(gstin) != 15:
+        return GstinValidationResponse(valid=False, gstin=gstin, error_reason="GSTIN must be exactly 15 characters long.")
+        
+    state_code = gstin[0:2]
+    if state_code not in GST_STATE_CODES:
+        return GstinValidationResponse(valid=False, gstin=gstin, error_reason=f"Invalid state code: {state_code}")
+        
+    pan = gstin[2:12]
+    if not re.match(r"^[A-Z]{5}[0-9]{4}[A-Z]{1}$", pan):
+        return GstinValidationResponse(valid=False, gstin=gstin, error_reason=f"Invalid PAN format: {pan}")
+        
+    entity_code = gstin[12:13]
+    if not re.match(r"^[1-9A-Z]$", entity_code):
+        return GstinValidationResponse(valid=False, gstin=gstin, error_reason=f"Invalid entity code: {entity_code}")
+        
+    fourteenth = gstin[13:14]
+    if fourteenth != 'Z':
+        return GstinValidationResponse(valid=False, gstin=gstin, error_reason="14th character must be 'Z'.")
+        
+    try:
+        expected_checksum = calculate_gstin_checksum(gstin[:14])
+    except ValueError:
+        return GstinValidationResponse(valid=False, gstin=gstin, error_reason="Invalid characters in GSTIN.")
+        
+    if gstin[14] != expected_checksum:
+        return GstinValidationResponse(valid=False, gstin=gstin, error_reason=f"Checksum mismatch. Expected '{expected_checksum}', got '{gstin[14]}'.")
+        
+    return GstinValidationResponse(
+        valid=True,
+        gstin=gstin,
+        state_code=state_code,
+        state_name=GST_STATE_CODES[state_code],
+        pan=pan,
+        entity_type_code=entity_code
+    )
+
+@app.get(
+    "/api/v1/gstin/{gstin}/state",
+    response_model=GstinStateResponse,
+    summary="Get GSTIN State",
+    tags=["GSTIN"],
+)
+async def get_gstin_state(
+    gstin: str,
+    _: dict = Depends(verify_api_key)
+):
+    """
+    Extracts the state code from a GSTIN and returns the state name.
+    """
+    gstin = gstin.upper().strip()
+    if len(gstin) < 2:
+        raise HTTPException(status_code=400, detail="Invalid GSTIN length.")
+        
+    state_code = gstin[0:2]
+    if state_code not in GST_STATE_CODES:
+        raise HTTPException(status_code=400, detail=f"Invalid state code: {state_code}")
+        
+    return GstinStateResponse(
+        gstin=gstin,
+        state_code=state_code,
+        state_name=GST_STATE_CODES[state_code]
+    )
+
+@app.get(
+    "/api/v1/gstin/{gstin}/pan",
+    response_model=GstinPanResponse,
+    summary="Get GSTIN PAN",
+    tags=["GSTIN"],
+)
+async def get_gstin_pan(
+    gstin: str,
+    _: dict = Depends(verify_api_key)
+):
+    """
+    Extracts the PAN and entity type code from a GSTIN.
+    """
+    gstin = gstin.upper().strip()
+    if len(gstin) < 13:
+        raise HTTPException(status_code=400, detail="Invalid GSTIN length.")
+        
+    pan = gstin[2:12]
+    entity_code = gstin[12:13]
+    
+    if not re.match(r"^[A-Z]{5}[0-9]{4}[A-Z]{1}$", pan):
+        raise HTTPException(status_code=400, detail=f"Invalid PAN format: {pan}")
+        
+    return GstinPanResponse(
+        gstin=gstin,
+        pan=pan,
+        entity_type_code=entity_code
     )
 
 
