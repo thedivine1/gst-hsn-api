@@ -2200,7 +2200,17 @@ async def get_hsn(
 
     global db_pool
     if not db_pool:
-        raise HTTPException(status_code=500, detail="Database pool not initialized.")
+        # Fallback to Supabase PostgREST client when asyncpg pool is unavailable
+        try:
+            res = supabase.table("hsn_rates").select("*").or_(f"hsn_code.eq.{code},hsn_code.like.{code[:4]}%" if len(code) >= 4 else f"hsn_code.eq.{code}").limit(50).execute()
+            rows = res.data or []
+            if not rows:
+                raise HTTPException(status_code=404, detail=f"No rate found for HSN code '{code}' or its heading/chapter.")
+            return [_map_db_to_hsn_rate(r, supply_type) for r in rows]
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=503, detail=f"Database unavailable: {e}")
 
     async with db_pool.acquire() as conn:
         # 1. Exact match (Fast path)
@@ -2253,7 +2263,17 @@ async def get_sac(
 
     global db_pool
     if not db_pool:
-        raise HTTPException(status_code=500, detail="Database pool not initialized.")
+        # Fallback to Supabase PostgREST client
+        try:
+            res = supabase.table("sac_rates").select("*").or_(f"sac_code.eq.{code},sac_code.like.{code[:4]}%" if len(code) >= 4 else f"sac_code.eq.{code}").limit(20).execute()
+            rows = res.data or []
+            if not rows:
+                raise HTTPException(status_code=404, detail=f"No rate found for SAC code '{code}'.")
+            return [_map_db_to_sac_rate(r, supply_type) for r in rows]
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=503, detail=f"Database unavailable: {e}")
 
     async with db_pool.acquire() as conn:
         rows = await conn.fetch("SELECT * FROM sac_rates WHERE sac_code = $1", code)
@@ -2323,7 +2343,12 @@ async def autocomplete(q: str, _: dict = Depends(verify_api_key)):
         
     global db_pool
     if not db_pool:
-        raise HTTPException(status_code=500, detail="Database pool not initialized.")
+        # Fallback to Supabase PostgREST client
+        try:
+            res = supabase.table("hsn_rates").select("hsn_code,hsn_description").ilike("hsn_description", f"%{q}%").limit(10).execute()
+            return res.data or []
+        except Exception as e:
+            raise HTTPException(status_code=503, detail=f"Database unavailable: {e}")
         
     async with db_pool.acquire() as conn:
         rows = await conn.fetch(
@@ -2361,7 +2386,20 @@ async def _async_lookup(req: LookupRequest) -> List[LookupResult]:
         
     global db_pool
     if not db_pool:
-        raise HTTPException(status_code=500, detail="Database pool not initialized.")
+        # Fallback to Supabase PostgREST client using ilike
+        try:
+            search_term = terms[0] if terms else req.description
+            res = supabase.table("hsn_rates").select("*").ilike("hsn_description", f"%{search_term}%").limit(20).execute()
+            rows = res.data or []
+            if not rows:
+                return []
+            result = _build_lookup_results(rows, req)
+            _cache_set(cache_key, result)
+            return result
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=503, detail=f"Database unavailable: {e}")
 
     async with db_pool.acquire() as conn:
         tsquery_and = " & ".join(terms)
@@ -2454,7 +2492,25 @@ async def get_summary(_: dict = Depends(verify_api_key)):
     """
     global db_pool
     if not db_pool:
-        raise HTTPException(status_code=500, detail="Database pool not initialized.")
+        # Fallback to Supabase PostgREST client
+        try:
+            total_hsn = supabase.table("hsn_rates").select("id", count="exact").limit(1).execute().count or 0
+            total_sac = supabase.table("sac_rates").select("id", count="exact").limit(1).execute().count or 0
+            return SummaryResponse(
+                total_hsn_codes=total_hsn, total_sac_codes=total_sac,
+                matched_with_rate=total_hsn, unmatched=0, has_conditions=0, cess_applicable=0,
+                by_schedule=[],
+                rate_slabs=RateSlabs(
+                    igst_slabs=[0, 0.25, 1.5, 3, 5, 18, 28, 40],
+                    cgst_slabs=[0, 0.125, 0.75, 1.5, 2.5, 9, 14, 20],
+                    note="SGST always equals CGST for intra-state supplies"
+                ),
+                last_updated="2025-09-22",
+            )
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=503, detail=f"Database unavailable: {e}")
 
     async with db_pool.acquire() as conn:
         total_hsn = await conn.fetchval("SELECT count(id) FROM hsn_rates") or 0
