@@ -3077,6 +3077,16 @@ async def gst_on_health_insurance_page():
     except Exception as e:
         raise HTTPException(status_code=500, detail="Blog template not found.")
 
+@app.get("/blog/gst-on-gold-jewellery", include_in_schema=False, response_class=HTMLResponse)
+async def gst_on_gold_jewellery_page():
+    try:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(base_dir, "gst-on-gold-jewellery.html"), "r", encoding="utf-8") as f:
+            content = f.read()
+        return HTMLResponse(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Blog template not found.")
+
 @app.get("/llms.txt", include_in_schema=False)
 async def llms_txt():
     """
@@ -3190,6 +3200,12 @@ async def sitemap_xml():
   <url>
     <loc>https://gstaccelerator.in/blog/gst-on-health-insurance</loc>
     <lastmod>2026-07-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://gstaccelerator.in/blog/gst-on-gold-jewellery</loc>
+    <lastmod>2026-07-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
