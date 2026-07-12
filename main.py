@@ -3507,9 +3507,9 @@ async def handle_call_tool(name: str, arguments: dict | None) -> list[types.Text
 
 @app.get("/mcp/sse", include_in_schema=False)
 async def mcp_sse_route(request: Request):
-    api_key_header = request.headers.get("x-api-key")
+    api_key_header = request.headers.get("x-api-key") or request.query_params.get("api_key")
     if not api_key_header:
-        raise HTTPException(status_code=401, detail="Missing X-API-Key")
+        raise HTTPException(status_code=401, detail="Missing API Key. Provide via X-API-Key header or api_key query parameter.")
     
     auth_dict = await verify_api_key(api_key_header)
     
@@ -3518,9 +3518,9 @@ async def mcp_sse_route(request: Request):
 
 @app.post("/mcp/messages", include_in_schema=False)
 async def mcp_messages_route(request: Request):
-    api_key_header = request.headers.get("x-api-key")
+    api_key_header = request.headers.get("x-api-key") or request.query_params.get("api_key")
     if not api_key_header:
-        raise HTTPException(status_code=401, detail="Missing X-API-Key header in POST request")
+        raise HTTPException(status_code=401, detail="Missing API Key in POST request")
         
     auth_dict = await verify_api_key(api_key_header)
     mcp_api_key_ctx.set(auth_dict)
