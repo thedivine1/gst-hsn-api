@@ -3217,11 +3217,42 @@ async def get_dashboard_keys(user=Depends(verify_jwt)):
 
 @app.post("/api/v1/dashboard/keys", tags=["Dashboard"])
 async def create_dashboard_key(req: KeyCreateRequest, user=Depends(verify_jwt)):
+    # --- Enforcement: 1 free active key per user unless on a paid plan ---
+    existing_res = (
+        supabase.table("api_keys")
+        .select("id, tier")
+        .eq("user_id", user.id)
+        .eq("is_active", True)
+        .execute()
+    )
+    existing_keys = existing_res.data or []
+
+    # Determine if the user has any paid-tier key
+    paid_tiers = {"developer", "pro", "business"}
+    user_has_paid_plan = any(k.get("tier", "free") in paid_tiers for k in existing_keys)
+
+    # If user already has 1+ active key and is NOT on a paid plan, block activation
+    if existing_keys and not user_has_paid_plan:
+        raise HTTPException(
+            status_code=403,
+            detail="Free plan allows only 1 active API key. Upgrade to a paid plan to generate additional keys."
+        )
+
     # Generate a new random key
     raw_key = f"gsta_live_{secrets.token_urlsafe(24)}"
     key_hash = _hash_key(raw_key)
     key_prefix = raw_key[:15]
-    
+
+    # Free tier gets 100 calls/month; paid tier inherits their plan's limit
+    new_tier = "free"
+    new_limit = 100
+    if user_has_paid_plan:
+        # Inherit the highest paid tier from existing keys
+        paid_key = next(k for k in existing_keys if k.get("tier", "free") in paid_tiers)
+        new_tier = paid_key["tier"]
+        tier_limits = {"developer": 5000, "pro": 50000, "business": 300000}
+        new_limit = tier_limits.get(new_tier, 5000)
+
     res = (
         supabase.table("api_keys")
         .insert({
@@ -3230,15 +3261,15 @@ async def create_dashboard_key(req: KeyCreateRequest, user=Depends(verify_jwt)):
             "key_hash": key_hash,
             "name": req.name,
             "is_active": True,
-            "tier": "free",
-            "monthly_limit": 1000,
+            "tier": new_tier,
+            "monthly_limit": new_limit,
             "calls_this_month": 0
         })
         .execute()
     )
     if not res.data:
         raise HTTPException(status_code=500, detail="Failed to generate key")
-        
+
     return {"raw_key": raw_key, "key_id": res.data[0]["id"]}
 
 @app.patch("/api/v1/dashboard/keys/{key_id}", tags=["Dashboard"])
@@ -3276,7 +3307,7 @@ async def rotate_dashboard_key(key_id: str, user=Depends(verify_jwt)):
             "name": old_key["name"],
             "is_active": True,
             "tier": old_key.get("tier", "free"),
-            "monthly_limit": old_key.get("monthly_limit", 1000),
+            "monthly_limit": old_key.get("monthly_limit", 100),
             "calls_this_month": 0
         })
         .execute()
@@ -3310,7 +3341,7 @@ async def get_dashboard_usage(user=Depends(verify_jwt)):
     )
     keys = res.data or []
     calls_used  = sum(k.get("calls_this_month", 0) or 0 for k in keys)
-    calls_limit = max((k.get("monthly_limit", 1000) or 1000 for k in keys), default=1000)
+    calls_limit = max((k.get("monthly_limit", 100) or 100 for k in keys), default=100)
     tier        = keys[0].get("tier", "free") if keys else "free"
     return {
         "calls_used":  calls_used,
