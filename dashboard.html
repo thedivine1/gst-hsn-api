@@ -845,6 +845,27 @@
 
   // ── Auth Init ──────────────────────────────────
   async function initAuth() {
+
+    // 1. Handle Supabase OAuth callback — tokens arrive in the URL hash
+    const hash = window.location.hash;
+    if (hash && hash.includes('access_token=')) {
+      const params = new URLSearchParams(hash.substring(1)); // strip leading #
+      const accessToken  = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+      if (accessToken && refreshToken) {
+        const { data, error } = await sb.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+        // Clean the tokens out of the URL so they don't linger
+        history.replaceState(null, '', window.location.pathname);
+        if (!error && data.session) {
+          sessionToken = data.session.access_token;
+          currentUser  = data.session.user;
+          onSignedIn(data.session.user);
+          return;
+        }
+      }
+    }
+
+    // 2. Existing: restore from custom sb-session key (legacy GitHub flow)
     const raw = localStorage.getItem('sb-session');
     if (raw) {
       try {
@@ -864,6 +885,8 @@
         }
       } catch (_) {}
     }
+
+    // 3. Check for an existing Supabase session (e.g. user already logged in)
     const { data: { session } } = await sb.auth.getSession();
     if (session) {
       sessionToken = session.access_token;
