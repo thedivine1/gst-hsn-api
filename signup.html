@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up — GST Accelerator API</title>
+  <meta name="description" content="Create your GST Accelerator developer account to get your API key.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg: #0B0E14;
+      --surface: #111520;
+      --surface-2: #161B27;
+      --border: #1E2A3A;
+      --border-2: #263344;
+      --amber: #E8650A;
+      --amber-dim: rgba(232, 101, 10, 0.12);
+      --amber-glow: rgba(232, 101, 10, 0.25);
+      --text: #F0F2F5;
+      --text-2: #B4BFCC;
+      --text-muted: #6B7B8D;
+      --success: #10B981;
+      --danger: #F04545;
+      --warn: #F59E0B;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-image:
+        radial-gradient(ellipse at 10% 50%, rgba(232,101,10,0.07), transparent 35%),
+        radial-gradient(ellipse at 90% 10%, rgba(96,165,250,0.04), transparent 30%);
+    }
+
+    /* NAV */
+    nav {
+      padding: 0 2rem; height: 64px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(11,14,20,0.9);
+      backdrop-filter: blur(16px);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .brand {
+      display: flex; align-items: center; gap: 0.6rem;
+      text-decoration: none; color: var(--text);
+      font-weight: 700; font-size: 1.05rem;
+    }
+    .brand-icon {
+      width: 28px; height: 28px; background: var(--amber);
+      border-radius: 7px; display: flex; align-items: center; justify-content: center;
+      font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #fff; font-weight: 700;
+    }
+    .nav-right { display: flex; align-items: center; gap: 1rem; }
+    .nav-right a { color: var(--text-muted); text-decoration: none; font-size: 0.875rem; transition: color 0.2s; }
+    .nav-right a:hover { color: var(--text); }
+
+    /* MAIN */
+    main {
+      flex: 1; display: flex;
+      align-items: center; justify-content: center;
+      padding: 2rem;
+    }
+
+    /* SIGNUP CARD */
+    #signup-card {
+      width: 100%; max-width: 420px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.5rem;
+      box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+      animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .auth-logo {
+      width: 40px; height: 40px; background: var(--amber);
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      font-family: 'JetBrains Mono', monospace; font-size: 18px; color: #fff; font-weight: 700;
+      margin-bottom: 1.5rem;
+    }
+    #signup-card h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 0.4rem; letter-spacing: -0.02em; }
+    #signup-card .auth-sub { color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.75rem; }
+
+    /* OAuth shortcuts */
+    .oauth-grid { display: flex; flex-direction: column; gap: 0.65rem; }
+    .oauth-btn {
+      width: 100%; display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 9px; cursor: pointer;
+      font-family: inherit; font-size: 0.88rem; font-weight: 500;
+      color: var(--text); text-align: left;
+      transition: all 0.2s;
+    }
+    .oauth-btn:hover {
+      background: var(--bg); border-color: var(--border-2);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .oauth-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+    .oauth-btn .btn-label { flex: 1; }
+    .oauth-btn .btn-arrow { color: var(--text-muted); font-size: 0.8rem; }
+
+    /* Divider */
+    .divider {
+      display: flex; align-items: center; gap: 0.75rem;
+      margin: 1.25rem 0; color: var(--text-muted); font-size: 0.8rem;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    /* Form */
+    .input-group { margin-bottom: 0.85rem; }
+    .input-group label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.4rem; }
+    input[type="email"], input[type="password"], input[type="text"] {
+      width: 100%;
+      background: var(--bg); border: 1px solid var(--border);
+      color: var(--text); padding: 0.75rem 1rem;
+      border-radius: 8px; font-family: inherit; font-size: 0.9rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input:focus { outline: none; border-color: var(--amber); box-shadow: 0 0 0 3px var(--amber-dim); }
+
+    /* Password strength meter */
+    .strength-wrap { margin-top: 0.5rem; }
+    .strength-bars {
+      display: flex; gap: 4px; margin-bottom: 0.35rem;
+    }
+    .strength-bar {
+      flex: 1; height: 3px; border-radius: 2px;
+      background: var(--border);
+      transition: background 0.3s ease;
+    }
+    .strength-bar.active-weak   { background: var(--danger); }
+    .strength-bar.active-fair   { background: var(--warn); }
+    .strength-bar.active-good   { background: #60a5fa; }
+    .strength-bar.active-strong { background: var(--success); }
+    .strength-label {
+      font-size: 0.75rem; color: var(--text-muted);
+      transition: color 0.3s;
+      min-height: 1em;
+    }
+    .strength-label.weak   { color: var(--danger); }
+    .strength-label.fair   { color: var(--warn); }
+    .strength-label.good   { color: #60a5fa; }
+    .strength-label.strong { color: var(--success); }
+
+    /* Requirements checklist */
+    .requirements { margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.3rem; }
+    .req {
+      display: flex; align-items: center; gap: 0.5rem;
+      font-size: 0.78rem; color: var(--text-muted);
+      transition: color 0.2s;
+    }
+    .req.met { color: var(--success); }
+    .req-icon { font-size: 0.7rem; width: 14px; text-align: center; }
+
+    .btn-primary {
+      width: 100%; background: var(--amber); color: #fff;
+      border: none; padding: 0.78rem; border-radius: 8px;
+      font-size: 0.9rem; font-weight: 600; cursor: pointer;
+      font-family: inherit; transition: all 0.2s; margin-top: 0.25rem;
+    }
+    .btn-primary:hover { background: #f0741c; transform: translateY(-1px); box-shadow: 0 4px 12px var(--amber-glow); }
+    .btn-primary:disabled { opacity: 0.65; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    #auth-message {
+      margin-top: 0.75rem; font-size: 0.82rem;
+      padding: 0.6rem 0.85rem; border-radius: 7px;
+      display: none;
+    }
+    #auth-message.error { background: rgba(240,69,69,0.1); border: 1px solid rgba(240,69,69,0.2); color: var(--danger); }
+    #auth-message.success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); color: var(--success); }
+
+    /* Success state */
+    #success-card {
+      display: none; text-align: center;
+      animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .success-icon {
+      width: 56px; height: 56px; background: rgba(16,185,129,0.1);
+      border: 1px solid rgba(16,185,129,0.25); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; margin: 0 auto 1.25rem;
+    }
+    #success-card h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 0.5rem; }
+    #success-card p { color: var(--text-muted); font-size: 0.875rem; line-height: 1.6; }
+    #success-card .email-highlight { color: var(--amber); font-weight: 600; }
+
+    @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand">
+    <div class="brand-icon">₹</div>
+    GST Accelerator
+  </a>
+  <div class="nav-right">
+    <a href="/">Home</a>
+    <a href="/docs">API Docs</a>
+    <a href="/login">Sign In</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- SIGNUP CARD -->
+  <div id="signup-card">
+    <div class="auth-logo">₹</div>
+    <h1>Create Account</h1>
+    <p class="auth-sub">Sign up to get your API key and start building.</p>
+
+    <!-- OAuth shortcuts -->
+    <div class="oauth-grid">
+      <button class="oauth-btn" id="google-signup-btn" onclick="oauthSignup('google')">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+        <span class="btn-label">Sign up with Google</span>
+        <span class="btn-arrow">→</span>
+      </button>
+
+      <button class="oauth-btn" id="github-signup-btn" onclick="oauthSignup('github')">
+        <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.164 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.907-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.268 2.75 1.026A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.026 2.747-1.026.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.137 20.16 22 16.42 22 12c0-5.523-4.477-10-10-10z"/>
+        </svg>
+        <span class="btn-label">Sign up with GitHub</span>
+        <span class="btn-arrow">→</span>
+      </button>
+    </div>
+
+    <div class="divider">or sign up with email</div>
+
+    <form id="signup-form" onsubmit="handleSignup(event)" novalidate>
+      <div class="input-group">
+        <label for="su-name">Full Name</label>
+        <input type="text" id="su-name" placeholder="Rahul Sharma" autocomplete="name">
+      </div>
+      <div class="input-group">
+        <label for="su-email">Email Address</label>
+        <input type="email" id="su-email" placeholder="dev@yourcompany.com" required autocomplete="email">
+      </div>
+      <div class="input-group">
+        <label for="su-password">Password</label>
+        <input type="password" id="su-password" placeholder="Min. 8 characters" required autocomplete="new-password" oninput="checkStrength(this.value)">
+        <!-- Strength meter -->
+        <div class="strength-wrap">
+          <div class="strength-bars">
+            <div class="strength-bar" id="bar-1"></div>
+            <div class="strength-bar" id="bar-2"></div>
+            <div class="strength-bar" id="bar-3"></div>
+            <div class="strength-bar" id="bar-4"></div>
+          </div>
+          <div class="strength-label" id="strength-label"></div>
+        </div>
+        <!-- Requirements -->
+        <div class="requirements">
+          <div class="req" id="req-len"><span class="req-icon">○</span> At least 8 characters</div>
+          <div class="req" id="req-upper"><span class="req-icon">○</span> One uppercase letter</div>
+          <div class="req" id="req-num"><span class="req-icon">○</span> One number</div>
+          <div class="req" id="req-special"><span class="req-icon">○</span> One special character (!@#$...)</div>
+        </div>
+      </div>
+      <div class="input-group">
+        <label for="su-confirm">Confirm Password</label>
+        <input type="password" id="su-confirm" placeholder="Re-enter password" required autocomplete="new-password">
+      </div>
+
+      <button type="submit" id="signup-btn" class="btn-primary">Create Account →</button>
+      <div id="auth-message"></div>
+
+      <p style="text-align:center; margin-top: 1rem; font-size: 0.82rem; color: var(--text-muted);">
+        Already have an account? <a href="/login" style="color: var(--amber); text-decoration: none; font-weight: 600;">Sign in →</a>
+      </p>
+    </form>
+  </div>
+
+  <!-- SUCCESS STATE -->
+  <div id="success-card" style="width:100%; max-width:420px; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:2.5rem; box-shadow:0 30px 60px rgba(0,0,0,0.5); text-align:center;">
+    <div class="success-icon">✉️</div>
+    <h2>Check your email!</h2>
+    <p style="margin-top:0.5rem;">We've sent a confirmation link to<br><span class="email-highlight" id="confirm-email"></span></p>
+    <p style="margin-top:1rem;">Click the link in the email to verify your account, then come back and <a href="/login" style="color:var(--amber);font-weight:600;">sign in</a>.</p>
+    <p style="margin-top:1.5rem; font-size:0.78rem; color:var(--text-muted);">Didn't receive it? Check your spam folder or <button onclick="resendEmail()" style="background:none;border:none;color:var(--amber);font-weight:600;cursor:pointer;font-family:inherit;font-size:inherit;">resend</button>.</p>
+  </div>
+
+</main>
+
+<script>
+  const SUPABASE_URL     = "{{ SUPABASE_URL }}";
+  const SUPABASE_ANON_KEY = "{{ SUPABASE_ANON_KEY }}";
+  const SITE_URL          = "{{ NEXT_PUBLIC_SITE_URL }}";
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // If already logged in, go to dashboard
+  sb.auth.getSession().then(({ data: { session } }) => {
+    if (session) window.location.href = '/dashboard';
+  });
+
+  // ── Spinner SVG ──
+  const spinnerSVG = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" style="animation:spin 1s linear infinite;vertical-align:middle;margin-right:6px;"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="4.93" x2="19.07" y2="7.76"></line></svg>`;
+
+  // ── OAuth signup (same flow as login) ──
+  async function oauthSignup(provider) {
+    const btnId = provider === 'google' ? 'google-signup-btn' : 'github-signup-btn';
+    const btn = document.getElementById(btnId);
+    const originalHtml = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.innerHTML = `${spinnerSVG} <span class="btn-label">Connecting...</span> <span class="btn-arrow">→</span>`; }
+    try {
+      const { data, error } = await sb.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo: SITE_URL + '/dashboard' }
+      });
+      if (error) {
+        alert('Error: ' + error.message);
+        if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
+      } else if (data && data.url) {
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      alert('Error: ' + err.message);
+      if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
+    }
+  }
+
+  // ── Password strength checker ──
+  function checkStrength(val) {
+    const bars   = [document.getElementById('bar-1'), document.getElementById('bar-2'), document.getElementById('bar-3'), document.getElementById('bar-4')];
+    const label  = document.getElementById('strength-label');
+    const reqLen     = document.getElementById('req-len');
+    const reqUpper   = document.getElementById('req-upper');
+    const reqNum     = document.getElementById('req-num');
+    const reqSpecial = document.getElementById('req-special');
+
+    const hasLen     = val.length >= 8;
+    const hasUpper   = /[A-Z]/.test(val);
+    const hasNum     = /[0-9]/.test(val);
+    const hasSpecial = /[^A-Za-z0-9]/.test(val);
+
+    // Update requirement checkmarks
+    setReq(reqLen, hasLen);
+    setReq(reqUpper, hasUpper);
+    setReq(reqNum, hasNum);
+    setReq(reqSpecial, hasSpecial);
+
+    const score = [hasLen, hasUpper, hasNum, hasSpecial].filter(Boolean).length;
+    const levels = ['', 'weak', 'fair', 'good', 'strong'];
+    const labels = ['', 'Too weak', 'Fair', 'Good', 'Strong ✓'];
+    const cls    = val.length === 0 ? '' : levels[score];
+
+    bars.forEach((b, i) => {
+      b.className = 'strength-bar';
+      if (val.length > 0 && i < score) b.classList.add(`active-${cls}`);
+    });
+    label.className = `strength-label ${cls}`;
+    label.textContent = val.length === 0 ? '' : labels[score];
+  }
+
+  function setReq(el, met) {
+    el.className = met ? 'req met' : 'req';
+    el.querySelector('.req-icon').textContent = met ? '✓' : '○';
+  }
+
+  // ── Handle email signup ──
+  let signupEmail = '';
+
+  async function handleSignup(e) {
+    e.preventDefault();
+    const name     = document.getElementById('su-name').value.trim();
+    const email    = document.getElementById('su-email').value.trim();
+    const password = document.getElementById('su-password').value;
+    const confirm  = document.getElementById('su-confirm').value;
+    const btn      = document.getElementById('signup-btn');
+    const msg      = document.getElementById('auth-message');
+
+    // Validate
+    if (password !== confirm) return showMsg('Passwords do not match.', 'error');
+    if (password.length < 8)  return showMsg('Password must be at least 8 characters.', 'error');
+
+    const hasUpper   = /[A-Z]/.test(password);
+    const hasNum     = /[0-9]/.test(password);
+    const hasSpecial = /[^A-Za-z0-9]/.test(password);
+    if (!hasUpper || !hasNum || !hasSpecial) return showMsg('Password needs an uppercase letter, a number, and a special character.', 'error');
+
+    btn.disabled = true;
+    btn.innerHTML = `${spinnerSVG} Creating account…`;
+    hideMsg();
+
+    const { error } = await sb.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: SITE_URL + '/dashboard',
+        data: { full_name: name }
+      }
+    });
+
+    if (error) {
+      showMsg(error.message, 'error');
+      btn.disabled = false;
+      btn.innerHTML = 'Create Account →';
+    } else {
+      signupEmail = email;
+      document.getElementById('confirm-email').textContent = email;
+      document.getElementById('signup-card').style.display = 'none';
+      document.getElementById('success-card').style.display = 'block';
+    }
+  }
+
+  async function resendEmail() {
+    if (!signupEmail) return;
+    await sb.auth.resend({ type: 'signup', email: signupEmail });
+    alert('Confirmation email resent to ' + signupEmail);
+  }
+
+  function showMsg(text, type) {
+    const msg = document.getElementById('auth-message');
+    msg.textContent = text;
+    msg.className = type;
+    msg.style.display = 'block';
+  }
+  function hideMsg() {
+    const msg = document.getElementById('auth-message');
+    msg.style.display = 'none';
+  }
+</script>
+</body>
+</html>

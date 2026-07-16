@@ -2800,6 +2800,19 @@ async def login_page():
     except Exception as e:
         raise HTTPException(status_code=500, detail="Login template not found.")
 
+@app.get("/signup", include_in_schema=False, response_class=HTMLResponse)
+async def signup_page():
+    try:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(base_dir, "signup.html"), "r", encoding="utf-8") as f:
+            content = f.read()
+        content = content.replace("{{ SUPABASE_URL }}", SUPABASE_URL or "")
+        content = content.replace("{{ SUPABASE_ANON_KEY }}", SUPABASE_ANON_KEY or "")
+        content = content.replace("{{ NEXT_PUBLIC_SITE_URL }}", NEXT_PUBLIC_SITE_URL)
+        return HTMLResponse(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Signup template not found.")
+
 @app.get("/dashboard", include_in_schema=False, response_class=HTMLResponse)
 async def dashboard_page():
     try:
