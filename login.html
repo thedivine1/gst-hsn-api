@@ -363,18 +363,31 @@
 
   // Google — via Supabase OAuth
   async function oauthLogin(provider) {
-    const btn = document.getElementById('google-login-btn');
+    const btnId = provider === 'google' ? 'google-login-btn' : 'github-login-btn';
+    const btn = document.getElementById(btnId);
+    const originalHtml = btn ? btn.innerHTML : '';
     if (btn) {
       btn.disabled = true;
-      btn.innerHTML = `${spinnerSVG} <span class="btn-label" style="margin-left:8px;">Logging in...</span>`;
+      btn.innerHTML = `${spinnerSVG} <span class="btn-label" style="margin-left:8px;">Connecting...</span>`;
     }
-    const { error } = await sb.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo: SITE_URL + '/dashboard' }
-    });
-    if (error) {
-      alert('Error: ' + error.message);
-      if (btn) btn.disabled = false;
+    try {
+      const { error } = await sb.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo: SITE_URL + '/dashboard' }
+      });
+      if (error) {
+        alert('Error: ' + error.message);
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalHtml;
+        }
+      }
+    } catch (err) {
+      alert('Exception: ' + err.message + '\nCheck if your Supabase URL/Key are correctly injected!');
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      }
     }
   }
 
