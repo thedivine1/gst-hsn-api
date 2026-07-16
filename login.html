@@ -361,7 +361,7 @@
     </svg>
   `;
 
-  // Google — via Supabase OAuth
+  // Google & GitHub — via Supabase OAuth
   async function oauthLogin(provider) {
     const btnId = provider === 'google' ? 'google-login-btn' : 'github-login-btn';
     const btn = document.getElementById(btnId);
@@ -371,23 +371,19 @@
       btn.innerHTML = `${spinnerSVG} <span class="btn-label" style="margin-left:8px;">Connecting...</span>`;
     }
     try {
-      const { error } = await sb.auth.signInWithOAuth({
+      const { data, error } = await sb.auth.signInWithOAuth({
         provider,
         options: { redirectTo: SITE_URL + '/dashboard' }
       });
       if (error) {
-        alert('Error: ' + error.message);
-        if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = originalHtml;
-        }
+        alert('OAuth Error: ' + error.message);
+        if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
+      } else if (data && data.url) {
+        window.location.href = data.url;
       }
     } catch (err) {
-      alert('Exception: ' + err.message + '\nCheck if your Supabase URL/Key are correctly injected!');
-      if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = originalHtml;
-      }
+      alert('Exception: ' + err.message + '\nCheck Supabase URL/Key are set correctly on the server!');
+      if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
     }
   }
 
