@@ -1062,6 +1062,15 @@ async def root():
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <!-- OAuth callback interceptor: Supabase redirects here with #access_token — forward to /dashboard -->
+  <script>
+    (function() {
+      var h = window.location.hash;
+      if (h && h.indexOf('access_token=') !== -1) {
+        window.location.replace('/dashboard' + h);
+      }
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GST Accelerator API — India’s fastest HSN &amp; SAC lookup API</title>
   <meta name="description" content="Free REST API for Indian GST HSN/SAC code lookup. Search 48,000+ codes, get GST rates, CGST/SGST splits, and legal notification references. JSON, fast, CBIC-sourced." />
