@@ -564,6 +564,44 @@ class GstinPanResponse(BaseModel):
     entity_type_code: str
 
 
+class InvoiceItemRequest(BaseModel):
+    hsn_code: str
+    quantity: float
+    rate: float
+
+
+class InvoiceRequest(BaseModel):
+    seller_state: str
+    buyer_state: str
+    items: List[InvoiceItemRequest]
+
+
+class InvoiceItemResponse(BaseModel):
+    hsn_code: str
+    quantity: float
+    rate: float
+    base_amount: float
+    cgst_amount: float
+    sgst_amount: float
+    igst_amount: float
+    cess_amount: float
+    total_tax_amount: float
+    total_amount: float
+    item_type: str = "goods"
+
+
+class InvoiceResponse(BaseModel):
+    transaction_type: Literal["intrastate", "interstate"]
+    items: List[InvoiceItemResponse]
+    total_base_amount: float
+    total_cgst_amount: float
+    total_sgst_amount: float
+    total_igst_amount: float
+    total_cess_amount: float
+    total_tax_amount: float
+    grand_total: float
+
+
 # ---------------------------------------------------------------------------
 # Condition evaluation helpers
 # ---------------------------------------------------------------------------
@@ -2245,6 +2283,258 @@ async def get_hsn(
     raise HTTPException(
         status_code=404,
         detail=f"No rate found for HSN code '{code}' or its heading/chapter.",
+    )
+
+
+# ---------------------------------------------------------------------------
+# State name → GST code mapping (reverse lookup for classifier)
+# ---------------------------------------------------------------------------
+_STATE_NAME_TO_CODE: dict[str, str] = {
+    v.lower(): k for k, v in GST_STATE_CODES.items()
+}
+# Extra common aliases / abbreviations users might send
+_STATE_ALIASES: dict[str, str] = {
+    "j&k": "01", "jk": "01", "jammu": "01",
+    "hp": "02", "himachal": "02",
+    "pb": "03",
+    "chd": "04",
+    "uk": "05", "uttaranchal": "05",
+    "hr": "06",
+    "dl": "07", "new delhi": "07",
+    "rj": "08",
+    "up": "09",
+    "br": "10",
+    "sk": "11",
+    "ar": "12", "arunachal": "12",
+    "nl": "13",
+    "mn": "14",
+    "mz": "15",
+    "tr": "16",
+    "ml": "17",
+    "as": "18",
+    "wb": "19",
+    "jh": "20",
+    "od": "21", "orissa": "21",
+    "cg": "22", "chattisgarh": "22",
+    "mp": "23",
+    "gj": "24",
+    "dd": "25",
+    "dn": "26", "dadra": "26",
+    "mh": "27",
+    "ap old": "28",
+    "ka": "29",
+    "ga": "30",
+    "ld": "31",
+    "kl": "32",
+    "tn": "33",
+    "py": "34", "pondicherry": "34",
+    "an": "35", "andaman": "35",
+    "ts": "36",
+    "ap": "37", "andhra": "37",
+    "la": "38",
+}
+
+
+def _resolve_state(raw: str) -> tuple[str, str]:
+    """
+    Accepts a state name (full or alias) OR a 2-digit GST state code.
+    Returns (state_code, state_name) or raises ValueError.
+    """
+    raw = raw.strip()
+    # Try numeric 2-digit code directly
+    if raw.isdigit() and len(raw) == 2 and raw in GST_STATE_CODES:
+        return raw, GST_STATE_CODES[raw]
+    # Try full name
+    key = raw.lower()
+    if key in _STATE_NAME_TO_CODE:
+        code = _STATE_NAME_TO_CODE[key]
+        return code, GST_STATE_CODES[code]
+    # Try alias
+    if key in _STATE_ALIASES:
+        code = _STATE_ALIASES[key]
+        return code, GST_STATE_CODES[code]
+    raise ValueError(
+        f"Unrecognised state: '{raw}'. "
+        "Pass a full state name (e.g. 'Maharashtra') or 2-digit GST state code (e.g. '27')."
+    )
+
+
+async def _lookup_hsn_rate_raw(code: str, conn) -> dict | None:
+    """
+    Internal HSN DB lookup — returns the first matching row dict or None.
+    Falls back from exact → 6-digit heading → 4-digit chapter.
+    """
+    code = code.strip()
+    if db_pool and conn:
+        rows = await conn.fetch("SELECT * FROM hsn_rates WHERE hsn_code = $1 LIMIT 1", code)
+        if rows:
+            return dict(rows[0])
+        if len(code) >= 4:
+            chapter = code[:4]
+            rows = await conn.fetch(
+                "SELECT * FROM hsn_rates WHERE hsn_code LIKE $1 LIMIT 50",
+                f"{chapter}%"
+            )
+            if rows:
+                if len(code) >= 6:
+                    heading = code[:6]
+                    for r in rows:
+                        if r["hsn_code"].startswith(heading):
+                            return dict(r)
+                return dict(rows[0])
+    else:
+        # Supabase PostgREST fallback
+        try:
+            res = (
+                supabase.table("hsn_rates")
+                .select("*")
+                .eq("hsn_code", code)
+                .limit(1)
+                .execute()
+            )
+            if res.data:
+                return res.data[0]
+            if len(code) >= 4:
+                res2 = (
+                    supabase.table("hsn_rates")
+                    .select("*")
+                    .like("hsn_code", f"{code[:4]}%")
+                    .limit(50)
+                    .execute()
+                )
+                if res2.data:
+                    if len(code) >= 6:
+                        for r in res2.data:
+                            if r["hsn_code"].startswith(code[:6]):
+                                return r
+                    return res2.data[0]
+        except Exception:
+            pass
+    return None
+
+
+@app.post(
+    "/api/v1/invoice/classify",
+    response_model=InvoiceResponse,
+    summary="Invoice Tax Classifier — CGST+SGST vs IGST",
+    tags=["Invoice"],
+    responses={
+        200: {"description": "Full invoice tax breakdown returned"},
+        400: {"description": "Invalid state name or HSN code"},
+        401: {"description": "Missing or invalid API key"},
+        404: {"description": "HSN code not found in database"},
+    },
+)
+async def classify_invoice(
+    payload: InvoiceRequest,
+    _: dict = Depends(verify_api_key),
+):
+    """
+    **Invoice Tax Classifier**
+
+    The single call that replaces all the GST logic your team would have to write.
+
+    Pass `seller_state`, `buyer_state`, and an array of line `items` (HSN code, quantity, rate).
+
+    Returns:
+    - Whether the transaction is **intrastate** (CGST + SGST) or **interstate** (IGST)
+    - Per-item tax breakdown (base amount, CGST, SGST, IGST, cess, totals)
+    - Document-level aggregates (total base, total tax, grand total)
+
+    **State input** — accepts any of:
+    - Full name: `"Maharashtra"`, `"Tamil Nadu"`
+    - 2-letter alias: `"MH"`, `"TN"`
+    - 2-digit GST code: `"27"`, `"33"`
+
+    **HSN fallback** — if an 8-digit code isn't found, automatically falls back to
+    6-digit heading → 4-digit chapter, mirroring the `/api/v1/hsn/{code}` behaviour.
+    """
+    # ── 1. Resolve states ────────────────────────────────────────────────────
+    try:
+        seller_code, seller_name = _resolve_state(payload.seller_state)
+        buyer_code, buyer_name = _resolve_state(payload.buyer_state)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    is_interstate = seller_code != buyer_code
+    transaction_type = "interstate" if is_interstate else "intrastate"
+
+    # ── 2. Process each line item ────────────────────────────────────────────
+    classified_items: list[InvoiceItemResponse] = []
+    totals = {
+        "base": 0.0, "cgst": 0.0, "sgst": 0.0,
+        "igst": 0.0, "cess": 0.0,
+    }
+
+    async def _process(item: InvoiceItemRequest, conn) -> InvoiceItemResponse:
+        row = await _lookup_hsn_rate_raw(item.hsn_code, conn)
+        if row is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"HSN code '{item.hsn_code}' not found in database.",
+            )
+
+        igst_pct: float = row.get("igst_rate") or 0.0
+        cgst_pct: float = row.get("cgst_rate") or (igst_pct / 2)
+        cess_pct: float = row.get("cess_rate") or 0.0
+
+        base = round(item.quantity * item.rate, 2)
+
+        if is_interstate:
+            igst_amt  = round(base * igst_pct / 100, 2)
+            cgst_amt  = 0.0
+            sgst_amt  = 0.0
+        else:
+            cgst_amt  = round(base * cgst_pct / 100, 2)
+            sgst_amt  = cgst_amt
+            igst_amt  = 0.0
+
+        cess_amt     = round(base * cess_pct / 100, 2)
+        total_tax    = round(cgst_amt + sgst_amt + igst_amt + cess_amt, 2)
+        total_amount = round(base + total_tax, 2)
+
+        return InvoiceItemResponse(
+            hsn_code=item.hsn_code,
+            quantity=item.quantity,
+            rate=item.rate,
+            base_amount=base,
+            cgst_amount=cgst_amt,
+            sgst_amount=sgst_amt,
+            igst_amount=igst_amt,
+            cess_amount=cess_amt,
+            total_tax_amount=total_tax,
+            total_amount=total_amount,
+        )
+
+    if db_pool:
+        async with db_pool.acquire() as conn:
+            for item in payload.items:
+                classified_items.append(await _process(item, conn))
+    else:
+        for item in payload.items:
+            classified_items.append(await _process(item, None))
+
+    # ── 3. Aggregate document totals ────────────────────────────────────────
+    for ci in classified_items:
+        totals["base"] += ci.base_amount
+        totals["cgst"] += ci.cgst_amount
+        totals["sgst"] += ci.sgst_amount
+        totals["igst"] += ci.igst_amount
+        totals["cess"] += ci.cess_amount
+
+    total_tax   = round(totals["cgst"] + totals["sgst"] + totals["igst"] + totals["cess"], 2)
+    grand_total = round(totals["base"] + total_tax, 2)
+
+    return InvoiceResponse(
+        transaction_type=transaction_type,
+        items=classified_items,
+        total_base_amount=round(totals["base"], 2),
+        total_cgst_amount=round(totals["cgst"], 2),
+        total_sgst_amount=round(totals["sgst"], 2),
+        total_igst_amount=round(totals["igst"], 2),
+        total_cess_amount=round(totals["cess"], 2),
+        total_tax_amount=total_tax,
+        grand_total=grand_total,
     )
 
 
