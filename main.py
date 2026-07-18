@@ -2378,8 +2378,6 @@ def _resolve_state(input_str: str) -> str:
         )
     return result
 
-or 2-digit GST state code (e.g. '27')."
-    )
 
 
 async def _lookup_hsn_rate_raw(code: str, conn) -> dict | None:
