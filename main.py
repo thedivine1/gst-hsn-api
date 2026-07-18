@@ -291,8 +291,21 @@ def _hash_key(raw_key: str) -> str:
     return hashlib.sha256(raw_key.encode()).hexdigest()
 
 
-async def verify_api_key(x_api_key: str = Header(..., description="Your API key")):
+async def verify_api_key(x_api_key: str = Header(default="", alias="X-API-Key", description="Your API key")):
     """Dependency: validates X-API-Key, enforces monthly limits, increments usage."""
+    x_api_key = x_api_key.strip()
+    if not x_api_key:
+        raise HTTPException(
+            status_code=401,
+            detail={
+                "error": "X-API-Key header is required.",
+                "code": 401,
+                "suggestions": [
+                    "Add header: X-API-Key: your_api_key"
+                ]
+            }
+        )
+
     if x_api_key in ("gsta_demo_frontend", "demo_public_key"):
         return {"tier": "demo", "api_key_id": "demo"}
         
@@ -301,19 +314,26 @@ async def verify_api_key(x_api_key: str = Header(..., description="Your API key"
     try:
         res = (
             supabase.table("api_keys")
-            .select("*")
+            .select("id, tier, user_id, is_active, monthly_limit, calls_this_month")
             .eq("key_hash", key_hash)
             .eq("is_active", True)
-            .single()
+            .limit(1)
             .execute()
         )
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid or inactive API key.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
         
-    if not res.data:
-        raise HTTPException(status_code=401, detail="Invalid or inactive API key.")
+    if not res.data or len(res.data) == 0:
+        raise HTTPException(
+            status_code=401, 
+            detail={
+                "error": "Invalid or inactive API key.",
+                "code": 401,
+                "suggestions": []
+            }
+        )
 
-    record = res.data
+    record = res.data[0]
 
     if record["calls_this_month"] >= record["monthly_limit"]:
         raise HTTPException(
