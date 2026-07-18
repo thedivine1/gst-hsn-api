@@ -226,48 +226,87 @@ async def general_exception_handler(request: Request, exc: Exception):
 # GSTIN Validation Helpers
 # ---------------------------------------------------------------------------
 
-GST_STATE_CODES = {
-    "01": "Jammu and Kashmir",
-    "02": "Himachal Pradesh",
-    "03": "Punjab",
-    "04": "Chandigarh",
-    "05": "Uttarakhand",
-    "06": "Haryana",
-    "07": "Delhi",
-    "08": "Rajasthan",
-    "09": "Uttar Pradesh",
-    "10": "Bihar",
-    "11": "Sikkim",
-    "12": "Arunachal Pradesh",
-    "13": "Nagaland",
-    "14": "Manipur",
-    "15": "Mizoram",
-    "16": "Tripura",
-    "17": "Meghalaya",
-    "18": "Assam",
-    "19": "West Bengal",
-    "20": "Jharkhand",
-    "21": "Odisha",
-    "22": "Chhattisgarh",
-    "23": "Madhya Pradesh",
-    "24": "Gujarat",
-    "25": "Daman and Diu",
-    "26": "Dadra and Nagar Haveli and Daman and Diu",
-    "27": "Maharashtra",
-    "28": "Andhra Pradesh (Old)",
-    "29": "Karnataka",
-    "30": "Goa",
-    "31": "Lakshadweep",
-    "32": "Kerala",
-    "33": "Tamil Nadu",
-    "34": "Puducherry",
-    "35": "Andaman and Nicobar Islands",
-    "36": "Telangana",
-    "37": "Andhra Pradesh",
-    "38": "Ladakh",
-    "97": "Other Territory",
-    "99": "Centre Jurisdiction"
+GST_STATE_MAP = {
+    "01": ("Jammu & Kashmir", "01"), "02": ("Himachal Pradesh", "02"),
+    "03": ("Punjab", "03"), "04": ("Chandigarh", "04"),
+    "05": ("Uttarakhand", "05"), "06": ("Haryana", "06"),
+    "07": ("Delhi", "07"), "08": ("Rajasthan", "08"),
+    "09": ("Uttar Pradesh", "09"), "10": ("Bihar", "10"),
+    "11": ("Sikkim", "11"), "12": ("Arunachal Pradesh", "12"),
+    "13": ("Nagaland", "13"), "14": ("Manipur", "14"),
+    "15": ("Mizoram", "15"), "16": ("Tripura", "16"),
+    "17": ("Meghalaya", "17"), "18": ("Assam", "18"),
+    "19": ("West Bengal", "19"), "20": ("Jharkhand", "20"),
+    "21": ("Odisha", "21"), "22": ("Chhattisgarh", "22"),
+    "23": ("Madhya Pradesh", "23"), "24": ("Gujarat", "24"),
+    "25": ("Daman & Diu", "25"), "26": ("Dadra & Nagar Haveli", "26"),
+    "27": ("Maharashtra", "27"), "28": ("Andhra Pradesh", "28"),
+    "29": ("Karnataka", "29"), "30": ("Goa", "30"),
+    "31": ("Lakshadweep", "31"), "32": ("Kerala", "32"),
+    "33": ("Tamil Nadu", "33"), "34": ("Puducherry", "34"),
+    "35": ("Andaman & Nicobar", "35"), "36": ("Telangana", "36"),
+    "37": ("Andhra Pradesh", "37"), "38": ("Ladakh", "38"),
+    "97": ("Other Territory", "97"), "99": ("Centre Jurisdiction", "99"),
+    
+    "maharashtra": ("Maharashtra", "27"), "mh": ("Maharashtra", "27"),
+    "karnataka": ("Karnataka", "29"), "ka": ("Karnataka", "29"),
+    "gujarat": ("Gujarat", "24"), "gj": ("Gujarat", "24"),
+    "tamil nadu": ("Tamil Nadu", "33"), "tn": ("Tamil Nadu", "33"),
+    "delhi": ("Delhi", "07"), "dl": ("Delhi", "07"),
+    "rajasthan": ("Rajasthan", "08"), "rj": ("Rajasthan", "08"),
+    "uttar pradesh": ("Uttar Pradesh", "09"), "up": ("Uttar Pradesh", "09"),
+    "west bengal": ("West Bengal", "19"), "wb": ("West Bengal", "19"),
+    "madhya pradesh": ("Madhya Pradesh", "23"), "mp": ("Madhya Pradesh", "23"),
+    "telangana": ("Telangana", "36"), "ts": ("Telangana", "36"),
+    "kerala": ("Kerala", "32"), "kl": ("Kerala", "32"),
+    "andhra pradesh": ("Andhra Pradesh", "37"), "ap": ("Andhra Pradesh", "37"),
+    "punjab": ("Punjab", "03"), "pb": ("Punjab", "03"),
+    "haryana": ("Haryana", "06"), "hr": ("Haryana", "06"),
+    "bihar": ("Bihar", "10"), "br": ("Bihar", "10"),
+    "arunachal pradesh": ("Arunachal Pradesh", "12"), "ar": ("Arunachal Pradesh", "12"),
+    "assam": ("Assam", "18"), "as": ("Assam", "18"),
+    "chhattisgarh": ("Chhattisgarh", "22"), "cg": ("Chhattisgarh", "22"), "ct": ("Chhattisgarh", "22"),
+    "goa": ("Goa", "30"), "ga": ("Goa", "30"),
+    "himachal pradesh": ("Himachal Pradesh", "02"), "hp": ("Himachal Pradesh", "02"),
+    "jharkhand": ("Jharkhand", "20"), "jh": ("Jharkhand", "20"),
+    "manipur": ("Manipur", "14"), "mn": ("Manipur", "14"),
+    "meghalaya": ("Meghalaya", "17"), "ml": ("Meghalaya", "17"),
+    "mizoram": ("Mizoram", "15"), "mz": ("Mizoram", "15"),
+    "nagaland": ("Nagaland", "13"), "nl": ("Nagaland", "13"),
+    "odisha": ("Odisha", "21"), "od": ("Odisha", "21"), "or": ("Odisha", "21"),
+    "sikkim": ("Sikkim", "11"), "sk": ("Sikkim", "11"),
+    "tripura": ("Tripura", "16"), "tr": ("Tripura", "16"),
+    "uttarakhand": ("Uttarakhand", "05"), "uk": ("Uttarakhand", "05"), "ua": ("Uttarakhand", "05"),
+    "jammu & kashmir": ("Jammu & Kashmir", "01"), "jk": ("Jammu & Kashmir", "01"),
+    "ladakh": ("Ladakh", "38"), "puducherry": ("Puducherry", "34"), "py": ("Puducherry", "34"),
+    "chandigarh": ("Chandigarh", "04"), "ch": ("Chandigarh", "04"),
+    "lakshadweep": ("Lakshadweep", "31"),
+    "andaman & nicobar": ("Andaman & Nicobar", "35"),
+    "dadra & nagar haveli": ("Dadra & Nagar Haveli", "26"),
+    "daman & diu": ("Daman & Diu", "25")
 }
+
+def resolve_state(s: str):
+    """Resolve any state input to (state_name, state_code) tuple."""
+    if not s:
+        raise HTTPException(
+            status_code=400,
+            detail={"error": "State cannot be empty", "code": 400, "suggestions": []}
+        )
+    key = s.strip().lower()
+    result = GST_STATE_MAP.get(key)
+    if not result:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": f"Unrecognised state: '{s}'. Accepted formats: "
+                         f"full name ('Maharashtra'), 2-digit GST code ('27'), "
+                         f"or abbreviation ('mh').",
+                "code": 400,
+                "suggestions": []
+            }
+        )
+    return result  # (state_name, state_code)
 
 def calculate_gstin_checksum(gstin_14: str) -> str:
     total = 0
@@ -609,16 +648,13 @@ class InvoiceRequest(BaseModel):
 
 class InvoiceItemResponse(BaseModel):
     hsn_code: str
-    quantity: float
-    rate: float
-    base_amount: float
-    cgst_amount: float
-    sgst_amount: float
-    igst_amount: float
-    cess_amount: float
-    total_tax_amount: float
+    description: str
+    supply_type: str
+    tax_rates: dict
+    taxable_value: float
+    tax_amount: float
     total_amount: float
-    item_type: str = "goods"
+    applicable_rate_string: str
 
 
 class InvoiceResponse(BaseModel):
@@ -2157,7 +2193,8 @@ async def validate_gstin(
         return GstinValidationResponse(valid=False, gstin=gstin, error_reason="GSTIN must be exactly 15 characters long.")
         
     state_code = gstin[0:2]
-    if state_code not in GST_STATE_CODES:
+    # For validation, we use a simple dict lookup for codes
+    if state_code not in ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "97", "99"]:
         return GstinValidationResponse(valid=False, gstin=gstin, error_reason=f"Invalid state code: {state_code}")
         
     pan = gstin[2:12]
@@ -2180,11 +2217,12 @@ async def validate_gstin(
     if gstin[14] != expected_checksum:
         return GstinValidationResponse(valid=False, gstin=gstin, error_reason=f"Checksum mismatch. Expected '{expected_checksum}', got '{gstin[14]}'.")
         
+    state_name = GST_STATE_MAP.get(state_code, ("Unknown", state_code))[0]
     return GstinValidationResponse(
         valid=True,
         gstin=gstin,
         state_code=state_code,
-        state_name=GST_STATE_CODES[state_code],
+        state_name=state_name,
         pan=pan,
         entity_type_code=entity_code
     )
@@ -2207,13 +2245,14 @@ async def get_gstin_state(
         raise HTTPException(status_code=400, detail="Invalid GSTIN length.")
         
     state_code = gstin[0:2]
-    if state_code not in GST_STATE_CODES:
+    if state_code not in GST_STATE_MAP:
         raise HTTPException(status_code=400, detail=f"Invalid state code: {state_code}")
         
+    state_name = GST_STATE_MAP[state_code][0]
     return GstinStateResponse(
         gstin=gstin,
         state_code=state_code,
-        state_name=GST_STATE_CODES[state_code]
+        state_name=state_name
     )
 
 @app.get(
@@ -2317,85 +2356,6 @@ async def get_hsn(
     )
 
 
-# ---------------------------------------------------------------------------
-# State name → GST code mapping (reverse lookup for classifier)
-# ---------------------------------------------------------------------------
-STATE_LOOKUP = {
-    # Full names (lowercase for matching)
-    "andhra pradesh": "Andhra Pradesh",
-    "arunachal pradesh": "Arunachal Pradesh",
-    "assam": "Assam",
-    "bihar": "Bihar",
-    "chhattisgarh": "Chhattisgarh",
-    "goa": "Goa",
-    "gujarat": "Gujarat",
-    "haryana": "Haryana",
-    "himachal pradesh": "Himachal Pradesh",
-    "jharkhand": "Jharkhand",
-    "karnataka": "Karnataka",
-    "kerala": "Kerala",
-    "madhya pradesh": "Madhya Pradesh",
-    "maharashtra": "Maharashtra",
-    "manipur": "Manipur",
-    "meghalaya": "Meghalaya",
-    "mizoram": "Mizoram",
-    "nagaland": "Nagaland",
-    "odisha": "Odisha",
-    "punjab": "Punjab",
-    "rajasthan": "Rajasthan",
-    "sikkim": "Sikkim",
-    "tamil nadu": "Tamil Nadu",
-    "telangana": "Telangana",
-    "tripura": "Tripura",
-    "uttar pradesh": "Uttar Pradesh",
-    "uttarakhand": "Uttarakhand",
-    "west bengal": "West Bengal",
-    "delhi": "Delhi",
-    "jammu and kashmir": "Jammu & Kashmir",
-    "jammu & kashmir": "Jammu & Kashmir",
-    "ladakh": "Ladakh",
-    "andaman and nicobar": "Andaman & Nicobar",
-    "andaman & nicobar islands": "Andaman & Nicobar",
-    "chandigarh": "Chandigarh",
-    "dadra and nagar haveli": "Dadra & Nagar Haveli",
-    "daman and diu": "Daman & Diu",
-    "lakshadweep": "Lakshadweep",
-    "puducherry": "Puducherry",
-    "pondicherry": "Puducherry",
-    # 2-digit GST numeric state codes (as strings)
-    "01": "Jammu & Kashmir", "02": "Himachal Pradesh", "03": "Punjab", "04": "Chandigarh", "05": "Uttarakhand",
-    "06": "Haryana", "07": "Delhi", "08": "Rajasthan", "09": "Uttar Pradesh",
-    "1": "Jammu & Kashmir", "2": "Himachal Pradesh", "3": "Punjab", "4": "Chandigarh", "5": "Uttarakhand",
-    "6": "Haryana", "7": "Delhi", "8": "Rajasthan", "9": "Uttar Pradesh",
-    "10": "Bihar", "11": "Sikkim", "12": "Arunachal Pradesh", "13": "Nagaland", "14": "Manipur",
-    "15": "Mizoram", "16": "Tripura", "17": "Meghalaya", "18": "Assam", "19": "West Bengal", "20": "Jharkhand",
-    "21": "Odisha", "22": "Chhattisgarh", "23": "Madhya Pradesh", "24": "Gujarat", "26": "Dadra & Nagar Haveli",
-    "27": "Maharashtra", "28": "Andhra Pradesh", "29": "Karnataka", "30": "Goa", "31": "Lakshadweep",
-    "32": "Kerala", "33": "Tamil Nadu", "34": "Puducherry", "35": "Andaman & Nicobar", "36": "Telangana",
-    "37": "Andhra Pradesh", "38": "Ladakh",
-    # Common abbreviations
-    "mh": "Maharashtra", "mah": "Maharashtra", "ka": "Karnataka", "kar": "Karnataka", "tn": "Tamil Nadu",
-    "dl": "Delhi", "nd": "Delhi", "gj": "Gujarat", "guj": "Gujarat", "rj": "Rajasthan", "raj": "Rajasthan",
-    "up": "Uttar Pradesh", "wb": "West Bengal", "pb": "Punjab", "hr": "Haryana", "br": "Bihar",
-    "mp": "Madhya Pradesh", "ap": "Andhra Pradesh", "ts": "Telangana", "tg": "Telangana", "kl": "Kerala",
-    "od": "Odisha", "or": "Odisha", "uk": "Uttarakhand", "ua": "Uttarakhand", "jk": "Jammu & Kashmir",
-    "hp": "Himachal Pradesh", "ga": "Goa", "as": "Assam", "jh": "Jharkhand", "cg": "Chhattisgarh",
-    "ct": "Chhattisgarh", "sk": "Sikkim", "mn": "Manipur", "ml": "Meghalaya", "mz": "Mizoram", "nl": "Nagaland",
-    "tr": "Tripura", "ar": "Arunachal Pradesh", "py": "Puducherry", "pu": "Puducherry", "ch": "Chandigarh",
-    "la": "Ladakh",
-}
-
-def _resolve_state(input_str: str) -> str:
-    if not input_str:
-        raise ValueError("State cannot be empty")
-    key = input_str.strip().lower()
-    result = STATE_LOOKUP.get(key)
-    if not result:
-        raise ValueError(
-            f"Unrecognised state: '{input_str}'. "
-            f"Accepted formats: full name ('Maharashtra'), "
-            f"2-digit GST code ('27'), or abbreviation ('mh')."
-        )
     return result
 
 
@@ -2491,14 +2451,12 @@ async def classify_invoice(
     6-digit heading → 4-digit chapter, mirroring the `/api/v1/hsn/{code}` behaviour.
     """
     # ── 1. Resolve states ────────────────────────────────────────────────────
-    try:
-        seller_code, seller_name = _resolve_state(payload.seller_state)
-        buyer_code, buyer_name = _resolve_state(payload.buyer_state)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    seller_name, seller_code = resolve_state(payload.seller_state)
+    buyer_name, buyer_code = resolve_state(payload.buyer_state)
 
-    is_interstate = seller_code != buyer_code
-    transaction_type = "interstate" if is_interstate else "intrastate"
+    supply_type = "intrastate" if seller_code == buyer_code else "interstate"
+    transaction_type = supply_type
+    is_interstate = supply_type == "interstate"
 
     # ── 2. Process each line item ────────────────────────────────────────────
     classified_items: list[InvoiceItemResponse] = []
@@ -2512,39 +2470,55 @@ async def classify_invoice(
         if row is None:
             raise HTTPException(
                 status_code=404,
-                detail=f"HSN code '{item.hsn_code}' not found in database.",
+                detail={
+                    "error": f"HSN code '{item.hsn_code}' not found in database.",
+                    "code": 404,
+                    "suggestions": []
+                },
             )
 
-        igst_pct: float = row.get("igst_rate") or 0.0
-        cgst_pct: float = row.get("cgst_rate") or (igst_pct / 2)
-        cess_pct: float = row.get("cess_rate") or 0.0
+        igst_pct: float = float(row.get("igst_rate") or 0.0)
+        cgst_pct: float = float(row.get("cgst_rate") or (igst_pct / 2))
+        cess_pct: float = float(row.get("cess_rate") or 0.0)
+        description: str = row.get("description") or ""
 
-        base = round(item.quantity * item.rate, 2)
+        # Support both rate*quantity and pre-computed amount
+        if hasattr(item, 'amount') and item.amount is not None:
+            base = round(float(item.amount), 2)
+        else:
+            qty = float(item.quantity) if item.quantity is not None else 1.0
+            rate = float(item.rate) if item.rate is not None else 0.0
+            base = round(qty * rate, 2)
 
         if is_interstate:
-            igst_amt  = round(base * igst_pct / 100, 2)
-            cgst_amt  = 0.0
-            sgst_amt  = 0.0
+            igst_amt = round(base * igst_pct / 100, 2)
+            cgst_amt = 0.0
+            sgst_amt = 0.0
+            applicable_rate_string = f"IGST {igst_pct}%"
         else:
-            cgst_amt  = round(base * cgst_pct / 100, 2)
-            sgst_amt  = cgst_amt
-            igst_amt  = 0.0
+            cgst_amt = round(base * cgst_pct / 100, 2)
+            sgst_amt = cgst_amt
+            igst_amt = 0.0
+            applicable_rate_string = f"CGST {cgst_pct}% + SGST {cgst_pct}%"
 
-        cess_amt     = round(base * cess_pct / 100, 2)
-        total_tax    = round(cgst_amt + sgst_amt + igst_amt + cess_amt, 2)
-        total_amount = round(base + total_tax, 2)
+        cess_amt  = round(base * cess_pct / 100, 2)
+        tax_amount = round(cgst_amt + sgst_amt + igst_amt + cess_amt, 2)
+        total_amount = round(base + tax_amount, 2)
 
         return InvoiceItemResponse(
             hsn_code=item.hsn_code,
-            quantity=item.quantity,
-            rate=item.rate,
-            base_amount=base,
-            cgst_amount=cgst_amt,
-            sgst_amount=sgst_amt,
-            igst_amount=igst_amt,
-            cess_amount=cess_amt,
-            total_tax_amount=total_tax,
+            description=description,
+            supply_type=supply_type,
+            tax_rates={
+                "cgst": cgst_pct if not is_interstate else 0,
+                "sgst": cgst_pct if not is_interstate else 0,
+                "igst": igst_pct if is_interstate else 0,
+                "cess": cess_pct,
+            },
+            taxable_value=base,
+            tax_amount=tax_amount,
             total_amount=total_amount,
+            applicable_rate_string=applicable_rate_string,
         )
 
     if db_pool:
@@ -2557,11 +2531,11 @@ async def classify_invoice(
 
     # ── 3. Aggregate document totals ────────────────────────────────────────
     for ci in classified_items:
-        totals["base"] += ci.base_amount
-        totals["cgst"] += ci.cgst_amount
-        totals["sgst"] += ci.sgst_amount
-        totals["igst"] += ci.igst_amount
-        totals["cess"] += ci.cess_amount
+        totals["base"] += ci.taxable_value
+        totals["cgst"] += ci.tax_rates.get("cgst", 0) * ci.taxable_value / 100
+        totals["sgst"] += ci.tax_rates.get("sgst", 0) * ci.taxable_value / 100
+        totals["igst"] += ci.tax_rates.get("igst", 0) * ci.taxable_value / 100
+        totals["cess"] += ci.tax_rates.get("cess", 0) * ci.taxable_value / 100
 
     total_tax   = round(totals["cgst"] + totals["sgst"] + totals["igst"] + totals["cess"], 2)
     grand_total = round(totals["base"] + total_tax, 2)
