@@ -2587,9 +2587,12 @@ async def classify_invoice(
                 },
             )
 
-        igst_pct: float = float(row.get("igst_rate") or 0.0)
-        cgst_pct: float = float(row.get("cgst_rate") or (igst_pct / 2))
-        cess_pct: float = float(row.get("cess_rate") or 0.0)
+        igst_raw = row.get("igst_rate")
+        cgst_raw = row.get("cgst_rate")
+        cess_raw = row.get("cess_rate")
+        igst_pct: float = float(igst_raw) if igst_raw is not None else 0.0
+        cgst_pct: float = float(cgst_raw) if cgst_raw is not None else round(igst_pct / 2, 3)
+        cess_pct: float = float(cess_raw) if cess_raw is not None else 0.0
         description: str = row.get(description_key) or row.get("description") or ""
 
         # Support both rate*quantity and pre-computed amount
@@ -2952,11 +2955,10 @@ async def get_summary(_: dict = Depends(verify_api_key)):
     Returns overall statistics: total codes, match rates, schedule breakdown, etc.
     """
     import time
-    global _summary_cache
+    global _summary_cache, db_pool
     if _summary_cache["gst:rates:summary"] and time.time() - _summary_cache["timestamp"] < SUMMARY_CACHE_TTL:
         return _summary_cache["gst:rates:summary"]
 
-    global db_pool
     if not db_pool:
         # Fallback to Supabase PostgREST client
         try:
@@ -3010,12 +3012,8 @@ async def get_summary(_: dict = Depends(verify_api_key)):
         rate_slabs=rate_slabs,
         last_updated="2025-09-22",
     )
-    
-    import time
-    global _summary_cache
     _summary_cache["gst:rates:summary"] = response
     _summary_cache["timestamp"] = time.time()
-    
     return response
 
 
