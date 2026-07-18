@@ -57,6 +57,45 @@ else:
 
 db_pool = None
 
+# ---------------------------------------------------------------------------
+# API key in-memory cache + usage buffer (FIX 2)
+# ---------------------------------------------------------------------------
+_key_cache: dict = {}          # {key_hash: (record_dict, expires_at)}
+KEY_CACHE_TTL = 60             # seconds — cache entries live for 1 minute
+_usage_buffer: dict = {}       # {api_key_id: pending_increment_count}
+
+
+async def _flush_usage_to_supabase():
+    """Background task: flush buffered usage increments to Supabase every 60 s."""
+    while True:
+        await asyncio.sleep(60)
+        if not _usage_buffer:
+            continue
+        items = list(_usage_buffer.items())
+        for key_id, count in items:
+            try:
+                current = (
+                    supabase.table("api_keys")
+                    .select("calls_this_month")
+                    .eq("id", key_id)
+                    .limit(1)
+                    .execute()
+                )
+                if current.data:
+                    new_count = current.data[0]["calls_this_month"] + count
+                    supabase.table("api_keys").update(
+                        {"calls_this_month": new_count}
+                    ).eq("id", key_id).execute()
+                _usage_buffer.pop(key_id, None)
+                # Invalidate cache so next request re-reads fresh count
+                for h, (rec, _exp) in list(_key_cache.items()):
+                    if rec.get("id") == key_id:
+                        del _key_cache[h]
+                        break
+            except Exception as e:
+                print(f"[usage-flush] error for key_id={key_id}: {e}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global db_pool
@@ -76,7 +115,10 @@ async def lifespan(app: FastAPI):
             print(f"Failed to initialize asyncpg pool: {e}")
     else:
         print("WARNING: DB_HOST/DB_USER/DB_PASSWORD missing. asyncpg pool will be None.")
+    # Start background usage-flush task
+    flush_task = asyncio.create_task(_flush_usage_to_supabase())
     yield
+    flush_task.cancel()
     if db_pool:
         await db_pool.close()
 
@@ -330,62 +372,75 @@ def _hash_key(raw_key: str) -> str:
     return hashlib.sha256(raw_key.encode()).hexdigest()
 
 
-async def verify_api_key(x_api_key: str = Header(default="", alias="X-API-Key", description="Your API key")):
-    """Dependency: validates X-API-Key, enforces monthly limits, increments usage."""
-    x_api_key = x_api_key.strip()
-    if not x_api_key:
+async def verify_api_key(x_api_key: str = Header(default=None, alias="X-API-Key", description="Your API key")):
+    """Dependency: validates X-API-Key, enforces monthly limits, increments usage (buffered)."""
+    # FIX 1 — Early exit BEFORE any SHA256 or Supabase call
+    if not x_api_key or not x_api_key.strip():
         raise HTTPException(
             status_code=401,
             detail={
-                "error": "X-API-Key header is required.",
+                "error": "API key required. Pass your key in the X-API-Key header.",
                 "code": 401,
-                "suggestions": [
-                    "Add header: X-API-Key: your_api_key"
-                ]
+                "suggestions": ["Add header: X-API-Key: your_api_key"]
             }
         )
+    x_api_key = x_api_key.strip()
 
     if x_api_key in ("gsta_demo_frontend", "demo_public_key"):
         return {"tier": "demo", "api_key_id": "demo"}
-        
+
     key_hash = _hash_key(x_api_key)
 
-    try:
-        res = (
-            supabase.table("api_keys")
-            .select("id, tier, user_id, is_active, monthly_limit, calls_this_month")
-            .eq("key_hash", key_hash)
-            .eq("is_active", True)
-            .limit(1)
-            .execute()
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-        
-    if not res.data or len(res.data) == 0:
+    # FIX 2 — Cache lookup (avoids Supabase SELECT on every request)
+    now = time.time()
+    record = None
+    if key_hash in _key_cache:
+        cached_record, expires_at = _key_cache[key_hash]
+        if now < expires_at:
+            record = cached_record
+
+    if record is None:
+        # Cache miss — hit Supabase once, then cache for KEY_CACHE_TTL seconds
+        try:
+            res = (
+                supabase.table("api_keys")
+                .select("id, tier, user_id, is_active, monthly_limit, calls_this_month")
+                .eq("key_hash", key_hash)
+                .eq("is_active", True)
+                .limit(1)
+                .execute()
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+        if not res.data:
+            raise HTTPException(
+                status_code=401,
+                detail={
+                    "error": "Invalid or inactive API key.",
+                    "code": 401,
+                    "suggestions": []
+                }
+            )
+        record = res.data[0]
+        _key_cache[key_hash] = (record, now + KEY_CACHE_TTL)
+
+    # Check monthly limit against DB value + buffered pending increments
+    pending = _usage_buffer.get(record["id"], 0)
+    effective_calls = record["calls_this_month"] + pending
+    if effective_calls >= record["monthly_limit"]:
         raise HTTPException(
-            status_code=401, 
+            status_code=429,
             detail={
-                "error": "Invalid or inactive API key.",
-                "code": 401,
-                "suggestions": []
+                "error": f"Monthly limit of {record['monthly_limit']} calls reached for tier '{record['tier']}'.",
+                "code": 429,
             }
         )
 
-    record = res.data[0]
+    # FIX 2 — Buffer the usage increment; background task flushes to Supabase every 60 s
+    _usage_buffer[record["id"]] = pending + 1
 
-    if record["calls_this_month"] >= record["monthly_limit"]:
-        raise HTTPException(
-            status_code=429,
-            detail=f"Monthly limit of {record['monthly_limit']} calls reached for tier '{record['tier']}'.",
-        )
-
-    # Increment call counter
-    supabase.table("api_keys").update(
-        {"calls_this_month": record["calls_this_month"] + 1}
-    ).eq("id", record["id"]).execute()
-
-    # Compute X-RateLimit reset: first day of next month at UTC midnight
+    # Compute X-RateLimit headers
     now_utc = datetime.now(timezone.utc)
     if now_utc.month == 12:
         reset_dt = datetime(now_utc.year + 1, 1, 1, tzinfo=timezone.utc)
@@ -393,10 +448,9 @@ async def verify_api_key(x_api_key: str = Header(default="", alias="X-API-Key", 
         reset_dt = datetime(now_utc.year, now_utc.month + 1, 1, tzinfo=timezone.utc)
     reset_ts = int(reset_dt.timestamp())
 
-    calls_used = record["calls_this_month"] + 1
+    calls_used = effective_calls + 1
     monthly_limit = record["monthly_limit"]
 
-    # Publish monthly quota so IPRateLimitMiddleware can write the headers
     _monthly_ratelimit_ctx.set({
         "limit":     monthly_limit,
         "remaining": max(0, monthly_limit - calls_used),
