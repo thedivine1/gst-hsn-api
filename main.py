@@ -14,7 +14,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 # pyrefly: ignore [missing-import]
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from supabase import create_client, Client  # pyright: ignore [missing-import]
 # pyrefly: ignore [missing-import]
 from dotenv import load_dotenv
@@ -566,8 +566,19 @@ class GstinPanResponse(BaseModel):
 
 class InvoiceItemRequest(BaseModel):
     hsn_code: str
-    quantity: float
-    rate: float
+    quantity: float = 1.0
+    rate: Optional[float] = None
+    amount: Optional[float] = None
+
+    @validator('amount', always=True)
+    def compute_amount(cls, v, values):
+        if v is not None:
+            return v
+        rate = values.get('rate')
+        qty = values.get('quantity', 1.0)
+        if rate is not None:
+            return rate * qty
+        raise ValueError("Either 'amount' or 'rate' must be provided")
 
 
 class InvoiceRequest(BaseModel):
@@ -2289,73 +2300,85 @@ async def get_hsn(
 # ---------------------------------------------------------------------------
 # State name → GST code mapping (reverse lookup for classifier)
 # ---------------------------------------------------------------------------
-_STATE_NAME_TO_CODE: dict[str, str] = {
-    v.lower(): k for k, v in GST_STATE_CODES.items()
-}
-# Extra common aliases / abbreviations users might send
-_STATE_ALIASES: dict[str, str] = {
-    "j&k": "01", "jk": "01", "jammu": "01",
-    "hp": "02", "himachal": "02",
-    "pb": "03",
-    "chd": "04",
-    "uk": "05", "uttaranchal": "05",
-    "hr": "06",
-    "dl": "07", "new delhi": "07",
-    "rj": "08",
-    "up": "09",
-    "br": "10",
-    "sk": "11",
-    "ar": "12", "arunachal": "12",
-    "nl": "13",
-    "mn": "14",
-    "mz": "15",
-    "tr": "16",
-    "ml": "17",
-    "as": "18",
-    "wb": "19",
-    "jh": "20",
-    "od": "21", "orissa": "21",
-    "cg": "22", "chattisgarh": "22",
-    "mp": "23",
-    "gj": "24",
-    "dd": "25",
-    "dn": "26", "dadra": "26",
-    "mh": "27",
-    "ap old": "28",
-    "ka": "29",
-    "ga": "30",
-    "ld": "31",
-    "kl": "32",
-    "tn": "33",
-    "py": "34", "pondicherry": "34",
-    "an": "35", "andaman": "35",
-    "ts": "36",
-    "ap": "37", "andhra": "37",
-    "la": "38",
+STATE_LOOKUP = {
+    # Full names (lowercase for matching)
+    "andhra pradesh": "Andhra Pradesh",
+    "arunachal pradesh": "Arunachal Pradesh",
+    "assam": "Assam",
+    "bihar": "Bihar",
+    "chhattisgarh": "Chhattisgarh",
+    "goa": "Goa",
+    "gujarat": "Gujarat",
+    "haryana": "Haryana",
+    "himachal pradesh": "Himachal Pradesh",
+    "jharkhand": "Jharkhand",
+    "karnataka": "Karnataka",
+    "kerala": "Kerala",
+    "madhya pradesh": "Madhya Pradesh",
+    "maharashtra": "Maharashtra",
+    "manipur": "Manipur",
+    "meghalaya": "Meghalaya",
+    "mizoram": "Mizoram",
+    "nagaland": "Nagaland",
+    "odisha": "Odisha",
+    "punjab": "Punjab",
+    "rajasthan": "Rajasthan",
+    "sikkim": "Sikkim",
+    "tamil nadu": "Tamil Nadu",
+    "telangana": "Telangana",
+    "tripura": "Tripura",
+    "uttar pradesh": "Uttar Pradesh",
+    "uttarakhand": "Uttarakhand",
+    "west bengal": "West Bengal",
+    "delhi": "Delhi",
+    "jammu and kashmir": "Jammu & Kashmir",
+    "jammu & kashmir": "Jammu & Kashmir",
+    "ladakh": "Ladakh",
+    "andaman and nicobar": "Andaman & Nicobar",
+    "andaman & nicobar islands": "Andaman & Nicobar",
+    "chandigarh": "Chandigarh",
+    "dadra and nagar haveli": "Dadra & Nagar Haveli",
+    "daman and diu": "Daman & Diu",
+    "lakshadweep": "Lakshadweep",
+    "puducherry": "Puducherry",
+    "pondicherry": "Puducherry",
+    # 2-digit GST numeric state codes (as strings)
+    "01": "Jammu & Kashmir", "02": "Himachal Pradesh", "03": "Punjab", "04": "Chandigarh", "05": "Uttarakhand",
+    "06": "Haryana", "07": "Delhi", "08": "Rajasthan", "09": "Uttar Pradesh",
+    "1": "Jammu & Kashmir", "2": "Himachal Pradesh", "3": "Punjab", "4": "Chandigarh", "5": "Uttarakhand",
+    "6": "Haryana", "7": "Delhi", "8": "Rajasthan", "9": "Uttar Pradesh",
+    "10": "Bihar", "11": "Sikkim", "12": "Arunachal Pradesh", "13": "Nagaland", "14": "Manipur",
+    "15": "Mizoram", "16": "Tripura", "17": "Meghalaya", "18": "Assam", "19": "West Bengal", "20": "Jharkhand",
+    "21": "Odisha", "22": "Chhattisgarh", "23": "Madhya Pradesh", "24": "Gujarat", "26": "Dadra & Nagar Haveli",
+    "27": "Maharashtra", "28": "Andhra Pradesh", "29": "Karnataka", "30": "Goa", "31": "Lakshadweep",
+    "32": "Kerala", "33": "Tamil Nadu", "34": "Puducherry", "35": "Andaman & Nicobar", "36": "Telangana",
+    "37": "Andhra Pradesh", "38": "Ladakh",
+    # Common abbreviations
+    "mh": "Maharashtra", "mah": "Maharashtra", "ka": "Karnataka", "kar": "Karnataka", "tn": "Tamil Nadu",
+    "dl": "Delhi", "nd": "Delhi", "gj": "Gujarat", "guj": "Gujarat", "rj": "Rajasthan", "raj": "Rajasthan",
+    "up": "Uttar Pradesh", "wb": "West Bengal", "pb": "Punjab", "hr": "Haryana", "br": "Bihar",
+    "mp": "Madhya Pradesh", "ap": "Andhra Pradesh", "ts": "Telangana", "tg": "Telangana", "kl": "Kerala",
+    "od": "Odisha", "or": "Odisha", "uk": "Uttarakhand", "ua": "Uttarakhand", "jk": "Jammu & Kashmir",
+    "hp": "Himachal Pradesh", "ga": "Goa", "as": "Assam", "jh": "Jharkhand", "cg": "Chhattisgarh",
+    "ct": "Chhattisgarh", "sk": "Sikkim", "mn": "Manipur", "ml": "Meghalaya", "mz": "Mizoram", "nl": "Nagaland",
+    "tr": "Tripura", "ar": "Arunachal Pradesh", "py": "Puducherry", "pu": "Puducherry", "ch": "Chandigarh",
+    "la": "Ladakh",
 }
 
+def _resolve_state(input_str: str) -> str:
+    if not input_str:
+        raise ValueError("State cannot be empty")
+    key = input_str.strip().lower()
+    result = STATE_LOOKUP.get(key)
+    if not result:
+        raise ValueError(
+            f"Unrecognised state: '{input_str}'. "
+            f"Accepted formats: full name ('Maharashtra'), "
+            f"2-digit GST code ('27'), or abbreviation ('mh')."
+        )
+    return result
 
-def _resolve_state(raw: str) -> tuple[str, str]:
-    """
-    Accepts a state name (full or alias) OR a 2-digit GST state code.
-    Returns (state_code, state_name) or raises ValueError.
-    """
-    raw = raw.strip()
-    # Try numeric 2-digit code directly
-    if raw.isdigit() and len(raw) == 2 and raw in GST_STATE_CODES:
-        return raw, GST_STATE_CODES[raw]
-    # Try full name
-    key = raw.lower()
-    if key in _STATE_NAME_TO_CODE:
-        code = _STATE_NAME_TO_CODE[key]
-        return code, GST_STATE_CODES[code]
-    # Try alias
-    if key in _STATE_ALIASES:
-        code = _STATE_ALIASES[key]
-        return code, GST_STATE_CODES[code]
-    raise ValueError(
-        f"Unrecognised state: '{raw}'. "
-        "Pass a full state name (e.g. 'Maharashtra') or 2-digit GST state code (e.g. '27')."
+or 2-digit GST state code (e.g. '27')."
     )
 
 
@@ -3348,6 +3371,16 @@ async def api_docs_page():
         return HTMLResponse(content)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Docs template not found.")
+
+@app.get("/test", include_in_schema=False, response_class=HTMLResponse)
+async def api_tester_page():
+    try:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(base_dir, "api_tester.html"), "r", encoding="utf-8") as f:
+            content = f.read()
+        return HTMLResponse(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Tester template not found.")
 
 @app.get("/blog/gst-api-for-developers", include_in_schema=False, response_class=HTMLResponse)
 async def gst_api_blog_page():
