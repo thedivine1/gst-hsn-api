@@ -2358,7 +2358,8 @@ async def get_hsn(
     """
     # HSN codes are static data — cache aggressively at CDN + browser level
     if response:
-        response.headers["Cache-Control"] = "public, max-age=86400, s-maxage=86400, stale-while-revalidate=3600"
+        response.headers["Cache-Control"] = "public, max-age=86400"
+        response.headers["X-Robots-Tag"] = "noindex"
 
     code = code.strip()
 
@@ -2625,7 +2626,8 @@ async def get_sac(
     """
     # SAC codes are static — cache at CDN level
     if response:
-        response.headers["Cache-Control"] = "public, max-age=86400, s-maxage=86400, stale-while-revalidate=3600"
+        response.headers["Cache-Control"] = "public, max-age=86400"
+        response.headers["X-Robots-Tag"] = "noindex"
 
     code = code.strip()
 
@@ -2705,25 +2707,46 @@ async def demo_lookup(q: str, request: Request):
     summary="Autocomplete suggestions",
     tags=["Lookup"],
 )
-async def autocomplete(q: str, _: dict = Depends(verify_api_key)):
-    if not q.strip():
+async def autocomplete(q: str, _: dict = Depends(verify_api_key), limit: int = 10):
+    if not q or len(q.strip()) < 2:
         return []
-        
-    global db_pool
-    if not db_pool:
-        # Fallback to Supabase PostgREST client
-        try:
-            res = supabase.table("hsn_rates").select("hsn_code,hsn_description").ilike("hsn_description", f"%{q}%").limit(10).execute()
-            return res.data or []
-        except Exception as e:
-            raise HTTPException(status_code=503, detail=f"Database unavailable: {e}")
-        
-    async with db_pool.acquire() as conn:
-        rows = await conn.fetch(
-            "SELECT hsn_code, hsn_description FROM hsn_rates WHERE hsn_description ILIKE $1 LIMIT 10", 
-            f"%{q}%"
-        )
-        return [dict(row) for row in rows]
+    
+    q_lower = q.strip().lower()
+    
+    # Step 1: Exact word match at start (highest priority)
+    exact_start = supabase.table("hsn_rates")\
+        .select("hsn_code,hsn_description")\
+        .ilike("hsn_description", f"{q}%")\
+        .limit(5)\
+        .execute()
+    
+    # Step 2: Contains word (medium priority)
+    contains = supabase.table("hsn_rates")\
+        .select("hsn_code,hsn_description")\
+        .ilike("hsn_description", f"% {q}%")\
+        .limit(10)\
+        .execute()
+    
+    # Step 3: Merge, deduplicate, prefer shorter descriptions
+    seen = set()
+    results = []
+    for row in (exact_start.data or []) + (contains.data or []):
+        code = row["hsn_code"]
+        if code not in seen:
+            seen.add(code)
+            results.append(row)
+    
+    # Sort: exact word match first, then by description length
+    def score(r):
+        desc = r["hsn_description"].lower()
+        if desc.startswith(q_lower):
+            return (0, len(desc))
+        elif f" {q_lower}" in desc or f"/{q_lower}" in desc:
+            return (1, len(desc))
+        return (2, len(desc))
+    
+    results.sort(key=score)
+    return results[:limit]
 
 @app.get(
     "/api/v1/gst-rate",
@@ -2844,8 +2867,23 @@ async def bulk_lookup(requests: List[LookupRequest], _: dict = Depends(verify_ap
             return []
         return await _async_lookup(req)
         
-    results = await asyncio.gather(*[process_one(req) for req in requests])
-    return list(results)
+    # Run all lookups in parallel, not sequentially
+    tasks = [process_one(req) for req in requests]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    
+    # Handle any individual failures gracefully
+    response = []
+    for i, result in enumerate(results):
+        if isinstance(result, Exception):
+            response.append({
+                "input": requests[i].dict(),
+                "error": str(result),
+                "hsn_code": None
+            })
+        else:
+            response.append(result)
+            
+    return response
 
 
 @app.get(
@@ -3923,3 +3961,5 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+
+
