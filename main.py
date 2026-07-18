@@ -2951,6 +2951,11 @@ async def get_summary(_: dict = Depends(verify_api_key)):
     """
     Returns overall statistics: total codes, match rates, schedule breakdown, etc.
     """
+    import time
+    global _summary_cache
+    if _summary_cache["gst:rates:summary"] and time.time() - _summary_cache["timestamp"] < SUMMARY_CACHE_TTL:
+        return _summary_cache["gst:rates:summary"]
+
     global db_pool
     if not db_pool:
         # Fallback to Supabase PostgREST client
@@ -2994,7 +2999,7 @@ async def get_summary(_: dict = Depends(verify_api_key)):
         note="SGST always equals CGST for intra-state supplies",
     )
 
-    return SummaryResponse(
+    response = SummaryResponse(
         total_hsn_codes=total_hsn,
         total_sac_codes=total_sac,
         matched_with_rate=matched,
@@ -3005,6 +3010,13 @@ async def get_summary(_: dict = Depends(verify_api_key)):
         rate_slabs=rate_slabs,
         last_updated="2025-09-22",
     )
+    
+    import time
+    global _summary_cache
+    _summary_cache["gst:rates:summary"] = response
+    _summary_cache["timestamp"] = time.time()
+    
+    return response
 
 
 # ---------------------------------------------------------------------------
