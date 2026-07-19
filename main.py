@@ -99,6 +99,21 @@ async def _flush_usage_to_supabase():
                 print(f"[usage-flush] error for key_id={key_id}: {e}")
 
 
+_app_health_state = {
+    "database": "unknown",
+    "storage": "ok"
+}
+
+async def _health_monitor_task():
+    while True:
+        try:
+            # Check database by making a tiny query
+            supabase.table("hsn_rates").select("id", count="exact").limit(1).execute()
+            _app_health_state["database"] = "connected"
+        except Exception:
+            _app_health_state["database"] = "degraded"
+        await asyncio.sleep(30)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global db_pool
@@ -120,8 +135,10 @@ async def lifespan(app: FastAPI):
         print("WARNING: DB_HOST/DB_USER/DB_PASSWORD missing. asyncpg pool will be None.")
     # Start background usage-flush task
     flush_task = asyncio.create_task(_flush_usage_to_supabase())
+    health_task = asyncio.create_task(_health_monitor_task())
     yield
     flush_task.cancel()
+    health_task.cancel()
     if db_pool:
         await db_pool.close()
 
@@ -475,16 +492,11 @@ async def verify_api_key(x_api_key: str = Header(default=None, alias="X-API-Key"
 @app.get("/health", tags=["Meta"])
 async def health():
     """Liveness check — returns API status, version, and uptime."""
-    db_status = "connected"
-    try:
-        supabase.table("hsn_rates").select("id", count="exact").limit(1).execute()
-    except Exception:
-        db_status = "degraded"
     return {
         "status": "ok",
         "version": "1.0.0",
         "uptime_seconds": round(time.time() - START_TIME),
-        "database": db_status,
+        "database": _app_health_state["database"],
         "last_updated": "2025-09-22",
         "source": "CBIC 09/2025-CT(Rate)",
         "cache_entries": len(_lookup_cache),
@@ -1183,7 +1195,9 @@ async def get_health():
         "status": "ok",
         "version": "1.0.0",
         "uptime_seconds": round(time.time() - START_TIME),
-        "uptime": round(time.time() - START_TIME)
+        "uptime": round(time.time() - START_TIME),
+        "database": _app_health_state["database"],
+        "storage": _app_health_state["storage"]
     }
 
 @app.get("/api/v1/meta", tags=["Meta"])
