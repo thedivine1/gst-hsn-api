@@ -9,7 +9,8 @@ from typing import List, Optional, Tuple, Literal
 # pyrefly: ignore [missing-import]
 from fastapi import FastAPI, Header, HTTPException, Depends, Request, Response, Query
 # pyrefly: ignore [missing-import]
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+import pathlib
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -163,6 +164,11 @@ app.add_middleware(
     allow_methods=["GET", "POST", "OPTIONS", "DELETE"],
     allow_headers=["X-API-Key", "Content-Type", "Authorization"],
 )
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    path = pathlib.Path(__file__).parent / "favicon.ico"
+    return FileResponse(path, media_type="image/x-icon")
 
 import time
 START_TIME = time.time()
