@@ -713,11 +713,12 @@ class InvoiceRequest(BaseModel):
     seller_state: str
     buyer_state: str
     items: List[InvoiceItemRequest]
+    exclude_descriptions: bool = Field(default=False)
 
 
 class InvoiceItemResponse(BaseModel):
     hsn_code: str
-    description: str
+    description: Optional[str] = None
     supply_type: str
     tax_rates: dict
     taxable_value: float
@@ -2472,20 +2473,21 @@ async def get_hsn(
 
 
 
-async def _lookup_sac_rate_raw(code: str, conn) -> dict | None:
+async def _lookup_sac_rate_raw(code: str, conn, exclude_descriptions: bool = False) -> dict | None:
     """
     Internal SAC DB lookup - returns the first matching row dict or None.
     Falls back from exact -> 4-digit heading.
     """
     code = code.strip()
+    fields = "sac_code, igst_rate, cgst_rate, cess_rate" if exclude_descriptions else "*"
     if db_pool and conn:
-        rows = await conn.fetch("SELECT * FROM sac_rates WHERE sac_code = $1 LIMIT 1", code)
+        rows = await conn.fetch(f"SELECT {fields} FROM sac_rates WHERE sac_code = $1 LIMIT 1", code)
         if rows:
             return dict(rows[0])
         if len(code) > 4:
             heading = code[:4]
             rows = await conn.fetch(
-                "SELECT * FROM sac_rates WHERE sac_code = $1 LIMIT 1",
+                f"SELECT {fields} FROM sac_rates WHERE sac_code = $1 LIMIT 1",
                 heading
             )
             if rows:
@@ -2495,7 +2497,7 @@ async def _lookup_sac_rate_raw(code: str, conn) -> dict | None:
         try:
             res = (
                 supabase.table("sac_rates")
-                .select("*")
+                .select(fields)
                 .eq("sac_code", code)
                 .limit(1)
                 .execute()
@@ -2505,7 +2507,7 @@ async def _lookup_sac_rate_raw(code: str, conn) -> dict | None:
             if len(code) >= 4:
                 res2 = (
                     supabase.table("sac_rates")
-                    .select("*")
+                    .select(fields)
                     .like("sac_code", f"{code[:4]}%")
                     .limit(50)
                     .execute()
@@ -2516,20 +2518,21 @@ async def _lookup_sac_rate_raw(code: str, conn) -> dict | None:
             pass
     return None
 
-async def _lookup_hsn_rate_raw(code: str, conn) -> dict | None:
+async def _lookup_hsn_rate_raw(code: str, conn, exclude_descriptions: bool = False) -> dict | None:
     """
     Internal HSN DB lookup — returns the first matching row dict or None.
     Falls back from exact → 6-digit heading → 4-digit chapter.
     """
     code = code.strip()
+    fields = "hsn_code, igst_rate, cgst_rate, cess_rate" if exclude_descriptions else "*"
     if db_pool and conn:
-        rows = await conn.fetch("SELECT * FROM hsn_rates WHERE hsn_code = $1 LIMIT 1", code)
+        rows = await conn.fetch(f"SELECT {fields} FROM hsn_rates WHERE hsn_code = $1 LIMIT 1", code)
         if rows:
             return dict(rows[0])
         if len(code) >= 4:
             chapter = code[:4]
             rows = await conn.fetch(
-                "SELECT * FROM hsn_rates WHERE hsn_code LIKE $1 LIMIT 50",
+                f"SELECT {fields} FROM hsn_rates WHERE hsn_code LIKE $1 LIMIT 50",
                 f"{chapter}%"
             )
             if rows:
@@ -2544,7 +2547,7 @@ async def _lookup_hsn_rate_raw(code: str, conn) -> dict | None:
         try:
             res = (
                 supabase.table("hsn_rates")
-                .select("*")
+                .select(fields)
                 .eq("hsn_code", code)
                 .limit(1)
                 .execute()
@@ -2554,7 +2557,7 @@ async def _lookup_hsn_rate_raw(code: str, conn) -> dict | None:
             if len(code) >= 4:
                 res2 = (
                     supabase.table("hsn_rates")
-                    .select("*")
+                    .select(fields)
                     .like("hsn_code", f"{code[:4]}%")
                     .limit(50)
                     .execute()
@@ -2573,6 +2576,7 @@ async def _lookup_hsn_rate_raw(code: str, conn) -> dict | None:
 @app.post(
     "/api/v1/invoice/classify",
     response_model=InvoiceResponse,
+    response_model_exclude_none=True,
     summary="Invoice Tax Classifier — CGST+SGST vs IGST",
     tags=["Invoice"],
     responses={
@@ -2624,11 +2628,11 @@ async def classify_invoice(
     async def _process(item: InvoiceItemRequest, conn) -> InvoiceItemResponse:
         is_service = item.hsn_code.startswith("99") and len(item.hsn_code.strip()) <= 6
         if is_service:
-            row = await _lookup_sac_rate_raw(item.hsn_code, conn)
+            row = await _lookup_sac_rate_raw(item.hsn_code, conn, payload.exclude_descriptions)
             code_type = "SAC"
             description_key = "sac_description"
         else:
-            row = await _lookup_hsn_rate_raw(item.hsn_code, conn)
+            row = await _lookup_hsn_rate_raw(item.hsn_code, conn, payload.exclude_descriptions)
             code_type = "HSN"
             description_key = "hsn_description"
 
@@ -2648,7 +2652,7 @@ async def classify_invoice(
         igst_pct: float = float(igst_raw) if igst_raw is not None else 0.0
         cgst_pct: float = float(cgst_raw) if cgst_raw is not None else round(igst_pct / 2, 3)
         cess_pct: float = float(cess_raw) if cess_raw is not None else 0.0
-        description: str = row.get(description_key) or row.get("description") or ""
+        description: Optional[str] = None if payload.exclude_descriptions else (row.get(description_key) or row.get("description") or "")
 
         # Support both rate*quantity and pre-computed amount
         if hasattr(item, 'amount') and item.amount is not None:
