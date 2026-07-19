@@ -1182,7 +1182,8 @@ async def get_health():
     return {
         "status": "ok",
         "version": "1.0.0",
-        "uptime": time.time() - START_TIME
+        "uptime_seconds": round(time.time() - START_TIME),
+        "uptime": round(time.time() - START_TIME)
     }
 
 @app.get("/api/v1/meta", tags=["Meta"])
