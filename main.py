@@ -1477,8 +1477,28 @@ async def root():
       font-size: 1rem; font-weight: 500;
       color: var(--muted);
       letter-spacing: 0.04em;
-      margin-bottom: 2.75rem;
+      margin-bottom: 2rem;
     }
+    .hero-install-cmds {
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 16px;
+      margin-bottom: 3.5rem; /* Gap between text and window */
+    }
+    .install-cmd {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 10px 16px;
+      display: flex; align-items: center; gap: 12px;
+      font-family: var(--font-mono); font-size: 0.85rem; color: #e2e8f0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .install-cmd .prompt { color: var(--muted); user-select: none; }
+    .install-cmd button {
+      background: transparent; border: none; color: var(--muted);
+      cursor: pointer; padding: 2px; display: flex; align-items: center;
+      transition: color 0.2s;
+    }
+    .install-cmd button:hover { color: var(--white); }
     .hero-mantra strong { color: var(--white); font-weight: 600; }
 
     /* ── DEMO CARD ── */
@@ -1848,6 +1868,24 @@ async def root():
     <strong>Compliance. Accelerated.</strong> &nbsp;·&nbsp;
     CBIC-sourced · Condition-aware · Agent-native
   </p>
+
+  <!-- INSTALL COMMANDS -->
+  <div class="hero-install-cmds">
+    <div class="install-cmd">
+      <span class="prompt">$</span>
+      <span>pip install gstaccelerator</span>
+      <button onclick="navigator.clipboard.writeText('pip install gstaccelerator'); this.style.color='#00d084'; setTimeout(()=>this.style.color='', 1500);" title="Copy">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+      </button>
+    </div>
+    <div class="install-cmd">
+      <span class="prompt">$</span>
+      <span>npm install gstaccelerator</span>
+      <button onclick="navigator.clipboard.writeText('npm install gstaccelerator'); this.style.color='#00d084'; setTimeout(()=>this.style.color='', 1500);" title="Copy">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+      </button>
+    </div>
+  </div>
 
   <!-- LIVE DEMO -->
   <div class="demo-card">
