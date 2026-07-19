@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import List, Optional, Tuple, Literal
 # pyrefly: ignore [missing-import]
-from fastapi import FastAPI, Header, HTTPException, Depends, Request, Response
+from fastapi import FastAPI, Header, HTTPException, Depends, Request, Response, Query
 # pyrefly: ignore [missing-import]
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -713,7 +713,6 @@ class InvoiceRequest(BaseModel):
     seller_state: str
     buyer_state: str
     items: List[InvoiceItemRequest]
-    exclude_descriptions: bool = Field(default=False)
 
 
 class InvoiceItemResponse(BaseModel):
@@ -2588,6 +2587,7 @@ async def _lookup_hsn_rate_raw(code: str, conn, exclude_descriptions: bool = Fal
 )
 async def classify_invoice(
     payload: InvoiceRequest,
+    exclude_descriptions: bool = Query(False, description="Exclude long textual descriptions"),
     _: dict = Depends(verify_api_key),
 ):
     """
@@ -2628,11 +2628,11 @@ async def classify_invoice(
     async def _process(item: InvoiceItemRequest, conn) -> InvoiceItemResponse:
         is_service = item.hsn_code.startswith("99") and len(item.hsn_code.strip()) <= 6
         if is_service:
-            row = await _lookup_sac_rate_raw(item.hsn_code, conn, payload.exclude_descriptions)
+            row = await _lookup_sac_rate_raw(item.hsn_code, conn, exclude_descriptions)
             code_type = "SAC"
             description_key = "sac_description"
         else:
-            row = await _lookup_hsn_rate_raw(item.hsn_code, conn, payload.exclude_descriptions)
+            row = await _lookup_hsn_rate_raw(item.hsn_code, conn, exclude_descriptions)
             code_type = "HSN"
             description_key = "hsn_description"
 
@@ -2652,7 +2652,7 @@ async def classify_invoice(
         igst_pct: float = float(igst_raw) if igst_raw is not None else 0.0
         cgst_pct: float = float(cgst_raw) if cgst_raw is not None else round(igst_pct / 2, 3)
         cess_pct: float = float(cess_raw) if cess_raw is not None else 0.0
-        description: Optional[str] = None if payload.exclude_descriptions else (row.get(description_key) or row.get("description") or "")
+        description: Optional[str] = None if exclude_descriptions else (row.get(description_key) or row.get("description") or "")
 
         # Support both rate*quantity and pre-computed amount
         if hasattr(item, 'amount') and item.amount is not None:
