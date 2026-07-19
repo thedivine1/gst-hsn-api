@@ -2825,45 +2825,99 @@ async def demo_lookup(q: str, request: Request):
     tags=["Lookup"],
 )
 async def autocomplete(q: str, _: dict = Depends(verify_api_key), limit: int = 10):
-    if not q or len(q.strip()) < 2:
+    """
+    Two-tier autocomplete:
+    1. Prefix LIKE 'q%'  → uses idx_hsn_description_prefix (fast B-tree scan)
+    2. Trigram similarity → uses idx_hsn_description_trgm (GIN), only fills
+       remaining slots when prefix results < limit.
+    Total cap: LIMIT 10 enforced at both tiers.
+    """
+    HARD_LIMIT = 10
+    q = q.strip()
+    if not q or len(q) < 2:
         return []
-    
-    q_lower = q.strip().lower()
-    
-    # Step 1: Exact word match at start (highest priority)
-    exact_start = supabase.table("hsn_rates")\
-        .select("hsn_code,hsn_description")\
-        .ilike("hsn_description", f"{q}%")\
-        .limit(5)\
+
+    q_lower = q.lower()
+    results: list[dict] = []
+    seen: set[str] = set()
+
+    # ── Tier 1: asyncpg fast path (prefix ILIKE, uses gin_trgm_ops GIN index) ─
+    if db_pool:
+        async with db_pool.acquire() as conn:
+            # Tier 1 – prefix match: ILIKE 'q%' uses GIN trgm index for short queries
+            prefix_rows = await conn.fetch(
+                """
+                SELECT hsn_code, hsn_description
+                FROM hsn_rates
+                WHERE hsn_description ILIKE $1
+                ORDER BY length(hsn_description)
+                LIMIT $2
+                """,
+                f"{q}%",
+                HARD_LIMIT,
+            )
+            for r in prefix_rows:
+                code = r["hsn_code"]
+                if code not in seen:
+                    seen.add(code)
+                    results.append({"hsn_code": code, "hsn_description": r["hsn_description"]})
+
+            # Tier 2 – trigram mid-string match, only if we still have slots left
+            remaining = HARD_LIMIT - len(results)
+            if remaining > 0:
+                trgm_rows = await conn.fetch(
+                    """
+                    SELECT hsn_code, hsn_description
+                    FROM hsn_rates
+                    WHERE hsn_description ILIKE $1
+                      AND NOT (hsn_description ILIKE $2)
+                    ORDER BY length(hsn_description)
+                    LIMIT $3
+                    """,
+                    f"%{q}%",
+                    f"{q}%",
+                    remaining,
+                )
+                for r in trgm_rows:
+                    code = r["hsn_code"]
+                    if code not in seen:
+                        seen.add(code)
+                        results.append({"hsn_code": code, "hsn_description": r["hsn_description"]})
+
+        return results
+
+    # ── Supabase REST fallback (no asyncpg pool available) ───────────────────
+    prefix_res = (
+        supabase.table("hsn_rates")
+        .select("hsn_code,hsn_description")
+        .ilike("hsn_description", f"{q}%")
+        .limit(HARD_LIMIT)
         .execute()
-    
-    # Step 2: Contains word (medium priority)
-    contains = supabase.table("hsn_rates")\
-        .select("hsn_code,hsn_description")\
-        .ilike("hsn_description", f"% {q}%")\
-        .limit(10)\
-        .execute()
-    
-    # Step 3: Merge, deduplicate, prefer shorter descriptions
-    seen = set()
-    results = []
-    for row in (exact_start.data or []) + (contains.data or []):
+    )
+    for row in prefix_res.data or []:
         code = row["hsn_code"]
         if code not in seen:
             seen.add(code)
             results.append(row)
-    
-    # Sort: exact word match first, then by description length
-    def score(r):
-        desc = r["hsn_description"].lower()
-        if desc.startswith(q_lower):
-            return (0, len(desc))
-        elif f" {q_lower}" in desc or f"/{q_lower}" in desc:
-            return (1, len(desc))
-        return (2, len(desc))
-    
-    results.sort(key=score)
-    return results[:limit]
+
+    remaining = HARD_LIMIT - len(results)
+    if remaining > 0:
+        mid_res = (
+            supabase.table("hsn_rates")
+            .select("hsn_code,hsn_description")
+            .ilike("hsn_description", f"%{q}%")
+            .limit(remaining + len(results))   # over-fetch then dedup
+            .execute()
+        )
+        for row in mid_res.data or []:
+            code = row["hsn_code"]
+            if code not in seen:
+                seen.add(code)
+                results.append(row)
+                if len(results) >= HARD_LIMIT:
+                    break
+
+    return results[:HARD_LIMIT]
 
 @app.get(
     "/api/v1/gst-rate",
