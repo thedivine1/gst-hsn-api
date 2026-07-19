@@ -267,7 +267,7 @@ const TESTS = [
   {id:'sac_intra',group:'SAC Lookup',name:'SAC — with supply_type=intrastate',method:'GET',path:'/api/v1/sac/{code}?supply_type={supply_type}',expected:200,
     params:[{key:'code',label:'SAC Code',type:'path',val:'9983'},{key:'supply_type',label:'Supply Type',type:'path',val:'intrastate'}]},
   {id:'sac_404',group:'SAC Lookup',name:'SAC — invalid code (expect 404)',method:'GET',path:'/api/v1/sac/{code}',expected:404,
-    params:[{key:'code',label:'SAC Code',type:'path',val:'9999'}]},
+    params:[{key:'code',label:'SAC Code',type:'path',val:'9900'}]},
   {id:'lookup_get',group:'Lookup & Search',name:'GET Lookup — keyword search',method:'GET',path:'/api/v1/lookup?q={q}',expected:200,
     params:[{key:'q',label:'Search Query',type:'path',val:'mobile phone'}]},
   {id:'lookup_post',group:'Lookup & Search',name:'POST Lookup — with conditions',method:'POST',path:'/api/v1/lookup',expected:200,

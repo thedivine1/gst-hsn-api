@@ -62,7 +62,9 @@ db_pool = None
 # API key in-memory cache + usage buffer (FIX 2)
 # ---------------------------------------------------------------------------
 _key_cache: dict = {}          # {key_hash: (record_dict, expires_at)}
-KEY_CACHE_TTL = 60             # seconds — cache entries live for 1 minute
+KEY_CACHE_TTL = 60             # seconds - cache entries live for 1 minute
+_summary_cache: dict = {"gst:rates:summary": None, "timestamp": 0}
+SUMMARY_CACHE_TTL = 86400      # 24 hours
 _usage_buffer: dict = {}       # {api_key_id: pending_increment_count}
 
 
@@ -2427,11 +2429,11 @@ async def _lookup_sac_rate_raw(code: str, conn) -> dict | None:
         rows = await conn.fetch("SELECT * FROM sac_rates WHERE sac_code = $1 LIMIT 1", code)
         if rows:
             return dict(rows[0])
-        if len(code) >= 4:
+        if len(code) > 4:
             heading = code[:4]
             rows = await conn.fetch(
-                "SELECT * FROM sac_rates WHERE sac_code LIKE $1 LIMIT 50",
-                f"{heading}%"
+                "SELECT * FROM sac_rates WHERE sac_code = $1 LIMIT 1",
+                heading
             )
             if rows:
                 return dict(rows[0])
@@ -2567,7 +2569,7 @@ async def classify_invoice(
     }
 
     async def _process(item: InvoiceItemRequest, conn) -> InvoiceItemResponse:
-        is_service = item.hsn_code.startswith("99")
+        is_service = item.hsn_code.startswith("99") and len(item.hsn_code.strip()) <= 6
         if is_service:
             row = await _lookup_sac_rate_raw(item.hsn_code, conn)
             code_type = "SAC"
@@ -2709,9 +2711,9 @@ async def get_sac(
             return [_map_db_to_sac_rate(dict(row), supply_type) for row in rows]
 
         # Fallback: heading (first 4 digits)
-        if len(code) >= 4:
+        if len(code) > 4:
             heading = code[:4]
-            rows = await conn.fetch("SELECT * FROM sac_rates WHERE sac_code LIKE $1", f"{heading}%")
+            rows = await conn.fetch("SELECT * FROM sac_rates WHERE sac_code = $1", heading)
             if rows:
                 return [_map_db_to_sac_rate(dict(row), supply_type) for row in rows]
 
@@ -2981,13 +2983,22 @@ async def get_summary(_: dict = Depends(verify_api_key)):
             raise HTTPException(status_code=503, detail=f"Database unavailable: {e}")
 
     async with db_pool.acquire() as conn:
-        total_hsn = await conn.fetchval("SELECT count(id) FROM hsn_rates") or 0
+        hsn_stats = await conn.fetchrow("""
+            SELECT 
+                count(id) as total_hsn,
+                count(id) FILTER (WHERE cgst_rate IS NOT NULL) as matched,
+                count(id) FILTER (WHERE has_condition = true) as has_conditions,
+                count(id) FILTER (WHERE cess_rate IS NOT NULL AND cess_rate > 0) as cess_count
+            FROM hsn_rates
+        """)
         total_sac = await conn.fetchval("SELECT count(id) FROM sac_rates") or 0
-        matched = await conn.fetchval("SELECT count(id) FROM hsn_rates WHERE cgst_rate IS NOT NULL") or 0
-        has_conditions = await conn.fetchval("SELECT count(id) FROM hsn_rates WHERE has_condition = true") or 0
-        cess_count = await conn.fetchval("SELECT count(id) FROM hsn_rates WHERE cess_rate IS NOT NULL AND cess_rate > 0") or 0
-        
         schedule_counts_rows = await conn.fetch("SELECT schedule, count(id) as cnt FROM hsn_rates WHERE schedule IS NOT NULL GROUP BY schedule")
+        
+        total_hsn = hsn_stats['total_hsn'] or 0
+        matched = hsn_stats['matched'] or 0
+        has_conditions = hsn_stats['has_conditions'] or 0
+        cess_count = hsn_stats['cess_count'] or 0
+        
         schedule_counts = {row['schedule']: row['cnt'] for row in schedule_counts_rows}
 
     by_schedule = [
