@@ -380,6 +380,7 @@
     <div class="sidebar-group">
       <span class="sidebar-label">Data &amp; Accuracy</span>
       <a href="#data-accuracy">How we maintain accuracy</a>
+      <a href="/changelog">Data Changelog</a>
     </div>
     <div class="sidebar-group">
       <span class="sidebar-label">Reliability</span>
@@ -390,6 +391,7 @@
       <a href="#response-fields">Response Fields</a>
       <a href="#errors">Error Codes</a>
       <a href="#rate-limits">Rate Limits</a>
+      <a href="#webhooks">Webhooks</a>
     </div>
   </nav>
 
@@ -1171,6 +1173,42 @@ igst = (invoice_value Ã— <span class="s-num">18</span>) / <span class="s-num"
           <div class="callout-title">Disclaimer</div>
           Rates are provided for informational purposes. Verify with a qualified CA for filing decisions.
         </div>
+      </div>
+    </div>
+
+    <!-- WEBHOOKS -->
+    <div class="doc-row" id="webhooks">
+      <div class="doc-left">
+        <h2>Rate-change webhooks (Developer plan and above)</h2>
+        <p>GST Accelerator fires a webhook within 6 hours of any CBIC notification that changes rates for HSN/SAC codes in your monitored list.</p>
+        <p style="margin-top: 1.5rem; font-style: italic; color: var(--text-muted);">(Coming in Q3 2026 — register interest at hello@gstaccelerator.in)</p>
+      </div>
+      <div class="doc-right">
+        <div class="code-block">
+          <div class="code-block-header"><span class="code-block-lang">Endpoint setup (POST /api/v1/webhooks)</span></div>
+          <pre><code>{
+  <span class="s-key">"url"</span>: <span class="s-str">"https://your-server.com/gst-webhook"</span>,
+  <span class="s-key">"hsn_codes"</span>: [<span class="s-str">"8415"</span>, <span class="s-str">"6101"</span>, <span class="s-str">"10063012"</span>],
+  <span class="s-key">"secret"</span>: <span class="s-str">"your_webhook_secret"</span>
+}</code></pre>
+        </div>
+        <div class="code-block" style="margin-top: 1.5rem;">
+          <div class="code-block-header"><span class="code-block-lang">Payload example</span></div>
+          <pre><code>{
+  <span class="s-key">"event"</span>: <span class="s-str">"rate_change"</span>,
+  <span class="s-key">"fired_at"</span>: <span class="s-str">"2025-09-22T18:00:00Z"</span>,
+  <span class="s-key">"notification"</span>: <span class="s-str">"09/2025-CT(Rate)"</span>,
+  <span class="s-key">"changes"</span>: [
+    {
+      <span class="s-key">"hsn_code"</span>: <span class="s-str">"8415"</span>,
+      <span class="s-key">"old_rate"</span>: {<span class="s-key">"igst"</span>: 28, <span class="s-key">"cgst"</span>: 14, <span class="s-key">"sgst"</span>: 14},
+      <span class="s-key">"new_rate"</span>: {<span class="s-key">"igst"</span>: 18, <span class="s-key">"cgst"</span>: 9, <span class="s-key">"sgst"</span>: 9},
+      <span class="s-key">"effective_date"</span>: <span class="s-str">"2025-09-22"</span>
+    }
+  ]
+}</code></pre>
+        </div>
+        <p style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-muted);">Each webhook includes an <code>X-GST-Signature</code> header. Verify with HMAC-SHA256 using your webhook secret.</p>
       </div>
     </div>
 

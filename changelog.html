@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Changelog - GST Accelerator</title>
+  <meta name="description" content="GST rate data updates and notification changelog.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0B0E14;
+      --surface: #111520;
+      --border: #1E2A3A;
+      --amber: #E8650A;
+      --text: #F0F2F5;
+      --text-muted: #6B7B8D;
+      --green-lit: #4ade80;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 0;
+      margin: 0;
+    }
+    nav {
+      height: 62px; padding: 0 1.5rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(11,14,20,0.97);
+    }
+    .brand { text-decoration: none; color: var(--text); font-weight: 700; display:flex; align-items:center; gap:0.6rem; }
+    .brand-icon { width: 28px; height: 28px; background: var(--amber); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono'; font-size: 13px; font-weight: 700; color: #fff; }
+    .nav-right a { color: var(--text-muted); text-decoration: none; margin-left: 1.5rem; font-size: 0.88rem; font-weight: 500; }
+    .nav-right a:hover { color: var(--text); }
+    .container { max-width: 800px; margin: 4rem auto; padding: 0 1.5rem; }
+    h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    .subtitle { color: var(--text-muted); font-size: 1.1rem; margin-bottom: 3rem; }
+    
+    /* Timeline */
+    .timeline { position: relative; padding-left: 2rem; border-left: 2px solid var(--border); }
+    .tl-item { position: relative; margin-bottom: 3rem; }
+    .tl-dot {
+      position: absolute; left: -2.4rem; top: 0.3rem; width: 12px; height: 12px;
+      background: var(--amber); border-radius: 50%; border: 3px solid var(--bg);
+    }
+    .tl-date { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--amber); font-weight: 600; margin-bottom: 0.5rem; }
+    .tl-card { background: var(--surface); border: 1px solid var(--border); padding: 1.5rem; border-radius: 8px; margin-top: 0.5rem; }
+    .tl-title { font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; color: var(--text); }
+    .tl-meta { display: flex; gap: 1.5rem; margin-bottom: 1rem; font-size: 0.85rem; color: var(--text-muted); flex-wrap: wrap; }
+    .tl-meta span strong { color: var(--text); }
+    .tl-pill { display: inline-block; background: rgba(74,222,128,0.1); color: var(--green-lit); padding: 2px 8px; border-radius: 4px; font-family: 'JetBrains Mono'; font-size: 0.8rem; margin: 0 4px 4px 0; border: 1px solid rgba(74,222,128,0.2); }
+    
+    footer { margin-top: 4rem; padding: 2rem 0; border-top: 1px solid var(--border); text-align: center; color: var(--text-muted); font-size: 0.85rem; }
+    footer a { color: var(--text-muted); text-decoration: none; margin: 0 0.5rem; }
+    footer a:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/" class="brand">
+      <div class="brand-icon">₹</div>
+      GST Accelerator
+    </a>
+    <div class="nav-right">
+      <a href="/docs">API Docs</a>
+      <a href="/dashboard">Dashboard</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1>Data Changelog</h1>
+    <p class="subtitle">Complete audit trail of CBIC notification implementations in our API.</p>
+    
+    <div class="timeline">
+      <!-- 10/2025 -->
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-date">SEP 22, 2025</div>
+        <div class="tl-card">
+          <div class="tl-title">Notification 10/2025-Central Tax (Rate)</div>
+          <div class="tl-meta">
+            <span><strong>Deployed to API:</strong> Sep 23, 2025</span>
+            <span><strong>Status:</strong> Active</span>
+          </div>
+          <p style="color:var(--text-muted); font-size:0.95rem; margin-bottom:1rem;">Updates to exemptions and conditional rates for specific goods.</p>
+          <div>
+            <span style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.5rem;">Affected HSN Codes:</span>
+            <span class="tl-pill">Various</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 09/2025 -->
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-date">SEP 22, 2025</div>
+        <div class="tl-card">
+          <div class="tl-title">Notification 09/2025-Central Tax (Rate)</div>
+          <div class="tl-meta">
+            <span><strong>Deployed to API:</strong> Sep 23, 2025</span>
+            <span><strong>Status:</strong> Active</span>
+          </div>
+          <p style="color:var(--text-muted); font-size:0.95rem; margin-bottom:1rem;">Major rate restructuring for electronics and consumer goods.</p>
+          <div>
+            <span style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.5rem;">Affected HSN Codes:</span>
+            <span class="tl-pill">8517</span>
+            <span class="tl-pill">8415</span>
+            <span class="tl-pill">6101</span>
+            <span class="tl-pill">10063012</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer>
+    <a href="/docs">API Docs</a>
+    <a href="/performance">Reliability</a>
+    <a href="/about">About</a>
+    <a href="https://gstaccelerator.instatus.com" target="_blank" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10B981;"></span>System Status: Operational</a>
+  </footer>
+</body>
+</html>

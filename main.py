@@ -2882,98 +2882,70 @@ async def demo_lookup(q: str, request: Request):
 )
 async def autocomplete(q: str, _: dict = Depends(verify_api_key), limit: int = 10):
     """
-    Two-tier autocomplete:
-    1. Prefix LIKE 'q%'  → uses idx_hsn_description_prefix (fast B-tree scan)
-    2. Trigram similarity → uses idx_hsn_description_trgm (GIN), only fills
-       remaining slots when prefix results < limit.
-    Total cap: LIMIT 10 enforced at both tiers.
+    Two-tier autocomplete with Python-side relevance ranking.
+    Prioritizes exact prefix matches (100), common consumer goods (80), and substring matches (50).
     """
-    HARD_LIMIT = 10
+    HARD_LIMIT = limit if limit else 20
     q = q.strip()
     if not q or len(q) < 2:
         return []
 
     q_lower = q.lower()
-    results: list[dict] = []
-    seen: set[str] = set()
+    raw_results = []
 
-    # ── Tier 1: asyncpg fast path (prefix ILIKE, uses gin_trgm_ops GIN index) ─
     if db_pool:
         async with db_pool.acquire() as conn:
-            # Tier 1 – prefix match: ILIKE 'q%' uses GIN trgm index for short queries
             prefix_rows = await conn.fetch(
-                """
-                SELECT hsn_code, hsn_description
-                FROM hsn_rates
-                WHERE hsn_description ILIKE $1
-                ORDER BY length(hsn_description)
-                LIMIT $2
-                """,
-                f"{q}%",
-                HARD_LIMIT,
+                "SELECT hsn_code, hsn_description FROM hsn_rates WHERE hsn_description ILIKE $1 LIMIT 50", f"{q}%"
             )
-            for r in prefix_rows:
-                code = r["hsn_code"]
-                if code not in seen:
-                    seen.add(code)
-                    results.append({"hsn_code": code, "hsn_description": r["hsn_description"]})
-
-            # Tier 2 – trigram mid-string match, only if we still have slots left
-            remaining = HARD_LIMIT - len(results)
-            if remaining > 0:
-                trgm_rows = await conn.fetch(
-                    """
-                    SELECT hsn_code, hsn_description
-                    FROM hsn_rates
-                    WHERE hsn_description ILIKE $1
-                      AND NOT (hsn_description ILIKE $2)
-                    ORDER BY length(hsn_description)
-                    LIMIT $3
-                    """,
-                    f"%{q}%",
-                    f"{q}%",
-                    remaining,
-                )
-                for r in trgm_rows:
-                    code = r["hsn_code"]
-                    if code not in seen:
-                        seen.add(code)
-                        results.append({"hsn_code": code, "hsn_description": r["hsn_description"]})
-
-        return results
-
-    # ── Supabase REST fallback (no asyncpg pool available) ───────────────────
-    prefix_res = (
-        supabase.table("hsn_rates")
-        .select("hsn_code,hsn_description")
-        .ilike("hsn_description", f"{q}%")
-        .limit(HARD_LIMIT)
-        .execute()
-    )
-    for row in prefix_res.data or []:
-        code = row["hsn_code"]
-        if code not in seen:
-            seen.add(code)
-            results.append(row)
-
-    remaining = HARD_LIMIT - len(results)
-    if remaining > 0:
+            mid_rows = await conn.fetch(
+                "SELECT hsn_code, hsn_description FROM hsn_rates WHERE hsn_description ILIKE $1 AND NOT (hsn_description ILIKE $2) LIMIT 50", f"%{q}%", f"{q}%"
+            )
+            raw_results = [dict(r) for r in prefix_rows] + [dict(r) for r in mid_rows]
+    else:
+        prefix_res = (
+            supabase.table("hsn_rates")
+            .select("hsn_code,hsn_description")
+            .ilike("hsn_description", f"{q}%")
+            .limit(50)
+            .execute()
+        )
         mid_res = (
             supabase.table("hsn_rates")
             .select("hsn_code,hsn_description")
             .ilike("hsn_description", f"%{q}%")
-            .limit(remaining + len(results))   # over-fetch then dedup
+            .limit(50)
             .execute()
         )
-        for row in mid_res.data or []:
-            code = row["hsn_code"]
-            if code not in seen:
-                seen.add(code)
-                results.append(row)
-                if len(results) >= HARD_LIMIT:
-                    break
+        raw_results = (prefix_res.data or []) + (mid_res.data or [])
 
-    return results[:HARD_LIMIT]
+    scored_results = []
+    seen = set()
+    
+    for row in raw_results:
+        code = row["hsn_code"]
+        if code in seen: continue
+        seen.add(code)
+        
+        desc = (row["hsn_description"] or "").lower()
+        try:
+            pos = desc.index(q_lower)
+        except ValueError:
+            pos = -1
+            
+        if pos == 0:
+            priority = 100
+        elif code.startswith(("84", "85", "86", "87", "88", "89", "90", "61", "62", "10")):
+            priority = 80
+        else:
+            priority = 50
+            
+        scored_results.append((priority, row))
+        
+    scored_results.sort(key=lambda x: -x[0])
+    
+    return [r[1] for r in scored_results[:HARD_LIMIT]]
+
 
 @app.get(
     "/api/v1/gst-rate",
@@ -3429,6 +3401,16 @@ async def performance_page():
         return HTMLResponse(content)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Performance template not found.")
+
+@app.get("/changelog", include_in_schema=False, response_class=HTMLResponse)
+async def changelog_page():
+    try:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(base_dir, "changelog.html"), "r", encoding="utf-8") as f:
+            content = f.read()
+        return HTMLResponse(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Changelog template not found.")
 
 @app.get("/pricing", include_in_schema=False, response_class=HTMLResponse)
 async def pricing_page():
