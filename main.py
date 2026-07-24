@@ -1852,7 +1852,7 @@ async def root():
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
       "name": "GST Accelerator API",
-      "description": "India's fastest HSN and SAC code lookup API. 48,000+ HSN codes, SAC search, GST rates, JSON REST API.",
+      "description": "The only condition-aware GST rate engine with audit-ready CBIC citations. B2B vs B2C. Branded vs unbranded. Price thresholds. CBIC notification reference in every response.",
       "applicationCategory": "DeveloperTool",
       "operatingSystem": "Any",
       "url": "https://gstaccelerator.in",
