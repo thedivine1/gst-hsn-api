@@ -3401,6 +3401,27 @@ async def terms_page():
     except Exception as e:
         raise HTTPException(status_code=500, detail="Terms template not found.")
 
+@app.get("/about", include_in_schema=False, response_class=HTMLResponse)
+async def about_page():
+    try:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(base_dir, "about.html"), "r", encoding="utf-8") as f:
+            content = f.read()
+        return HTMLResponse(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="About template not found.")
+
+@app.get("/performance", include_in_schema=False, response_class=HTMLResponse)
+@app.get("/reliability", include_in_schema=False, response_class=HTMLResponse)
+async def performance_page():
+    try:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(os.path.join(base_dir, "performance.html"), "r", encoding="utf-8") as f:
+            content = f.read()
+        return HTMLResponse(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Performance template not found.")
+
 @app.get("/pricing", include_in_schema=False, response_class=HTMLResponse)
 async def pricing_page():
     """Razorpay payment page — served as a standalone HTML file with injected keys."""
