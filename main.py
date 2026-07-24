@@ -1717,14 +1717,22 @@ async def root():
     /* ── PRICING ── */
     .price-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+      grid-template-columns: repeat(5, 1fr);
       gap: 12px;
+      align-items: stretch;
+    }
+    @media (max-width: 1024px) {
+      .price-grid {
+        grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+      }
     }
     .plan {
       background: var(--ink-2);
       border: 1px solid var(--border);
       border-radius: 12px; padding: 1.5rem;
       position: relative;
+      display: flex;
+      flex-direction: column;
     }
     .plan.featured {
       border-color: var(--amber);
@@ -1760,7 +1768,7 @@ async def root():
     .pf.off { opacity: 0.38; }
     .pf.off::before { content: "·"; color: var(--muted); }
     .plan-action {
-      display: block; width: 100%; margin-top: 1.25rem;
+      display: block; width: 100%; margin-top: auto;
       padding: 0.6rem; border-radius: 7px; text-align: center;
       font-family: var(--font-body); font-size: 0.875rem; font-weight: 600;
       text-decoration: none; cursor: pointer; border: none;

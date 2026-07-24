@@ -415,14 +415,22 @@
     /* ── PRICING ── */
     .price-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+      grid-template-columns: repeat(5, 1fr);
       gap: 12px;
+      align-items: stretch;
+    }
+    @media (max-width: 1024px) {
+      .price-grid {
+        grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+      }
     }
     .plan {
       background: var(--ink-2);
       border: 1px solid var(--border);
       border-radius: 12px; padding: 1.5rem;
       position: relative;
+      display: flex;
+      flex-direction: column;
     }
     .plan.featured {
       border-color: var(--amber);
@@ -458,11 +466,11 @@
     .pf.off { opacity: 0.38; }
     .pf.off::before { content: "·"; color: var(--muted); }
     .plan-action {
-      display: block; width: 100%; margin-top: 1.25rem;
+      display: block; width: 100%; margin-top: auto;
       padding: 0.6rem; border-radius: 7px; text-align: center;
       font-family: var(--font-body); font-size: 0.875rem; font-weight: 600;
       text-decoration: none; cursor: pointer; border: none;
-      transition: opacity 0.15s;
+      transition: all 0.2s;
     }
     .pa-outline { background: transparent; border: 1px solid var(--border-md); color: var(--white); }
     .pa-solid { background: var(--amber); color: #fff; }
@@ -696,14 +704,26 @@
       <div class="plan-tier">Free</div>
       <div class="plan-price">₹0</div>
       <div class="plan-mo">forever</div>
-      <div class="plan-quota">100 calls / month</div>
+      <div class="plan-quota">1,000 calls / month</div>
       <div class="pf">HSN + SAC lookup</div>
       <div class="pf">CGST / SGST / IGST output</div>
-      <div class="pf">JSON + Swagger docs</div>
+      <div class="pf">All endpoints included</div>
       <div class="pf off">Condition resolver</div>
       <div class="pf off">MCP endpoint</div>
       <div class="pf off">Rate-change alerts</div>
       <a class="plan-action pa-outline" href="/login">Get free key</a>
+    </div>
+
+    <div class="plan">
+      <div class="plan-tier">Startup</div>
+      <div class="plan-price"><sup>₹</sup>199</div>
+      <div class="plan-mo">/ month</div>
+      <div class="plan-quota">5,000 calls / month</div>
+      <div class="pf">Everything in Free</div>
+      <div class="pf">Condition resolver</div>
+      <div class="pf off">MCP endpoint</div>
+      <div class="pf off">Rate-change alerts</div>
+      <a class="plan-action pa-solid" href="/pricing" style="background:var(--ink-3);color:var(--white);border-color:var(--border-md);">Get started</a>
     </div>
 
     <div class="plan featured">
@@ -719,7 +739,7 @@
       <div class="pf">Rate-change email alerts</div>
       <div class="pf off">Webhooks</div>
       <a class="plan-action pa-solid" href="/pricing">Get started</a>
-      <div class="upi-note">Pay via UPI · Instant activation</div>
+      <div class="upi-note">Pay via UPI · Cards · Net Banking</div>
     </div>
 
     <div class="plan">
