@@ -1,0 +1,50 @@
+{
+  "name": "gstaccelerator",
+  "version": "0.3.1",
+  "description": "India GST API Client and MCP Server for AI Agents (HSN/SAC Rates)",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "gstaccelerator-mcp": "./dist/bin/mcp-server.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test": "jest",
+    "start": "node dist/bin/mcp-server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thedivine1/gstaccelerator-js.git"
+  },
+  "keywords": [
+    "gst",
+    "gstin",
+    "hsn",
+    "sac",
+    "mcp-server",
+    "fintech",
+    "india-tax",
+    "compliance",
+    "model-context-protocol",
+    "ai-agents"
+  ],
+  "author": "GST Accelerator <hello@gstaccelerator.in>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/thedivine1/gstaccelerator-js/issues"
+  },
+  "homepage": "https://gstaccelerator.in",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.6.0",
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "jest": "^29.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

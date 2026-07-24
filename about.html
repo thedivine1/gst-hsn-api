@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About Us - GST Accelerator</title>
+  <meta name="description" content="About GST Accelerator and the team behind it.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0B0E14;
+      --surface: #111520;
+      --surface-2: #161B27;
+      --border: #1E2A3A;
+      --amber: #E8650A;
+      --text: #F0F2F5;
+      --text-muted: #6B7B8D;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 0;
+      margin: 0;
+    }
+    nav {
+      height: 62px; padding: 0 1.5rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(11,14,20,0.97);
+    }
+    .brand { text-decoration: none; color: var(--text); font-weight: 700; display:flex; align-items:center; gap:0.6rem; }
+    .brand-icon { width: 28px; height: 28px; background: var(--amber); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono'; font-size: 13px; font-weight: 700; color: #fff; }
+    .nav-right a { color: var(--text-muted); text-decoration: none; margin-left: 1.5rem; font-size: 0.88rem; font-weight: 500; }
+    .nav-right a:hover { color: var(--text); }
+    .container { max-width: 800px; margin: 4rem auto; padding: 0 1.5rem; }
+    h1 { font-size: 2.5rem; margin-bottom: 2rem; }
+    p { color: var(--text-muted); margin-bottom: 1.5rem; font-size: 1.1rem; }
+    .card { background: var(--surface); border: 1px solid var(--border); padding: 2rem; border-radius: 8px; margin-bottom: 2rem; }
+    .links-list { display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; }
+    .links-list a { color: var(--amber); text-decoration: none; display: flex; align-items: center; gap: 0.5rem; font-weight: 500; }
+    .links-list a:hover { text-decoration: underline; }
+    footer { margin-top: 4rem; padding: 2rem 0; border-top: 1px solid var(--border); text-align: center; color: var(--text-muted); font-size: 0.85rem; }
+    footer a { color: var(--text-muted); text-decoration: none; margin: 0 0.5rem; }
+    footer a:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/" class="brand">
+      <div class="brand-icon">₹</div>
+      GST Accelerator
+    </a>
+    <div class="nav-right">
+      <a href="/docs">API Docs</a>
+      <a href="/dashboard">Dashboard</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1>About GST Accelerator</h1>
+    <div class="card">
+      <p>Built by <strong>Touchport LLP, Pune</strong>.</p>
+      <p>We bring <strong>17 years of industrial automation and B2B technology experience</strong> to compliance engineering.</p>
+      <p><em>GST Accelerator was built because we kept seeing Indian billing platforms hardcode GST rates and break every GST Council meeting.</em> We designed a dynamic, condition-aware engine to solve this permanently.</p>
+    </div>
+
+    <div class="card">
+      <h2>Connect &amp; Integrate</h2>
+      <div class="links-list">
+        <a href="mailto:hello@gstaccelerator.in">✉️ hello@gstaccelerator.in</a>
+        <a href="https://pypi.org/project/gstaccelerator" target="_blank">📦 PyPI (Python SDK)</a>
+        <a href="https://www.npmjs.com/package/gstaccelerator" target="_blank">📦 npm (Node.js SDK)</a>
+        <a href="https://github.com/gstaccelerator" target="_blank">💻 GitHub (Open Source tools)</a>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <a href="/docs">API Docs</a>
+    <a href="/performance">Reliability</a>
+    <a href="/about">About</a>
+    <a href="https://gstaccelerator.instatus.com" target="_blank" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10B981;"></span>System Status: Operational</a>
+  </footer>
+</body>
+</html>

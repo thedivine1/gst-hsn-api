@@ -48,21 +48,21 @@ def register_key(tier: str, limit: int, prefix: str):
     reset = date(today.year + (today.month // 12), today.month % 12 + 1, 1)
 
     record = {
+        "user_id": "bd775341-dcfe-4e20-a9c2-1b40fe7b1703",  # default demo user
         "key_hash": key_hash,
         "key_prefix": key_prefix,
         "tier": tier,
         "monthly_limit": limit,
-        "reset_date": str(reset),
         "is_active": True,
     }
 
     try:
         res = supabase.table("api_keys").insert(record).execute()
-        print("\n✅ API key registered successfully!")
+        print("\n[SUCCESS] API key registered successfully!")
         print(f"   Tier      : {tier}")
         print(f"   Limit     : {limit} calls/month")
         print(f"   Prefix    : {key_prefix}")
-        print(f"\n🔑 YOUR RAW API KEY (copy it now — it will NOT be shown again):")
+        print(f"\n[KEY] YOUR RAW API KEY (copy it now -- it will NOT be shown again):")
         print(f"\n   {raw_key}\n")
     except Exception as e:
         print(f"ERROR registering key: {e}")

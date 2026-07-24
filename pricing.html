@@ -404,15 +404,39 @@
       <div class="plan-tier">Free</div>
       <div class="plan-price">₹0</div>
       <div class="plan-mo">forever</div>
-      <div class="plan-quota">100 calls / month</div>
+      <div class="plan-quota">1,000 calls / month</div>
       <div class="pf">HSN + SAC lookup</div>
       <div class="pf">CGST / SGST / IGST output</div>
-      <div class="pf">JSON + Swagger docs</div>
+      <div class="pf">All endpoints included</div>
       <div class="pf off">Condition resolver</div>
       <div class="pf off">MCP endpoint</div>
       <div class="pf off">Rate-change alerts</div>
       <a class="btn-free" href="/login" id="free-btn">Get free key →</a>
       <div class="plan-note" style="visibility: hidden;">UPI · Cards · Net Banking · Wallets</div>
+    </div>
+
+    <!-- STARTUP -->
+    <div class="plan">
+      <div class="plan-tier">Startup</div>
+      <div class="plan-price"><sup>₹</sup>199</div>
+      <div class="plan-mo">/month</div>
+      <div class="plan-quota">5,000 calls / month</div>
+      <div class="pf">Everything in Free</div>
+      <div class="pf">Condition resolver</div>
+      <div class="pf off">MCP endpoint</div>
+      <div class="pf off">Rate-change alerts</div>
+      <div class="pf off">SLA / Support</div>
+      <div class="pf off">Webhooks</div>
+      <div class="rzp-wrap rzp-outline" id="rzp-startup">
+        <form>
+          <script
+            src="https://checkout.razorpay.com/v1/payment-button.js"
+            data-payment_button_id="{{ RAZORPAY_BTN_STARTUP }}"
+            async>
+          </script>
+        </form>
+      </div>
+      <div class="plan-note">UPI · Cards · Net Banking · Wallets</div>
     </div>
 
     <!-- DEVELOPER (FEATURED) -->

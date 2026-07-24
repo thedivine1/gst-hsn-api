@@ -378,6 +378,14 @@
       <a href="#supply-types">Supply Types</a>
     </div>
     <div class="sidebar-group">
+      <span class="sidebar-label">Data &amp; Accuracy</span>
+      <a href="#data-accuracy">How we maintain accuracy</a>
+    </div>
+    <div class="sidebar-group">
+      <span class="sidebar-label">Reliability</span>
+      <a href="/performance">Load Test Results</a>
+    </div>
+    <div class="sidebar-group">
       <span class="sidebar-label">Reference</span>
       <a href="#response-fields">Response Fields</a>
       <a href="#errors">Error Codes</a>
@@ -1142,6 +1150,26 @@ igst = (invoice_value Ã— <span class="s-num">18</span>) / <span class="s-num"
         <div class="callout amber" style="margin-top: 1.5rem;">
           <div class="callout-title">Need more calls?</div>
           Upgrade your plan from the <a href="/dashboard" style="color:var(--amber)">Developer Dashboard</a> or contact <a href="mailto:hello@gstaccelerator.in" style="color:var(--amber)">hello@gstaccelerator.in</a> for custom enterprise quotas.
+        </div>
+      </div>
+    </div>
+
+    <!-- DATA & ACCURACY -->
+    <div class="doc-row" id="data-accuracy">
+      <div class="doc-left">
+        <h2>How we maintain GST rate accuracy</h2>
+        <p>Trust and data provenance are central to GST Accelerator.</p>
+        <ul style="color:var(--text-muted); padding-left:1.5rem; margin-bottom:1.5rem; line-height:1.6;">
+          <li><strong>Source:</strong> CBIC.gov.in official notifications + GST Council press releases</li>
+          <li><strong>Update SLA:</strong> New notifications ingested within 48 hours of CBIC publication</li>
+          <li><strong>Verification:</strong> All rates cross-checked against official CBIC notification PDFs before deployment</li>
+        </ul>
+        <p>View our <a href="/api/v1/changelog" style="color:var(--amber)">/api/v1/changelog</a> for a complete audit trail.</p>
+      </div>
+      <div class="doc-right">
+        <div class="callout amber">
+          <div class="callout-title">Disclaimer</div>
+          Rates are provided for informational purposes. Verify with a qualified CA for filing decisions.
         </div>
       </div>
     </div>

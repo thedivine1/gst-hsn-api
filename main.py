@@ -1035,14 +1035,19 @@ def _build_tax_info(
     supply_type: Optional[str],
 ) -> Tuple[TaxRates, ApplicableRate]:
     """Helper to convert flat DB rates into nested TaxRates and ApplicableRate."""
+    
+    # Conditional logic for intrastate vs interstate
+    is_intra = (supply_type == "intrastate")
+    is_inter = (supply_type == "interstate")
+
     tax = TaxRates(
-        igst=igst_rate,
-        cgst=cgst_rate,
-        sgst=cgst_rate,
-        utgst=cgst_rate,
+        igst=igst_rate if not is_intra else None,
+        cgst=cgst_rate if not is_inter else None,
+        sgst=cgst_rate if not is_inter else None,
+        utgst=cgst_rate if not is_inter else None,
         cess=cess_rate if cess_rate is not None else 0,
-        total_intrastate=(cgst_rate * 2) if cgst_rate is not None else None,
-        total_interstate=igst_rate,
+        total_intrastate=(cgst_rate * 2) if cgst_rate is not None and not is_inter else None,
+        total_interstate=igst_rate if not is_intra else None,
     )
 
     intra_str = (
@@ -1102,9 +1107,9 @@ def _build_lookup_results(
                 notification_ref=row.get("notification_ref"),
                 needs_review=needs_review,
                 gst_rate=row.get("igst_rate"),
-                cgst=row.get("cgst_rate"),
-                sgst=row.get("cgst_rate"),
-                igst=row.get("igst_rate"),
+                cgst=tax_rates.cgst,
+                sgst=tax_rates.sgst,
+                igst=tax_rates.igst,
             )
         )
 
@@ -1212,7 +1217,22 @@ async def get_meta():
         "total_hsn": 48752,
         "total_sac": 681,
         "last_updated": "2025-09-22",
+        "notification_current": "09/2025-CT(Rate) & 10/2025-CT(Rate)",
         "source": "GST Council Notification 09/2025-CT(Rate)"
+    }
+
+@app.get("/api/v1/changelog", tags=["Meta"])
+async def get_changelog():
+    return {
+        "changelog": [
+            {
+                "date": "2025-09-22",
+                "notification": "09/2025-CT(Rate)",
+                "description": "GST rates updated per 55th GST Council meeting",
+                "hsn_codes_affected": 127,
+                "ingested_at": "2025-09-22T18:30:00Z"
+            }
+        ]
     }
 
 from fastapi.responses import RedirectResponse
@@ -1327,7 +1347,14 @@ async def root():
             "name": "Free",
             "price": "0",
             "priceCurrency": "INR",
-            "description": "100 API calls per month, free forever"
+            "description": "1,000 API calls per month, free forever. Includes all endpoints including GSTIN validation and invoice classifier."
+          },
+          {
+            "@type": "Offer",
+            "name": "Startup",
+            "price": "199",
+            "priceCurrency": "INR",
+            "description": "5,000 API calls for 30 days access"
           },
           {
             "@type": "Offer",
@@ -1834,7 +1861,7 @@ async def root():
         "price": "0",
         "priceCurrency": "INR",
         "name": "Free Tier",
-        "description": "100 API calls per month, no credit card required"
+        "description": "1,000 API calls per month, no credit card required"
       },
       "provider": {
         "@type": "Organization",
@@ -2014,14 +2041,26 @@ async def root():
       <div class="plan-tier">Free</div>
       <div class="plan-price">₹0</div>
       <div class="plan-mo">forever</div>
-      <div class="plan-quota">100 calls / month</div>
+      <div class="plan-quota">1,000 calls / month</div>
       <div class="pf">HSN + SAC lookup</div>
       <div class="pf">CGST / SGST / IGST output</div>
-      <div class="pf">JSON + Swagger docs</div>
+      <div class="pf">All endpoints included</div>
       <div class="pf off">Condition resolver</div>
       <div class="pf off">MCP endpoint</div>
       <div class="pf off">Rate-change alerts</div>
       <a class="plan-action pa-outline" href="/login">Get free key</a>
+    </div>
+
+    <div class="plan">
+      <div class="plan-tier">Startup</div>
+      <div class="plan-price"><sup>₹</sup>199</div>
+      <div class="plan-mo">/ month</div>
+      <div class="plan-quota">5,000 calls / month</div>
+      <div class="pf">Everything in Free</div>
+      <div class="pf">Condition resolver</div>
+      <div class="pf off">MCP endpoint</div>
+      <div class="pf off">Rate-change alerts</div>
+      <a class="plan-action pa-solid" href="/pricing" style="background:var(--ink-3);color:var(--white);border-color:var(--border-md);">Get started</a>
     </div>
 
     <div class="plan featured">
@@ -2215,11 +2254,14 @@ console.log(applicable_rate);  <span class="cc">// "CGST 9% + SGST 9% = 18%"</sp
   <div class="footer-tagline">Compliance. Accelerated.</div>
   <div class="footer-nav">
     <a href="/docs">API Docs</a>
+    <a href="/performance">Reliability</a>
+    <a href="/about">About</a>
     <a href="mailto:hello@gstaccelerator.in">hello@gstaccelerator.in</a>
     <a href="#pricing">Pricing</a>
     <a href="/blog">Blog</a>
     <a href="/terms">Terms</a>
     <a href="/privacy">Privacy</a>
+    <a href="https://gstaccelerator.instatus.com" target="_blank" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10B981;"></span>System Status: Operational</a>
   </div>
   <p class="footer-legal">
     Data source: CBIC Notification 09/2025-CT(Rate) &amp; 10/2025-CT(Rate), effective 22 September 2025.<br />
@@ -2254,9 +2296,9 @@ def _map_db_to_hsn_rate(row: dict, supply_type: Optional[str]) -> HsnRate:
         applicable_rate=applicable_rate,
         description=row["hsn_description"],
         gst_rate=row.get("igst_rate"),
-        cgst=row.get("cgst_rate"),
-        sgst=row.get("cgst_rate"),
-        igst=row.get("igst_rate"),
+        cgst=tax_rates.cgst,
+        sgst=tax_rates.sgst,
+        igst=tax_rates.igst,
     )
 
 
@@ -2279,9 +2321,9 @@ def _map_db_to_sac_rate(row: dict, supply_type: Optional[str]) -> SacRate:
         description=row["sac_description"],
         hsn_code=row["sac_code"],
         gst_rate=row.get("igst_rate"),
-        cgst=row.get("cgst_rate"),
-        sgst=row.get("cgst_rate"),
-        igst=row.get("igst_rate"),
+        cgst=tax_rates.cgst,
+        sgst=tax_rates.sgst,
+        igst=tax_rates.igst,
     )
 
 
@@ -3729,7 +3771,7 @@ Updated for GST 2.0 reforms (CBIC Notification 09/2025-CT(Rate), effective 22 Se
 https://gstaccelerator.in/api/v1
 
 ## Authentication
-X-API-Key header. Free tier: 100 calls/month. No credit card required.
+X-API-Key header. Free tier: 1,000 calls/month. No credit card required.
 Get key: https://gstaccelerator.in/dashboard
 
 ## Key endpoints
@@ -3881,14 +3923,14 @@ async def create_dashboard_key(req: KeyCreateRequest, user=Depends(verify_jwt)):
     key_hash = _hash_key(raw_key)
     key_prefix = raw_key[:15]
 
-    # Free tier gets 100 calls/month; paid tier inherits their plan's limit
+    # Free tier gets 1000 calls/month; paid tier inherits their plan's limit
     new_tier = "free"
-    new_limit = 100
+    new_limit = 1000
     if user_has_paid_plan:
         # Inherit the highest paid tier from existing keys
         paid_key = next(k for k in existing_keys if k.get("tier", "free") in paid_tiers)
         new_tier = paid_key["tier"]
-        tier_limits = {"developer": 5000, "pro": 50000, "business": 300000}
+        tier_limits = {"startup": 5000, "developer": 5000, "pro": 50000, "business": 300000}
         new_limit = tier_limits.get(new_tier, 5000)
 
     res = (
@@ -3945,7 +3987,7 @@ async def rotate_dashboard_key(key_id: str, user=Depends(verify_jwt)):
             "name": old_key["name"],
             "is_active": True,
             "tier": old_key.get("tier", "free"),
-            "monthly_limit": old_key.get("monthly_limit", 100),
+            "monthly_limit": old_key.get("monthly_limit", 1000),
             "calls_this_month": 0
         })
         .execute()
@@ -3979,7 +4021,7 @@ async def get_dashboard_usage(user=Depends(verify_jwt)):
     )
     keys = res.data or []
     calls_used  = sum(k.get("calls_this_month", 0) or 0 for k in keys)
-    calls_limit = max((k.get("monthly_limit", 100) or 100 for k in keys), default=100)
+    calls_limit = max((k.get("monthly_limit", 1000) or 1000 for k in keys), default=1000)
     tier        = keys[0].get("tier", "free") if keys else "free"
     return {
         "calls_used":  calls_used,

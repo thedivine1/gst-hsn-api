@@ -1,0 +1,52 @@
+{
+  "name": "gstaccelerator",
+  "version": "0.3.0",
+  "description": "JavaScript client for the GST Accelerator API — India GST HSN/SAC lookup, GSTIN validation",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "gst",
+    "hsn",
+    "sac",
+    "india",
+    "tax",
+    "gstin",
+    "gst-api",
+    "invoice",
+    "compliance",
+    "fintech"
+  ],
+  "homepage": "https://gstaccelerator.in",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thedivine1/gstaccelerator-js.git"
+  },
+  "scripts": {
+    "build": "tsup"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "cross-fetch": "^4.0.0"
+  },
+  "bin": {
+    "gstaccelerator-mcp": "dist/mcp-server.js"
+  }
+}
