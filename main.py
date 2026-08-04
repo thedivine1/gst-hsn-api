@@ -21,9 +21,17 @@ from supabase import create_client, Client  # pyright: ignore [missing-import]
 # pyrefly: ignore [missing-import]
 from dotenv import load_dotenv
 import contextvars
-import mcp.types as types
-from mcp.server import Server
-from mcp.server.sse import SseServerTransport
+try:
+    import mcp.types as types
+    from mcp.server import Server
+    from mcp.server.sse import SseServerTransport
+    _MCP_AVAILABLE = True
+except ImportError:
+    types = None  # type: ignore[assignment]
+    Server = None  # type: ignore[assignment]
+    SseServerTransport = None  # type: ignore[assignment]
+    _MCP_AVAILABLE = False
+    print("WARNING: mcp not available — MCP endpoint disabled.")
 import json
 from functools import lru_cache
 from collections import OrderedDict
@@ -4054,23 +4062,28 @@ async def get_dashboard_usage(user=Depends(verify_jwt)):
 # MCP Endpoints (SSE)
 # ---------------------------------------------------------------------------
 
-mcp_server = Server("gst-accelerator")
-sse_transport = SseServerTransport("/mcp/messages")
 mcp_api_key_ctx = contextvars.ContextVar("mcp_api_key_ctx", default=None)
+if _MCP_AVAILABLE:
+    mcp_server = Server("gst-accelerator")  # type: ignore[operator]
+    sse_transport = SseServerTransport("/mcp/messages")  # type: ignore[operator]
+else:
+    mcp_server = None  # type: ignore[assignment]
+    sse_transport = None  # type: ignore[assignment]
 
-@mcp_server.list_tools()
-async def handle_list_tools() -> list[types.Tool]:
-    return [
-        types.Tool(
-            name="lookup_gst_rate",
-            description="Lookup GST rates based on product description.",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "query": {"type": "string", "description": "The product description, e.g., 'rice', 'software'"},
-                    "conditions": {
-                        "type": "object",
-                        "description": "Optional conditions.",
+if _MCP_AVAILABLE:
+    @mcp_server.list_tools()
+    async def handle_list_tools() -> list[types.Tool]:
+        return [
+            types.Tool(
+                name="lookup_gst_rate",
+                description="Lookup GST rates based on product description.",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "query": {"type": "string", "description": "The product description, e.g., 'rice', 'software'"},
+                        "conditions": {
+                            "type": "object",
+                            "description": "Optional conditions.",
                         "properties": {
                             "sale_value_inr": {"type": "number"},
                             "branded": {"type": "boolean"},
@@ -4133,83 +4146,83 @@ async def handle_list_tools() -> list[types.Tool]:
         )
     ]
 
-@mcp_server.call_tool()
-async def handle_call_tool(name: str, arguments: dict | None) -> list[types.TextContent]:
-    if name == "lookup_gst_rate":
-        api_key_dict = mcp_api_key_ctx.get()
-        if not api_key_dict:
-            return [types.TextContent(type="text", text="Error: Unauthorized. Missing API key in MCP context.")]
+    @mcp_server.call_tool()
+    async def handle_call_tool(name: str, arguments: dict | None) -> list[types.TextContent]:
+        if name == "lookup_gst_rate":
+            api_key_dict = mcp_api_key_ctx.get()
+            if not api_key_dict:
+                return [types.TextContent(type="text", text="Error: Unauthorized. Missing API key in MCP context.")]
+                
+            req = LookupRequest(description=arguments.get("query", ""))
+            cond_dict = arguments.get("conditions")
+            if cond_dict:
+                req.conditions = ConditionFlags(**cond_dict)
+                
+            results = await lookup_rate(req, api_key_dict)
+            text_results = [json.loads(r.model_dump_json()) for r in results]
+            return [types.TextContent(type="text", text=json.dumps(text_results, indent=2))]
             
-        req = LookupRequest(description=arguments.get("query", ""))
-        cond_dict = arguments.get("conditions")
-        if cond_dict:
-            req.conditions = ConditionFlags(**cond_dict)
+        if name == "get_hsn_rate":
+            api_key_dict = mcp_api_key_ctx.get()
+            if not api_key_dict:
+                return [types.TextContent(type="text", text="Error: Unauthorized.")]
             
-        results = await lookup_rate(req, api_key_dict)
-        text_results = [json.loads(r.model_dump_json()) for r in results]
-        return [types.TextContent(type="text", text=json.dumps(text_results, indent=2))]
-        
-    if name == "get_hsn_rate":
-        api_key_dict = mcp_api_key_ctx.get()
-        if not api_key_dict:
-            return [types.TextContent(type="text", text="Error: Unauthorized.")]
-        
-        result = await get_hsn(arguments.get("hsn_code", ""), None, api_key_dict)
-        return [types.TextContent(type="text", text=json.dumps([json.loads(r.model_dump_json()) for r in result], indent=2))]
+            result = await get_hsn(arguments.get("hsn_code", ""), None, api_key_dict)
+            return [types.TextContent(type="text", text=json.dumps([json.loads(r.model_dump_json()) for r in result], indent=2))]
 
-    if name == "get_sac_rate":
-        api_key_dict = mcp_api_key_ctx.get()
-        if not api_key_dict:
-            return [types.TextContent(type="text", text="Error: Unauthorized.")]
-        
-        result = await get_sac(arguments.get("sac_code", ""), None, api_key_dict)
-        return [types.TextContent(type="text", text=json.dumps([json.loads(r.model_dump_json()) for r in result], indent=2))]
-
-    if name == "bulk_lookup":
-        api_key_dict = mcp_api_key_ctx.get()
-        if not api_key_dict:
-            return [types.TextContent(type="text", text="Error: Unauthorized.")]
-        
-        queries = arguments.get("queries", [])
-        reqs = [LookupRequest(description=q) for q in queries]
-        results = await bulk_lookup(reqs, api_key_dict)
-        text_results = [[json.loads(r.model_dump_json()) for r in row] for row in results]
-        return [types.TextContent(type="text", text=json.dumps(text_results, indent=2))]
-
-    if name == "validate_gstin":
-        api_key_dict = mcp_api_key_ctx.get()
-        if not api_key_dict:
-            return [types.TextContent(type="text", text="Error: Unauthorized.")]
+        if name == "get_sac_rate":
+            api_key_dict = mcp_api_key_ctx.get()
+            if not api_key_dict:
+                return [types.TextContent(type="text", text="Error: Unauthorized.")]
             
-        try:
-            result = await validate_gstin(arguments.get("gstin", ""), api_key_dict)
-            return [types.TextContent(type="text", text=json.dumps(json.loads(result.model_dump_json()), indent=2))]
-        except Exception as e:
-            return [types.TextContent(type="text", text=json.dumps({"error": str(e)}))]
-        
-    raise ValueError(f"Unknown tool: {name}")
+            result = await get_sac(arguments.get("sac_code", ""), None, api_key_dict)
+            return [types.TextContent(type="text", text=json.dumps([json.loads(r.model_dump_json()) for r in result], indent=2))]
 
-@app.get("/mcp/sse", include_in_schema=False)
-async def mcp_sse_route(request: Request):
-    api_key_header = request.headers.get("x-api-key") or request.query_params.get("api_key")
-    if not api_key_header:
-        raise HTTPException(status_code=401, detail="Missing API Key. Provide via X-API-Key header or api_key query parameter.")
-    
-    auth_dict = await verify_api_key(api_key_header)
-    
-    async with sse_transport.connect_sse(request.scope, request.receive, request._send) as streams:
-        await mcp_server.run(streams[0], streams[1], mcp_server.create_initialization_options())
+        if name == "bulk_lookup":
+            api_key_dict = mcp_api_key_ctx.get()
+            if not api_key_dict:
+                return [types.TextContent(type="text", text="Error: Unauthorized.")]
+            
+            queries = arguments.get("queries", [])
+            reqs = [LookupRequest(description=q) for q in queries]
+            results = await bulk_lookup(reqs, api_key_dict)
+            text_results = [[json.loads(r.model_dump_json()) for r in row] for row in results]
+            return [types.TextContent(type="text", text=json.dumps(text_results, indent=2))]
 
-@app.post("/mcp/messages", include_in_schema=False)
-async def mcp_messages_route(request: Request):
-    api_key_header = request.headers.get("x-api-key") or request.query_params.get("api_key")
-    if not api_key_header:
-        raise HTTPException(status_code=401, detail="Missing API Key in POST request")
+        if name == "validate_gstin":
+            api_key_dict = mcp_api_key_ctx.get()
+            if not api_key_dict:
+                return [types.TextContent(type="text", text="Error: Unauthorized.")]
+                
+            try:
+                result = await validate_gstin(arguments.get("gstin", ""), api_key_dict)
+                return [types.TextContent(type="text", text=json.dumps(json.loads(result.model_dump_json()), indent=2))]
+            except Exception as e:
+                return [types.TextContent(type="text", text=json.dumps({"error": str(e)}))]
+            
+        raise ValueError(f"Unknown tool: {name}")
+
+    @app.get("/mcp/sse", include_in_schema=False)
+    async def mcp_sse_route(request: Request):
+        api_key_header = request.headers.get("x-api-key") or request.query_params.get("api_key")
+        if not api_key_header:
+            raise HTTPException(status_code=401, detail="Missing API Key. Provide via X-API-Key header or api_key query parameter.")
         
-    auth_dict = await verify_api_key(api_key_header)
-    mcp_api_key_ctx.set(auth_dict)
-    
-    await sse_transport.handle_post_message(request.scope, request.receive, request._send)
+        auth_dict = await verify_api_key(api_key_header)
+        
+        async with sse_transport.connect_sse(request.scope, request.receive, request._send) as streams:
+            await mcp_server.run(streams[0], streams[1], mcp_server.create_initialization_options())
+
+    @app.post("/mcp/messages", include_in_schema=False)
+    async def mcp_messages_route(request: Request):
+        api_key_header = request.headers.get("x-api-key") or request.query_params.get("api_key")
+        if not api_key_header:
+            raise HTTPException(status_code=401, detail="Missing API Key in POST request")
+            
+        auth_dict = await verify_api_key(api_key_header)
+        mcp_api_key_ctx.set(auth_dict)
+        
+        await sse_transport.handle_post_message(request.scope, request.receive, request._send)
 
 if __name__ == "__main__":
     # pyrefly: ignore [missing-import]
