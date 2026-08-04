@@ -5,5 +5,3 @@ python-dotenv
 pydantic
 passlib
 httpx
-mcp
-asyncpg
