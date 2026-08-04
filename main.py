@@ -2289,9 +2289,12 @@ def _map_db_to_hsn_rate(row: dict, supply_type: Optional[str]) -> HsnRate:
     tax_rates, applicable_rate = _build_tax_info(
         row.get("igst_rate"), row.get("cgst_rate"), row.get("cess_rate"), supply_type
     )
+    raw_hsn = str(row["hsn_code"]).strip()
+    hsn_code = raw_hsn.zfill(8) if len(raw_hsn) == 7 else raw_hsn
+    
     return HsnRate(
         id=row.get("id"),
-        hsn_code=row["hsn_code"],
+        hsn_code=hsn_code,
         hsn_description=row["hsn_description"],
         schedule=row.get("schedule"),
         condition_text=row.get("condition_text"),
