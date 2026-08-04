@@ -45,7 +45,11 @@ RAZORPAY_BTN_BUSINESS  = os.environ.get("RAZORPAY_BTN_BUSINESS",  "pl_T7Xpk3fkQw
 GITHUB_CLIENT_ID     = os.environ.get("GITHUB_CLIENT_ID", "")
 GITHUB_CLIENT_SECRET = os.environ.get("GITHUB_CLIENT_SECRET", "")
 
-import asyncpg
+try:
+    import asyncpg
+except ImportError:
+    asyncpg = None  # type: ignore[assignment]
+    print("WARNING: asyncpg not available — falling back to Supabase PostgREST client.")
 from contextlib import asynccontextmanager
 
 supabase: Optional[Client] = None
@@ -119,7 +123,7 @@ async def _health_monitor_task():
 async def lifespan(app: FastAPI):
     global db_pool
     database_url = os.environ.get("DATABASE_URL")
-    if database_url:
+    if asyncpg and database_url:
         try:
             db_pool = await asyncpg.create_pool(
                 dsn=database_url,
@@ -132,8 +136,10 @@ async def lifespan(app: FastAPI):
             print("Successfully initialized asyncpg pool.")
         except Exception as e:
             print(f"Failed to initialize asyncpg pool: {e}")
+    elif not asyncpg:
+        print("INFO: asyncpg unavailable — using Supabase PostgREST fallback.")
     else:
-        print("WARNING: DB_HOST/DB_USER/DB_PASSWORD missing. asyncpg pool will be None.")
+        print("WARNING: DATABASE_URL missing. asyncpg pool will be None.")
     # Start background usage-flush task
     flush_task = asyncio.create_task(_flush_usage_to_supabase())
     health_task = asyncio.create_task(_health_monitor_task())

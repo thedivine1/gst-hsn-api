@@ -1,13 +1,9 @@
 fastapi
 uvicorn
 supabase
-pandas
-openpyxl
 python-dotenv
 pydantic
 passlib
-pytest
 httpx
-locust
 mcp
 asyncpg
