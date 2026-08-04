@@ -380,7 +380,7 @@ stats = {
     + len(sac_rates[sac_rates["cgst_rate"].notna()]),
     "Unmatched": len(hsn_rates[hsn_rates["cgst_rate"].isna()])
     + len(sac_rates[sac_rates["cgst_rate"].isna()]),
-    "Has conditions": len(final_df[final_df["has_condition"]]),
+    "Has conditions": len(final_df[final_df["has_condition"] == True]),
     "Cess applicable count": len(
         final_df[final_df["cess_rate"].notna() & (final_df["cess_rate"] != "Nil")]
     ),

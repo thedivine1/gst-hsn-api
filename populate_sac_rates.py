@@ -506,7 +506,7 @@ def main():
         # Pad to 6 digits for 6-digit codes; keep 2/4-digit as-is
         digits = "".join(c for c in sac_raw if c.isdigit())
         if len(digits) >= 6:
-            sac_code = digits[:6].ljust(6, "0")
+            sac_code = digits[:6].zfill(6)
         elif len(digits) == 4:
             sac_code = digits
         elif len(digits) == 2:

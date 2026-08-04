@@ -153,11 +153,11 @@ def normalise_hsn(raw: str) -> tuple[str, bool, bool]:
         return padded, False, True  # heading
 
     if length <= 6:
-        padded = digits_only.ljust(8, "0")  # pad trailing zeros to 8
+        padded = digits_only.zfill(8)  # pad leading zeros to 8
         return padded, False, False
 
     # 7 or 8 digit
-    padded = digits_only[:8].ljust(8, "0")
+    padded = digits_only[:8].zfill(8)
     return padded, False, False
 
 
